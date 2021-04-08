@@ -135,6 +135,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ginkgo/core/reorder/reordering_base.hpp>
 #include <ginkgo/core/reorder/scaled_reordered.hpp>
 
+#include <ginkgo/core/solver/batch_bicgstab.hpp>
 #include <ginkgo/core/solver/batch_richardson.hpp>
 #include <ginkgo/core/solver/bicg.hpp>
 #include <ginkgo/core/solver/bicgstab.hpp>
@@ -153,6 +154,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ginkgo/core/solver/triangular.hpp>
 #include <ginkgo/core/solver/workspace.hpp>
 
+#include <ginkgo/core/stop/batch_stop_enum.hpp>
 #include <ginkgo/core/stop/combined.hpp>
 #include <ginkgo/core/stop/criterion.hpp>
 #include <ginkgo/core/stop/iteration.hpp>
