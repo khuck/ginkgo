@@ -221,7 +221,7 @@ void BatchIlu<ValueType, IndexType>::generate_precond(
 
 
 #define GKO_DECLARE_BATCH_ILU(ValueType) class BatchIlu<ValueType, int32>
-GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_BATCH_ILU);
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE_NO_HALF(GKO_DECLARE_BATCH_ILU);
 
 
 }  // namespace preconditioner

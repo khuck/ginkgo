@@ -72,6 +72,7 @@ class BatchEll
     : public EnableBatchLinOp<BatchEll<ValueType, IndexType>>,
       public EnableCreateMethod<BatchEll<ValueType, IndexType>>,
       public ConvertibleTo<BatchEll<next_precision<ValueType>, IndexType>>,
+      public ConvertibleTo<BatchEll<previous_precision<ValueType>, IndexType>>,
       public ConvertibleTo<BatchDense<ValueType>>,
       public BatchReadableFromMatrixData<ValueType, IndexType>,
       public BatchWritableToMatrixData<ValueType, IndexType>,
@@ -107,13 +108,21 @@ public:
         bool same_executor = this->get_executor() == result->get_executor();
         EnableBatchLinOp<BatchEll>::move_to(result);
     }
+
     friend class BatchEll<next_precision<ValueType>, IndexType>;
+    friend class BatchEll<previous_precision<ValueType>, IndexType>;
 
     void convert_to(
         BatchEll<next_precision<ValueType>, IndexType>* result) const override;
 
     void move_to(
         BatchEll<next_precision<ValueType>, IndexType>* result) override;
+
+    void convert_to(BatchEll<previous_precision<ValueType>, IndexType>* result)
+        const override;
+
+    void move_to(
+        BatchEll<previous_precision<ValueType>, IndexType>* result) override;
 
     void convert_to(BatchDense<ValueType>* result) const override;
 

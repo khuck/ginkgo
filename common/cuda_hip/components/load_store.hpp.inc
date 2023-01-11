@@ -30,9 +30,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************<GINKGO LICENSE>*******************************/
 
+template <typename T>
+struct is_valid_type
+    : std::integral_constant<bool, std::is_floating_point<T>::value ||
+                                       std::is_same<T, __half>::value> {};
+
+
 template <typename ValueType, typename IndexType>
 __device__ __forceinline__
-    std::enable_if_t<std::is_floating_point<ValueType>::value, ValueType>
+    std::enable_if_t<is_valid_type<ValueType>::value, ValueType>
     load(const ValueType* values, IndexType index)
 {
     const volatile ValueType* val = values + index;
@@ -40,8 +46,8 @@ __device__ __forceinline__
 }
 
 template <typename ValueType, typename IndexType>
-__device__ __forceinline__ std::enable_if_t<
-    std::is_floating_point<ValueType>::value, thrust::complex<ValueType>>
+__device__ __forceinline__ std::enable_if_t<is_valid_type<ValueType>::value,
+                                            thrust::complex<ValueType>>
 load(const thrust::complex<ValueType>* values, IndexType index)
 {
     auto real = reinterpret_cast<const ValueType*>(values);
@@ -52,7 +58,7 @@ load(const thrust::complex<ValueType>* values, IndexType index)
 template <typename ValueType, typename IndexType>
 __device__ __forceinline__ void store(
     ValueType* values, IndexType index,
-    std::enable_if_t<std::is_floating_point<ValueType>::value, ValueType> value)
+    std::enable_if_t<is_valid_type<ValueType>::value, ValueType> value)
 {
     volatile ValueType* val = values + index;
     *val = value;

@@ -34,15 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GKO_HIP_COMPONENTS_LOAD_STORE_HIP_HPP_
 
 
-namespace gko {
-namespace kernels {
-namespace hip {
-
-#include "common/cuda_hip/components/load_store.hpp.inc"
-
-}  // namespace hip
-}  // namespace kernels
-}  // namespace gko
+#include "hip/components/volatile.hip.hpp"
 
 
 #endif  // GKO_HIP_COMPONENTS_LOAD_STORE_HIP_HPP_

@@ -152,7 +152,7 @@ public:
 
         const int row_index = threadIdx.x;
         if (row_index < num_rows) {
-            ValueType sum = 0;
+            ValueType sum = zero<ValueType>();
 
             const int start = row_ptrs[row_index];
             const int end = csr_diag_locs_[row_index];
@@ -171,7 +171,7 @@ public:
                 if (i == end) {
                     ValueType val =
                         (r[row_index] - sum) /
-                        1;  // 1 in place of factored_values_entry[end]
+                        one(sum);  // 1 in place of factored_values_entry[end]
                     store(work_, row_index, val);
                     completed = true;
                 }
@@ -190,7 +190,7 @@ public:
 
         const int row_index = num_rows - 1 - static_cast<int>(threadIdx.x);
         if (row_index >= 0) {
-            ValueType sum = 0;
+            ValueType sum = zero<ValueType>();
 
             const int start = csr_diag_locs_[row_index];
             const int end = row_ptrs[row_index + 1] - 1;

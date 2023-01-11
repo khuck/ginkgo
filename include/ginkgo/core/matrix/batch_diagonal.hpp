@@ -76,6 +76,7 @@ class BatchDiagonal
     : public EnableBatchLinOp<BatchDiagonal<ValueType>>,
       public EnableCreateMethod<BatchDiagonal<ValueType>>,
       public ConvertibleTo<BatchDiagonal<next_precision<ValueType>>>,
+      public ConvertibleTo<BatchDiagonal<previous_precision<ValueType>>>,
       public BatchReadableFromMatrixData<ValueType, int32>,
       public BatchReadableFromMatrixData<ValueType, int64>,
       public BatchWritableToMatrixData<ValueType, int32>,
@@ -117,11 +118,17 @@ public:
     }
 
     friend class BatchDiagonal<next_precision<ValueType>>;
+    friend class BatchDiagonal<previous_precision<ValueType>>;
 
     void convert_to(
         BatchDiagonal<next_precision<ValueType>>* result) const override;
 
     void move_to(BatchDiagonal<next_precision<ValueType>>* result) override;
+
+    void convert_to(
+        BatchDiagonal<previous_precision<ValueType>>* result) const override;
+
+    void move_to(BatchDiagonal<previous_precision<ValueType>>* result) override;
 
     /**
      * Read from a COO-type matrix data object into this batch diagonal matrix.

@@ -116,6 +116,24 @@ void BatchDiagonal<ValueType>::move_to(
 }
 
 
+template <typename ValueType>
+void BatchDiagonal<ValueType>::convert_to(
+    BatchDiagonal<previous_precision<ValueType>>* const result) const
+{
+    result->values_ = this->values_;
+    result->num_elems_per_batch_cumul_ = this->num_elems_per_batch_cumul_;
+    result->set_size(this->get_size());
+}
+
+
+template <typename ValueType>
+void BatchDiagonal<ValueType>::move_to(
+    BatchDiagonal<previous_precision<ValueType>>* const result)
+{
+    this->convert_to(result);
+}
+
+
 namespace {
 
 

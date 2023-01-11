@@ -147,7 +147,8 @@ void apply(std::shared_ptr<const CudaExecutor> exec,
     dispatcher.apply(b, x, logdata);
 }
 
-GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_BATCH_GMRES_APPLY_KERNEL);
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE_NO_HALF(
+    GKO_DECLARE_BATCH_GMRES_APPLY_KERNEL);
 
 
 }  // namespace batch_gmres

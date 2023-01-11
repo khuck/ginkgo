@@ -124,7 +124,7 @@ void BatchCg<ValueType>::solver_apply(const BatchLinOp* const b,
 
 
 #define GKO_DECLARE_BATCH_CG(_type) class BatchCg<_type>
-GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_BATCH_CG);
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE_NO_HALF(GKO_DECLARE_BATCH_CG);
 
 
 #define GKO_DECLARE_BATCH_CG_APPLY_FUNCTION(_type)                            \
@@ -137,7 +137,8 @@ GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_BATCH_CG);
     template void EnableBatchSolver<BatchCg<_type>, BatchLinOp>::apply_impl(  \
         const BatchLinOp* alpha, const BatchLinOp* b, const BatchLinOp* beta, \
         BatchLinOp* x) const
-GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_BATCH_CG_APPLY_FUNCTION);
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE_NO_HALF(
+    GKO_DECLARE_BATCH_CG_APPLY_FUNCTION);
 
 
 }  // namespace solver

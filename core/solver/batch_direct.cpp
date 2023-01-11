@@ -194,7 +194,7 @@ void BatchDirect<ValueType>::apply_impl(const BatchLinOp* alpha,
 
 
 #define GKO_DECLARE_BATCH_DIRECT(_type) class BatchDirect<_type>
-GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_BATCH_DIRECT);
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE_NO_HALF(GKO_DECLARE_BATCH_DIRECT);
 
 
 }  // namespace solver

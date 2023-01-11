@@ -34,15 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define GKO_CUDA_COMPONENTS_LOAD_STORE_CUH_
 
 
-namespace gko {
-namespace kernels {
-namespace cuda {
-
-#include "common/cuda_hip/components/load_store.hpp.inc"
-
-}  // namespace cuda
-}  // namespace kernels
-}  // namespace gko
+#include "cuda/components/volatile.cuh"
 
 
 #endif  // GKO_CUDA_COMPONENTS_LOAD_STORE_CUH_

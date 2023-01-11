@@ -251,6 +251,25 @@ void BatchDense<ValueType>::move_to(
 
 
 template <typename ValueType>
+void BatchDense<ValueType>::convert_to(
+    BatchDense<previous_precision<ValueType>>* result) const
+{
+    result->values_ = this->values_;
+    result->stride_ = this->stride_;
+    result->num_elems_per_batch_cumul_ = this->num_elems_per_batch_cumul_;
+    result->set_size(this->get_size());
+}
+
+
+template <typename ValueType>
+void BatchDense<ValueType>::move_to(
+    BatchDense<previous_precision<ValueType>>* result)
+{
+    this->convert_to(result);
+}
+
+
+template <typename ValueType>
 void BatchDense<ValueType>::convert_to(BatchCsr<ValueType, int32>* result) const
 {
     auto exec = this->get_executor();

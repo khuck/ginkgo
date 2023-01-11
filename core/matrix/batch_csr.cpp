@@ -114,6 +114,25 @@ void BatchCsr<ValueType, IndexType>::move_to(
 
 template <typename ValueType, typename IndexType>
 void BatchCsr<ValueType, IndexType>::convert_to(
+    BatchCsr<previous_precision<ValueType>, IndexType>* result) const
+{
+    result->values_ = this->values_;
+    result->col_idxs_ = this->col_idxs_;
+    result->row_ptrs_ = this->row_ptrs_;
+    result->set_size(this->get_size());
+}
+
+
+template <typename ValueType, typename IndexType>
+void BatchCsr<ValueType, IndexType>::move_to(
+    BatchCsr<previous_precision<ValueType>, IndexType>* result)
+{
+    this->convert_to(result);
+}
+
+
+template <typename ValueType, typename IndexType>
+void BatchCsr<ValueType, IndexType>::convert_to(
     BatchDense<ValueType>* const result) const
 {
     auto temp =
