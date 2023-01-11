@@ -1314,6 +1314,16 @@ bool try_sparselib_spmv(std::shared_ptr<const DpcppExecutor> exec,
 }  // namespace host_kernel
 
 
+template <typename ValueType>
+struct onemkl_support : std::false_type {};
+
+template <>
+struct onemkl_support<double> : std::true_type {};
+
+template <>
+struct onemkl_support<float> : std::true_type {};
+
+
 template <typename MatrixValueType, typename InputValueType,
           typename OutputValueType, typename IndexType>
 void spmv(std::shared_ptr<const DpcppExecutor> exec,
@@ -1348,7 +1358,9 @@ void spmv(std::shared_ptr<const DpcppExecutor> exec,
         bool use_classical = true;
         if (a->get_strategy()->get_name() == "sparselib" ||
             a->get_strategy()->get_name() == "cusparse") {
-            use_classical = !host_kernel::try_sparselib_spmv(exec, a, b, c);
+            if constexpr(onemkl_support<ValueType>::value) {
+                use_classical = !host_kernel::try_sparselib_spmv(exec, a, b, c);
+            }
         }
         if (use_classical) {
             IndexType max_length_per_row = 0;
@@ -1418,8 +1430,10 @@ void advanced_spmv(std::shared_ptr<const DpcppExecutor> exec,
         bool use_classical = true;
         if (a->get_strategy()->get_name() == "sparselib" ||
             a->get_strategy()->get_name() == "cusparse") {
-            use_classical =
-                !host_kernel::try_sparselib_spmv(exec, a, b, c, alpha, beta);
+            if constexpr(onemkl_support<ValueType>::value) {
+                use_classical = !host_kernel::try_sparselib_spmv(exec, a, b, c,
+                                                                 alpha, beta);
+            }
         }
         if (use_classical) {
             IndexType max_length_per_row = 0;
