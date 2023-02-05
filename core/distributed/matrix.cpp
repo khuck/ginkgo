@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ginkgo/core/base/precision_dispatch.hpp>
 #include <ginkgo/core/distributed/vector.hpp>
 #include <ginkgo/core/matrix/csr.hpp>
+#include <ginkgo/core/matrix/diagonal.hpp>
 
 
 #include "core/distributed/matrix_kernels.hpp"
@@ -85,6 +86,9 @@ Matrix<ValueType, LocalIndexType, GlobalIndexType>::Matrix(
       gather_idxs_{exec},
       non_local_to_global_{exec},
       one_scalar_{},
+      row_partition_{part_type::create(exec)},
+      col_partition_{part_type::create(exec)},
+      matrix_data_{exec},
       local_mtx_{local_matrix_template->clone(exec)},
       non_local_mtx_{non_local_matrix_template->clone(exec)}
 {
@@ -113,6 +117,10 @@ void Matrix<ValueType, LocalIndexType, GlobalIndexType>::convert_to(
     result->recv_offsets_ = this->recv_offsets_;
     result->recv_sizes_ = this->recv_sizes_;
     result->send_sizes_ = this->send_sizes_;
+    // FIXME Add mixed prec copies to device_matrix_data
+    // result->matrix_data_ = this->matrix_data_;
+    result->row_partition_ = this->row_partition_;
+    result->col_partition_ = this->col_partition_;
     result->non_local_to_global_ = this->non_local_to_global_;
     result->set_size(this->get_size());
 }
@@ -132,9 +140,22 @@ void Matrix<ValueType, LocalIndexType, GlobalIndexType>::move_to(
     result->recv_offsets_ = std::move(this->recv_offsets_);
     result->recv_sizes_ = std::move(this->recv_sizes_);
     result->send_sizes_ = std::move(this->send_sizes_);
+    // FIXME Add mixed prec copies to device_matrix_data
+    // result->matrix_data_ = std::move(this->matrix_data_);
+    result->row_partition_ = std::move(this->row_partition_);
+    result->col_partition_ = std::move(this->col_partition_);
     result->non_local_to_global_ = std::move(this->non_local_to_global_);
     result->set_size(this->get_size());
     this->set_size({});
+}
+
+
+template <typename ValueType, typename LocalIndexType, typename GlobalIndexType>
+std::unique_ptr<gko::matrix::Diagonal<ValueType>>
+Matrix<ValueType, LocalIndexType, GlobalIndexType>::extract_diagonal() const
+{
+    return gko::as<DiagonalExtractable<ValueType>>(this->get_local_matrix())
+        ->extract_diagonal();
 }
 
 
@@ -144,6 +165,9 @@ void Matrix<ValueType, LocalIndexType, GlobalIndexType>::read_distributed(
     const Partition<local_index_type, global_index_type>* row_partition,
     const Partition<local_index_type, global_index_type>* col_partition)
 {
+    using part_type =
+        gko::experimental::distributed::Partition<local_index_type,
+                                                  global_index_type>;
     const auto comm = this->get_communicator();
     GKO_ASSERT_EQ(data.get_size()[0], row_partition->get_size());
     GKO_ASSERT_EQ(data.get_size()[1], col_partition->get_size());
@@ -151,10 +175,13 @@ void Matrix<ValueType, LocalIndexType, GlobalIndexType>::read_distributed(
     GKO_ASSERT_EQ(comm.size(), col_partition->get_num_parts());
     auto exec = this->get_executor();
     auto local_part = comm.rank();
+    this->row_partition_->copy_from(row_partition);
+    this->col_partition_->copy_from(col_partition);
+    this->matrix_data_ = data;
 
     // set up LinOp sizes
     auto num_parts = static_cast<size_type>(row_partition->get_num_parts());
-    auto global_num_rows = row_partition->get_size();
+    auto global_num_rows = this->get_row_partition()->get_size();
     auto global_num_cols = col_partition->get_size();
     dim<2> global_dim{global_num_rows, global_num_cols};
     this->set_size(global_dim);
@@ -373,7 +400,8 @@ template <typename ValueType, typename LocalIndexType, typename GlobalIndexType>
 Matrix<ValueType, LocalIndexType, GlobalIndexType>::Matrix(const Matrix& other)
     : EnableDistributedLinOp<Matrix<value_type, local_index_type,
                                     global_index_type>>{other.get_executor()},
-      DistributedBase{other.get_communicator()}
+      DistributedBase{other.get_communicator()},
+      matrix_data_{other.get_executor()}
 {
     *this = other;
 }
@@ -384,7 +412,8 @@ Matrix<ValueType, LocalIndexType, GlobalIndexType>::Matrix(
     Matrix&& other) noexcept
     : EnableDistributedLinOp<Matrix<value_type, local_index_type,
                                     global_index_type>>{other.get_executor()},
-      DistributedBase{other.get_communicator()}
+      DistributedBase{other.get_communicator()},
+      matrix_data_{other.get_executor()}
 {
     *this = std::move(other);
 }
@@ -406,6 +435,9 @@ Matrix<ValueType, LocalIndexType, GlobalIndexType>::operator=(
         recv_offsets_ = other.recv_offsets_;
         send_sizes_ = other.send_sizes_;
         recv_sizes_ = other.recv_sizes_;
+        matrix_data_ = other.matrix_data_;
+        row_partition_ = other.row_partition_;
+        col_partition_ = other.col_partition_;
         non_local_to_global_ = other.non_local_to_global_;
         one_scalar_.init(this->get_executor(), dim<2>{1, 1});
         one_scalar_->fill(one<value_type>());
@@ -430,6 +462,9 @@ Matrix<ValueType, LocalIndexType, GlobalIndexType>::operator=(Matrix&& other)
         recv_offsets_ = std::move(other.recv_offsets_);
         send_sizes_ = std::move(other.send_sizes_);
         recv_sizes_ = std::move(other.recv_sizes_);
+        matrix_data_ = std::move(other.matrix_data_);
+        row_partition_ = std::move(other.row_partition_);
+        col_partition_ = std::move(other.col_partition_);
         non_local_to_global_ = std::move(other.non_local_to_global_);
         one_scalar_.init(this->get_executor(), dim<2>{1, 1});
         one_scalar_->fill(one<value_type>());
