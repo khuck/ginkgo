@@ -62,6 +62,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "dpcpp/base/dim3.dp.hpp"
 #include "dpcpp/base/dpct.hpp"
 #include "dpcpp/base/helper.hpp"
+#include "dpcpp/base/onemkl_bindings.hpp"
 #include "dpcpp/components/atomic.dp.hpp"
 #include "dpcpp/components/cooperative_groups.dp.hpp"
 #include "dpcpp/components/reduction.dp.hpp"
@@ -1430,7 +1431,7 @@ void advanced_spmv(std::shared_ptr<const DpcppExecutor> exec,
         bool use_classical = true;
         if (a->get_strategy()->get_name() == "sparselib" ||
             a->get_strategy()->get_name() == "cusparse") {
-            if constexpr(onemkl_support<ValueType>::value) {
+            if constexpr(onemkl::is_supported<ValueType>::value) {
                 use_classical = !host_kernel::try_sparselib_spmv(exec, a, b, c,
                                                                  alpha, beta);
             }
