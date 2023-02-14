@@ -264,6 +264,53 @@ GKO_BIND_HIPBLAS_NORM2(ValueType, detail::not_implemented);
 #undef GKO_BIND_HIPBLAS_NORM2
 
 
+#define GKO_BIND_HIPBLAS_BATCH_GETRF(ValueType, HipblasName)                  \
+    inline void batch_getrf(hipblasHandle_t handle, int n,                    \
+                            ValueType* Aarray[], int lda, int* pivot_array,   \
+                            int* info_array, int batch_size)                  \
+    {                                                                         \
+        GKO_ASSERT_NO_HIPBLAS_ERRORS(                                         \
+            HipblasName(handle, n, as_hipblas_type(Aarray), lda, pivot_array, \
+                        info_array, batch_size));                             \
+    }                                                                         \
+    static_assert(true,                                                       \
+                  "This assert is used to counter the false positive extra "  \
+                  "semi-colon warnings")
+
+GKO_BIND_HIPBLAS_BATCH_GETRF(float, hipblasSgetrfBatched);
+GKO_BIND_HIPBLAS_BATCH_GETRF(double, hipblasDgetrfBatched);
+GKO_BIND_HIPBLAS_BATCH_GETRF(std::complex<float>, hipblasCgetrfBatched);
+GKO_BIND_HIPBLAS_BATCH_GETRF(std::complex<double>, hipblasZgetrfBatched);
+template <typename ValueType>
+GKO_BIND_HIPBLAS_BATCH_GETRF(ValueType, detail::not_implemented);
+
+#undef GKO_BIND_HIPBLAS_BATCH_GETRF
+
+
+#define GKO_BIND_HIPBLAS_BATCH_GETRS(ValueType, HipblasName)                  \
+    inline void batch_getrs(hipblasHandle_t handle, hipblasOperation_t trans, \
+                            int n, int nrhs, ValueType* Aarray[], int lda,    \
+                            const int* devIpiv, ValueType* Barray[], int ldb, \
+                            int* info, int batchSize)                         \
+    {                                                                         \
+        GKO_ASSERT_NO_HIPBLAS_ERRORS(HipblasName(                             \
+            handle, trans, n, nrhs, as_hipblas_type(Aarray), lda, devIpiv,    \
+            as_hipblas_type(Barray), ldb, info, batchSize));                  \
+    }                                                                         \
+    static_assert(true,                                                       \
+                  "This assert is used to counter the false positive extra "  \
+                  "semi-colon warnings")
+
+GKO_BIND_HIPBLAS_BATCH_GETRS(float, hipblasSgetrsBatched);
+GKO_BIND_HIPBLAS_BATCH_GETRS(double, hipblasDgetrsBatched);
+GKO_BIND_HIPBLAS_BATCH_GETRS(std::complex<float>, hipblasCgetrsBatched);
+GKO_BIND_HIPBLAS_BATCH_GETRS(std::complex<double>, hipblasZgetrsBatched);
+template <typename ValueType>
+GKO_BIND_HIPBLAS_BATCH_GETRS(ValueType, detail::not_implemented);
+
+#undef GKO_BIND_HIPBLAS_BATCH_GETRS
+
+
 inline hipblasContext* init(hipStream_t stream)
 {
     hipblasHandle_t handle;
