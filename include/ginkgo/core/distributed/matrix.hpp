@@ -266,6 +266,7 @@ class Matrix
           Matrix<ValueType, LocalIndexType, GlobalIndexType>>,
       public EnableCreateMethod<
           Matrix<ValueType, LocalIndexType, GlobalIndexType>>,
+      public ScaledIdentityAddable,
       public ConvertibleTo<
           Matrix<next_precision<ValueType>, LocalIndexType, GlobalIndexType>>,
 #if GINKGO_ENABLE_HALF
@@ -570,6 +571,8 @@ protected:
 
     void apply_impl(const LinOp* alpha, const LinOp* b, const LinOp* beta,
                     LinOp* x) const override;
+
+    void add_scaled_identity_impl(const LinOp* a, const LinOp* b) override;
 
 private:
     std::vector<comm_index_type> send_offsets_;
