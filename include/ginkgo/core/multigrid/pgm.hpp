@@ -189,6 +189,8 @@ protected:
 
     void generate();
 
+    void generate_local(std::shared_ptr<const LinOp> local_matrix);
+
 private:
     std::shared_ptr<const LinOp> system_matrix_{};
     array<IndexType> agg_;
