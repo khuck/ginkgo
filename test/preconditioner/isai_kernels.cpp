@@ -654,23 +654,45 @@ TEST_F(Isai, IsaiScatterPartialExcessSolutionIsEquivalentToRef)
 }
 
 
-TEST_F(Isai, IsaiGenerateGeneralWithHighSparsityPowerIsEquivalentToRef)
+TEST_F(Isai, IsaiGenerateGeneralWithSparsityPower8IsEquivalentToRef)
 {
     using Isai =
         gko::preconditioner::Isai<gko::preconditioner::isai_type::general,
                                   value_type, index_type>;
     initialize_tridiag_data(matrix_type::general, 65);
 
+    auto isai =
+        Isai::build().with_sparsity_power(8).on(ref)->generate(mtx->clone());
+
+    auto d_isai =
+        Isai::build().with_sparsity_power(8).on(exec)->generate(d_mtx->clone());
+
+    GKO_ASSERT_MTX_NEAR(isai->get_approximate_inverse(),
+                        d_isai->get_approximate_inverse(),
+                        r<value_type>::value);
+}
+
+TEST_F(Isai, IsaiGenerateGeneralSparsityPowerNIsEquivalentToRef)
+{
+    using Isai =
+        gko::preconditioner::Isai<gko::preconditioner::isai_type::general,
+                                  value_type, index_type>;
+    initialize_tridiag_data(matrix_type::general, 65);
+
+    auto isai = Isai::build()
+                    .with_sparsity_power(static_cast<int>(mtx->get_size()[0]))
+                    .with_excess_solver_reduction(r<value_type>::value)
+                    .on(ref)
+                    ->generate(mtx->clone());
+
     auto d_isai =
         Isai::build()
             .with_sparsity_power(static_cast<int>(d_mtx->get_size()[0]))
-            .on(ref)
+            .with_excess_solver_reduction(r<value_type>::value)
+            .on(exec)
             ->generate(d_mtx->clone());
 
-    auto id = Dense::create(exec, d_mtx->get_size());
-    id->fill(0.0);
-    ensure_diagonal(id.get());
-    auto result = Csr::create(exec, mtx->get_size());
-    d_isai->get_approximate_inverse()->apply(d_mtx, result);
-    GKO_ASSERT_MTX_NEAR(result, id, r<value_type>::value);
+    GKO_ASSERT_MTX_NEAR(isai->get_approximate_inverse(),
+                        d_isai->get_approximate_inverse(),
+                        5 * r<value_type>::value);
 }
