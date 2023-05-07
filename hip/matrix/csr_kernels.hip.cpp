@@ -189,47 +189,9 @@ GKO_ENABLE_IMPLEMENTATION_SELECTION(select_merge_path_spmv, merge_path_spmv);
 template <typename ValueType, typename IndexType>
 int compute_items_per_thread(std::shared_ptr<const HipExecutor> exec)
 {
-#if GINKGO_HIP_PLATFORM_NVCC
-
-
-    const int version =
-        (exec->get_major_version() << 4) + exec->get_minor_version();
-    // The num_item is decided to make the occupancy 100%
-    // TODO: Extend this list when new GPU is released
-    //       Tune this parameter
-    // 128 threads/block the number of items per threads
-    // 3.0 3.5: 6
-    // 3.7: 14
-    // 5.0, 5.3, 6.0, 6.2: 8
-    // 5.2, 6.1, 7.0: 12
-    int num_item = 6;
-    switch (version) {
-    case 0x50:
-    case 0x53:
-    case 0x60:
-    case 0x62:
-        num_item = 8;
-        break;
-    case 0x52:
-    case 0x61:
-    case 0x70:
-        num_item = 12;
-        break;
-    case 0x37:
-        num_item = 14;
-    }
-
-
-#else
-
-
     // HIP uses the minimal num_item to make the code work correctly.
     // TODO: this parameter should be tuned.
     int num_item = 6;
-
-
-#endif  // GINKGO_HIP_PLATFORM_NVCC
-
 
     // Ensure that the following is satisfied:
     // sizeof(IndexType) + sizeof(ValueType)

@@ -89,33 +89,9 @@ enum class log_propagation_mode {
 enum class allocation_mode { device, unified_global, unified_host };
 
 
-#ifdef NDEBUG
-
-// When in release, prefer device allocations
 constexpr allocation_mode default_cuda_alloc_mode = allocation_mode::device;
 
 constexpr allocation_mode default_hip_alloc_mode = allocation_mode::device;
-
-#else
-
-// When in debug, always UM allocations.
-constexpr allocation_mode default_cuda_alloc_mode =
-    allocation_mode::unified_global;
-
-#if (GINKGO_HIP_PLATFORM_HCC == 1)
-
-// HIP on AMD GPUs does not support UM, so always prefer device allocations.
-constexpr allocation_mode default_hip_alloc_mode = allocation_mode::device;
-
-#else
-
-// HIP on NVIDIA GPUs supports UM, so prefer UM allocations.
-constexpr allocation_mode default_hip_alloc_mode =
-    allocation_mode::unified_global;
-
-#endif
-
-#endif
 
 
 }  // namespace gko
@@ -180,12 +156,7 @@ struct hipblasContext;
 
 struct hipsparseContext;
 
-#if GINKGO_HIP_PLATFORM_HCC
 struct ihipStream_t;
-#define GKO_HIP_STREAM_STRUCT ihipStream_t
-#else
-#define GKO_HIP_STREAM_STRUCT CUstream_st
-#endif
 
 
 namespace gko {
@@ -1802,7 +1773,7 @@ public:
         int device_id, std::shared_ptr<Executor> master,
         bool device_reset = false,
         allocation_mode alloc_mode = default_hip_alloc_mode,
-        GKO_HIP_STREAM_STRUCT* stream = nullptr);
+        ihipStream_t* stream = nullptr);
 
     std::shared_ptr<Executor> get_master() noexcept override;
 
@@ -1908,7 +1879,7 @@ public:
         return this->get_exec_info().closest_pu_ids;
     }
 
-    GKO_HIP_STREAM_STRUCT* get_stream() const { return stream_; }
+    ihipStream_t* get_stream() const { return stream_; }
 
 protected:
     void set_gpu_property();
@@ -1918,7 +1889,7 @@ protected:
     HipExecutor(int device_id, std::shared_ptr<Executor> master,
                 bool device_reset = false,
                 allocation_mode alloc_mode = default_hip_alloc_mode,
-                GKO_HIP_STREAM_STRUCT* stream = nullptr)
+                ihipStream_t* stream = nullptr)
         : EnableDeviceReset{device_reset},
           master_(master),
           alloc_mode_(alloc_mode),
@@ -1971,7 +1942,7 @@ private:
     handle_manager<hipsparseContext> hipsparse_handle_;
 
     allocation_mode alloc_mode_;
-    GKO_HIP_STREAM_STRUCT* stream_;
+    ihipStream_t* stream_;
 };
 
 
@@ -2002,10 +1973,10 @@ public:
      * Returns the native HIP stream handle.
      * In a moved-from hip_stream, this will return nullptr.
      */
-    GKO_HIP_STREAM_STRUCT* get() const;
+    ihipStream_t* get() const;
 
 private:
-    GKO_HIP_STREAM_STRUCT* stream_;
+    ihipStream_t* stream_;
 
     int device_id_;
 };

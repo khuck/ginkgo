@@ -195,14 +195,8 @@ public:
 
     __device__ __forceinline__ unsigned size() const noexcept { return Size; }
 
-    __device__ __forceinline__ void sync() const noexcept
-    {
-#if GINKGO_HIP_PLATFORM_NVCC
-        __syncwarp(data_.mask);
-#endif  // GINKGO_HIP_PLATFORM_NVCC
-    }
+    __device__ __forceinline__ void sync() const noexcept {}
 
-#if GINKGO_HIP_PLATFORM_HCC
 #define GKO_BIND_SHFL(ShflOp, ValueType, SelectorType)                       \
     __device__ __forceinline__ ValueType ShflOp(                             \
         ValueType var, SelectorType selector) const noexcept                 \
@@ -212,17 +206,6 @@ public:
     static_assert(true,                                                      \
                   "This assert is used to counter the false positive extra " \
                   "semi-colon warnings")
-#else
-#define GKO_BIND_SHFL(ShflOp, ValueType, SelectorType)                       \
-    __device__ __forceinline__ ValueType ShflOp(                             \
-        ValueType var, SelectorType selector) const noexcept                 \
-    {                                                                        \
-        return __##ShflOp##_sync(data_.mask, var, selector, Size);           \
-    }                                                                        \
-    static_assert(true,                                                      \
-                  "This assert is used to counter the false positive extra " \
-                  "semi-colon warnings")
-#endif
 
     GKO_BIND_SHFL(shfl, int32, int32);
     GKO_BIND_SHFL(shfl, float, int32);
@@ -250,15 +233,11 @@ public:
      */
     __device__ __forceinline__ int any(int predicate) const noexcept
     {
-#if GINKGO_HIP_PLATFORM_HCC
         if (Size == config::warp_size) {
             return __any(predicate);
         } else {
             return (__ballot(predicate) & data_.mask) != 0;
         }
-#else
-        return __any_sync(data_.mask, predicate);
-#endif
     }
 
     /**
@@ -267,15 +246,11 @@ public:
      */
     __device__ __forceinline__ int all(int predicate) const noexcept
     {
-#if GINKGO_HIP_PLATFORM_HCC
         if (Size == config::warp_size) {
             return __all(predicate);
         } else {
             return (__ballot(predicate) & data_.mask) == data_.mask;
         }
-#else
-        return __all_sync(data_.mask, predicate);
-#endif
     }
 
     /**
@@ -288,19 +263,11 @@ public:
     __device__ __forceinline__ config::lane_mask_type ballot(
         int predicate) const noexcept
     {
-#if GINKGO_HIP_PLATFORM_HCC
         if (Size == config::warp_size) {
             return __ballot(predicate);
         } else {
             return (__ballot(predicate) & data_.mask) >> data_.lane_offset;
         }
-#else
-        if (Size == config::warp_size) {
-            return __ballot_sync(data_.mask, predicate);
-        } else {
-            return __ballot_sync(data_.mask, predicate) >> data_.lane_offset;
-        }
-#endif
     }
 
 private:
@@ -373,14 +340,9 @@ private:
 }  // namespace detail
 
 
-// Implementing this as a using directive messes up with SFINAE for some reason,
-// probably a bug in NVCC. If it is a complete type, everything works fine.
 template <unsigned Size>
-struct thread_block_tile
-    : detail::enable_extended_shuffle<detail::thread_block_tile<Size>> {
-    using detail::enable_extended_shuffle<
-        detail::thread_block_tile<Size>>::enable_extended_shuffle;
-};
+using thread_block_tile =
+    detail::enable_extended_shuffle<detail::thread_block_tile<Size>>;
 
 
 // Only support tile_partition with 1, 2, 4, 8, 16, 32, 64 (hip).

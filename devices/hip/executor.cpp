@@ -53,19 +53,11 @@ bool HipExecutor::verify_memory_to(const HipExecutor* dest_exec) const
 
 bool HipExecutor::verify_memory_to(const CudaExecutor* dest_exec) const
 {
-#if GINKGO_HIP_PLATFORM_NVCC
-    return this->get_device_id() == dest_exec->get_device_id();
-#else
     return false;
-#endif
 }
 
 
-#if (GINKGO_HIP_PLATFORM_NVCC == 1)
-using hip_device_class = nvidia_device;
-#else
 using hip_device_class = amd_device;
-#endif
 
 
 void HipExecutor::increase_num_execs(int device_id)

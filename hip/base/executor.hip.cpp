@@ -37,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include <hip/hip_runtime.h>
-#if GINKGO_HIP_PLATFORM_HCC && GKO_HAVE_ROCTX
+#if GKO_HAVE_ROCTX
 #include <roctx.h>
 #endif
 
@@ -60,11 +60,7 @@ namespace gko {
 #include "common/cuda_hip/base/executor.hpp.inc"
 
 
-#if (GINKGO_HIP_PLATFORM_NVCC == 1)
-using hip_device_class = nvidia_device;
-#else
 using hip_device_class = amd_device;
-#endif
 
 
 std::shared_ptr<HipExecutor> HipExecutor::create(
@@ -180,17 +176,7 @@ void HipExecutor::raw_copy_to(const OmpExecutor*, size_type num_bytes,
 void HipExecutor::raw_copy_to(const CudaExecutor* dest, size_type num_bytes,
                               const void* src_ptr, void* dest_ptr) const
 {
-#if GINKGO_HIP_PLATFORM_NVCC == 1
-    if (num_bytes > 0) {
-        detail::hip_scoped_device_id_guard g(this->get_device_id());
-        GKO_ASSERT_NO_HIP_ERRORS(hipMemcpyPeerAsync(
-            dest_ptr, dest->get_device_id(), src_ptr, this->get_device_id(),
-            num_bytes, this->get_stream()));
-        this->synchronize();
-    }
-#else
     GKO_NOT_SUPPORTED(dest);
-#endif
 }
 
 
@@ -271,16 +257,9 @@ void HipExecutor::set_gpu_property()
             this->get_device_id()));
         this->get_exec_info().max_workgroup_size = max_threads_per_block;
         this->get_exec_info().max_workitem_sizes = max_threads_per_block_dim;
-#if GINKGO_HIP_PLATFORM_NVCC
-        this->get_exec_info().num_pu_per_cu =
-            convert_sm_ver_to_cores(this->get_exec_info().major,
-                                    this->get_exec_info().minor) /
-            kernels::hip::config::warp_size;
-#else
         // In GCN (Graphics Core Next), each multiprocessor has 4 SIMD
         // Reference: https://en.wikipedia.org/wiki/Graphics_Core_Next
         this->get_exec_info().num_pu_per_cu = 4;
-#endif  // GINKGO_HIP_PLATFORM_NVCC
         this->get_exec_info().max_subgroup_size =
             kernels::hip::config::warp_size;
     }
@@ -331,13 +310,13 @@ hip_stream::hip_stream(hip_stream&& other)
 {}
 
 
-GKO_HIP_STREAM_STRUCT* hip_stream::get() const { return stream_; }
+ihipStream_t* hip_stream::get() const { return stream_; }
 
 
 namespace log {
 
 
-#if GINKGO_HIP_PLATFORM_HCC && GKO_HAVE_ROCTX
+#if GKO_HAVE_ROCTX
 
 void begin_roctx(const char* name, profile_event_category)
 {
