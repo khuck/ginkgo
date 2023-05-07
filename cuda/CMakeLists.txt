@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.18)
 add_library(ginkgo_cuda $<TARGET_OBJECTS:ginkgo_cuda_device> "")
 target_sources(ginkgo_cuda
     PRIVATE
@@ -99,8 +100,6 @@ if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
     endif()
 endif()
 
-target_compile_options(ginkgo_cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:${GINKGO_CUDA_COMPILER_FLAGS}>)
-target_compile_options(ginkgo_cuda PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${GINKGO_COMPILER_FLAGS}>)
 ginkgo_compile_features(ginkgo_cuda)
 target_compile_definitions(ginkgo_cuda PRIVATE GKO_COMPILING_CUDA)
 target_include_directories(ginkgo_cuda
@@ -112,12 +111,6 @@ target_include_directories(ginkgo_cuda
 target_link_libraries(ginkgo_cuda PRIVATE ${CUDA_RUNTIME_LIBS} ${CUBLAS} ${CUSPARSE} ${CURAND} ${CUFFT} nvtx::nvtx)
 # NVTX3 is header-only and requires dlopen/dlclose in static builds
 target_link_libraries(ginkgo_cuda PUBLIC ginkgo_device ${CMAKE_DL_LIBS})
-target_compile_options(ginkgo_cuda
-        PRIVATE "$<$<COMPILE_LANGUAGE:CUDA>:${GINKGO_CUDA_ARCH_FLAGS}>")
-# we handle CUDA architecture flags for now, disable CMake handling
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
-    set_target_properties(ginkgo_cuda PROPERTIES CUDA_ARCHITECTURES OFF)
-endif()
 list(GET CUDA_RUNTIME_LIBS 0 CUDA_FIRST_LIB)
 get_filename_component(GKO_CUDA_LIBDIR "${CUDA_FIRST_LIB}" DIRECTORY)
 

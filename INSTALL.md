@@ -102,22 +102,6 @@ Ginkgo adds the following additional switches to control what is being built:
     3.8](https://github.com/Kitware/CMake/commit/489c52ce680df6439f9c1e553cd2925ca8944cb1)
     but [documented starting from
     3.10](https://cmake.org/cmake/help/v3.10/variable/CMAKE_CUDA_HOST_COMPILER.html).
-*   `-DGINKGO_CUDA_ARCHITECTURES=<list>` where `<list>` is a semicolon (`;`) separated
-    list of architectures. Supported values are:
-
-    *   `Auto`
-    *   `Kepler`, `Maxwell`, `Pascal`, `Volta`, `Turing`, `Ampere`
-    *   `CODE`, `CODE(COMPUTE)`, `(COMPUTE)`
-
-    `Auto` will automatically detect the present CUDA-enabled GPU architectures
-    in the system. `Kepler`, `Maxwell`, `Pascal`, `Volta` and `Ampere` will add flags for
-    all architectures of that particular NVIDIA GPU generation. `COMPUTE` and
-    `CODE` are placeholders that should be replaced with compute and code
-    numbers (e.g.  for `compute_70` and `sm_70` `COMPUTE` and `CODE` should be
-    replaced with `70`. Default is `Auto`.  For a more detailed explanation of
-    this option see the
-    [`ARCHITECTURES` specification list](https://github.com/ginkgo-project/CudaArchitectureSelector/blob/master/CudaArchitectureSelector.cmake#L58)
-    section in the documentation of the CudaArchitectureSelector CMake module.
 
 For example, to build everything (in debug mode), use:
 

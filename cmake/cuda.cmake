@@ -12,14 +12,7 @@ if(MSVC)
     endif()
 endif()
 
-include(cmake/Modules/CudaArchitectureSelector.cmake)
-
 set(CUDA_INCLUDE_DIRS ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-
-# Detect the CUDA architecture flags and propagate to all the project
-cas_variable_cuda_architectures(GINKGO_CUDA_ARCH_FLAGS
-    ARCHITECTURES ${GINKGO_CUDA_ARCHITECTURES}
-    UNSUPPORTED "20" "21")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "PGI|NVHPC")
     find_package(NVHPC REQUIRED

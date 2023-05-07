@@ -15,12 +15,15 @@ if(GINKGO_BUILD_CUDA)
                   CXX_STANDARD_REQUIRED ON
                   POSITION_INDEPENDENT_CODE ON
     )
-  
+
     add_executable(test_stream_identification_cuda test_default_stream_identification.cu)
     add_test(NAME default_stream_identification_cuda COMMAND test_stream_identification_cuda)
     
     set_tests_properties(default_stream_identification_cuda PROPERTIES
                          ENVIRONMENT LD_PRELOAD=$<TARGET_FILE:identify_stream_usage_cuda>)
+
+    set_target_properties(identify_stream_usage_cuda PROPERTIES CUDA_ARCHITECTURES all)
+    set_target_properties(test_stream_identification_cuda PROPERTIES CUDA_ARCHITECTURES all)
 endif()
 
 if(GINKGO_BUILD_HIP AND GINKGO_HIP_PLATFORM MATCHES "${HIP_PLATFORM_AMD_REGEX}")
