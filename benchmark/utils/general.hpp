@@ -479,8 +479,7 @@ gko::remove_complex<ValueType> compute_residual_norm(
 }
 
 
-template <typename VectorType,
-          typename ValueType = typename VectorType::value_type>
+template <typename ValueType>
 std::vector<gko::remove_complex<ValueType>> compute_batch_max_relative_norm2(
     batch_vec<ValueType>* result, const batch_vec<ValueType>* answer)
 {
@@ -516,7 +515,8 @@ std::vector<gko::remove_complex<ValueType>> compute_batch_max_relative_norm2(
 }
 
 
-template <typename ValueType>
+template <typename VectorType,
+          typename ValueType = typename VectorType::value_type>
 gko::remove_complex<ValueType> compute_max_relative_norm2(
     VectorType* result, const VectorType* answer)
 {
