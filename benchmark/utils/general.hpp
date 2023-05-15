@@ -449,8 +449,7 @@ gko::remove_complex<ValueType> compute_direct_error(const gko::LinOp* solver,
 }
 
 
-template <typename VectorType,
-          typename ValueType = typename VectorType::value_type>
+template <typename ValueType>
 std::vector<gko::remove_complex<ValueType>> compute_batch_residual_norm(
     const gko::BatchLinOp* system_matrix, const batch_vec<ValueType>* b,
     const batch_vec<ValueType>* x)
@@ -466,7 +465,8 @@ std::vector<gko::remove_complex<ValueType>> compute_batch_residual_norm(
 }
 
 
-template <typename ValueType>
+template <typename VectorType,
+          typename ValueType = typename VectorType::value_type>
 gko::remove_complex<ValueType> compute_residual_norm(
     const gko::LinOp* system_matrix, const VectorType* b, const VectorType* x)
 {
