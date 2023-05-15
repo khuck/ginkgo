@@ -50,6 +50,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include <ginkgo/core/base/array.hpp>
+#include <ginkgo/core/base/half.hpp>
 #include <ginkgo/core/base/math.hpp>
 #include <ginkgo/core/base/mtx_io.hpp>
 #include <ginkgo/core/matrix/batch_dense.hpp>
@@ -672,15 +673,19 @@ template <>
     std::complex<half> val2, double abs_error)
 {
     using T = std::complex<float32>;
-    const double diff = abs(T{val1} - T{val2});
+    // T{val1} calls the constructor of complex<float>() -> which gives the
+    // complex<float>(double/float) ambiguous
+    T Tval1 = val1;
+    T Tval2 = val2;
+    const double diff = abs(Tval1 - Tval2);
     if (diff <= abs_error) return ::testing::AssertionSuccess();
 
     return ::testing::AssertionFailure()
            << "The difference between " << first_expression << " and "
            << second_expression << " is " << diff << ", which exceeds "
            << tolerance_expression << ", where\n"
-           << first_expression << " evaluates to " << T{val1} << ",\n"
-           << second_expression << " evaluates to " << T{val2} << ", and\n"
+           << first_expression << " evaluates to " << Tval1 << ",\n"
+           << second_expression << " evaluates to " << Tval2 << ", and\n"
            << tolerance_expression << " evaluates to " << abs_error << ".";
 }
 

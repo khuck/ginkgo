@@ -62,7 +62,7 @@ protected:
     using Csr = gko::matrix::Csr<value_type>;
     using Diag = gko::matrix::Diagonal<value_type>;
     using Dense = gko::matrix::Dense<value_type>;
-    using MixedDense = gko::matrix::Dense<gko::next_precision<value_type>>;
+    using MixedDense = gko::matrix::Dense<next_precision<value_type>>;
 
     Diagonal()
         : exec(gko::ReferenceExecutor::create()),
@@ -117,7 +117,7 @@ TYPED_TEST_SUITE(Diagonal, gko::test::ValueTypes, TypenameNameGenerator);
 TYPED_TEST(Diagonal, ConvertsToPrecision)
 {
     using ValueType = typename TestFixture::value_type;
-    using OtherType = typename gko::next_precision<ValueType>;
+    using OtherType = next_precision<ValueType>;
     using Diagonal = typename TestFixture::Diag;
     using OtherDiagonal = gko::matrix::Diagonal<OtherType>;
     auto tmp = OtherDiagonal::create(this->exec);
@@ -125,7 +125,9 @@ TYPED_TEST(Diagonal, ConvertsToPrecision)
     // If OtherType is more precise: 0, otherwise r
     auto residual = r<OtherType>::value < r<ValueType>::value
                         ? gko::remove_complex<ValueType>{0}
-                        : gko::remove_complex<ValueType>{r<OtherType>::value};
+                        : gko::remove_complex<ValueType>{
+                              static_cast<gko::remove_complex<ValueType>>(
+                                  r<OtherType>::value)};
 
     this->diag1->convert_to(tmp);
     tmp->convert_to(res);
@@ -137,7 +139,7 @@ TYPED_TEST(Diagonal, ConvertsToPrecision)
 TYPED_TEST(Diagonal, MovesToPrecision)
 {
     using ValueType = typename TestFixture::value_type;
-    using OtherType = typename gko::next_precision<ValueType>;
+    using OtherType = next_precision<ValueType>;
     using Diagonal = typename TestFixture::Diag;
     using OtherDiagonal = gko::matrix::Diagonal<OtherType>;
     auto tmp = OtherDiagonal::create(this->exec);
@@ -145,7 +147,9 @@ TYPED_TEST(Diagonal, MovesToPrecision)
     // If OtherType is more precise: 0, otherwise r
     auto residual = r<OtherType>::value < r<ValueType>::value
                         ? gko::remove_complex<ValueType>{0}
-                        : gko::remove_complex<ValueType>{r<OtherType>::value};
+                        : gko::remove_complex<ValueType>{
+                              static_cast<gko::remove_complex<ValueType>>(
+                                  r<OtherType>::value)};
 
     this->diag1->move_to(tmp);
     tmp->move_to(res);
@@ -602,8 +606,7 @@ TYPED_TEST(Diagonal, AppliesToComplex)
 
 TYPED_TEST(Diagonal, AppliesToMixedComplex)
 {
-    using mixed_value_type =
-        gko::next_precision<typename TestFixture::value_type>;
+    using mixed_value_type = next_precision<typename TestFixture::value_type>;
     using mixed_complex_type = gko::to_complex<mixed_value_type>;
     using Vec = gko::matrix::Dense<mixed_complex_type>;
     auto exec = gko::ReferenceExecutor::create();
@@ -662,8 +665,7 @@ TYPED_TEST(Diagonal, AppliesLinearCombinationToComplex)
 
 TYPED_TEST(Diagonal, AppliesLinearCombinationToMixedComplex)
 {
-    using mixed_value_type =
-        gko::next_precision<typename TestFixture::value_type>;
+    using mixed_value_type = next_precision<typename TestFixture::value_type>;
     using mixed_complex_type = gko::to_complex<mixed_value_type>;
     using Vec = gko::matrix::Dense<mixed_complex_type>;
     using Scalar = gko::matrix::Dense<mixed_value_type>;

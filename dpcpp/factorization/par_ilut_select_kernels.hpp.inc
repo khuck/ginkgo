@@ -96,13 +96,13 @@ void build_searchtree(dim3 grid, dim3 block, size_type dynamic_shared_memory,
                        sycl::access::target::local>
             sh_samples_acc_ct1(sycl::range<1>(1024 /*sample_size*/), cgh);
 
-        cgh.parallel_for(
-            sycl_nd_range(grid, block), [=
-        ](sycl::nd_item<3> item_ct1) [[sycl::reqd_sub_group_size(
-                                            config::warp_size)]] {
-                build_searchtree(input, size, tree_output, item_ct1,
-                                 sh_samples_acc_ct1.get_pointer());
-            });
+        cgh.parallel_for(sycl_nd_range(grid, block),
+                         [=](sycl::nd_item<3> item_ct1)
+                             [[sycl::reqd_sub_group_size(config::warp_size)]] {
+                                 build_searchtree(
+                                     input, size, tree_output, item_ct1,
+                                     sh_samples_acc_ct1.get_pointer());
+                             });
     });
 }
 
@@ -284,12 +284,13 @@ void block_prefix_sum(dim3 grid, dim3 block, size_type dynamic_shared_memory,
                               cgh);
 
         cgh.parallel_for(
-            sycl_nd_range(grid, block), [=
-        ](sycl::nd_item<3> item_ct1) [[sycl::reqd_sub_group_size(
-                                            config::warp_size)]] {
-                block_prefix_sum(counters, totals, num_blocks, item_ct1,
-                                 (IndexType*)warp_sums_acc_ct1.get_pointer());
-            });
+            sycl_nd_range(grid, block),
+            [=](sycl::nd_item<3> item_ct1)
+                [[sycl::reqd_sub_group_size(config::warp_size)]] {
+                    block_prefix_sum(
+                        counters, totals, num_blocks, item_ct1,
+                        (IndexType*)warp_sums_acc_ct1.get_pointer());
+                });
     });
 }
 
@@ -372,7 +373,7 @@ void basecase_select(const ValueType* __restrict__ input, IndexType size,
 
     for (int i = 0; i < basecase_local_size; ++i) {
         auto idx = item_ct1.get_local_id(2) + i * basecase_block_size;
-        local[i] = idx < size ? input[idx] : sentinel;
+        local[i] = idx < size ? input[idx] : static_cast<ValueType>(sentinel);
     }
     bitonic_sort<basecase_size, basecase_local_size>(local, sh_local, item_ct1);
     if (item_ct1.get_local_id(2) == rank / basecase_local_size) {
@@ -391,12 +392,12 @@ void basecase_select(dim3 grid, dim3 block, size_type dynamic_shared_memory,
             sh_local_acc_ct1(sycl::range<1>(1024 /*basecase_size*/), cgh);
 
         cgh.parallel_for(
-            sycl_nd_range(grid, block), [=
-        ](sycl::nd_item<3> item_ct1) [[sycl::reqd_sub_group_size(
-                                            config::warp_size)]] {
-                basecase_select(input, size, rank, out, item_ct1,
-                                (ValueType*)sh_local_acc_ct1.get_pointer());
-            });
+            sycl_nd_range(grid, block),
+            [=](sycl::nd_item<3> item_ct1)
+                [[sycl::reqd_sub_group_size(config::warp_size)]] {
+                    basecase_select(input, size, rank, out, item_ct1,
+                                    (ValueType*)sh_local_acc_ct1.get_pointer());
+                });
     });
 }
 
@@ -431,12 +432,11 @@ template <typename IndexType>
 void find_bucket(dim3 grid, dim3 block, size_type dynamic_shared_memory,
                  sycl::queue* queue, IndexType* prefix_sum, IndexType rank)
 {
-    queue->parallel_for(
-        sycl_nd_range(grid, block), [=
-    ](sycl::nd_item<3> item_ct1) [[sycl::reqd_sub_group_size(
-                                        config::warp_size)]] {
-            find_bucket(prefix_sum, rank, item_ct1);
-        });
+    queue->parallel_for(sycl_nd_range(grid, block),
+                        [=](sycl::nd_item<3> item_ct1)
+                            [[sycl::reqd_sub_group_size(config::warp_size)]] {
+                                find_bucket(prefix_sum, rank, item_ct1);
+                            });
 }
 
 

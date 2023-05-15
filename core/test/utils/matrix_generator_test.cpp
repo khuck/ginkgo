@@ -51,31 +51,33 @@ template <typename T>
 class MatrixGenerator : public ::testing::Test {
 protected:
     using value_type = T;
+    using check_type =
+        typename gko::detail::arth_type<gko::remove_complex<value_type>>::type;
     using real_type = gko::remove_complex<T>;
     using mtx_type = gko::matrix::Dense<T>;
 
     MatrixGenerator()
         : exec(gko::ReferenceExecutor::create()),
           mtx(gko::test::generate_random_matrix<mtx_type>(
-              500, 100, std::normal_distribution<real_type>(50, 5),
-              std::normal_distribution<real_type>(20.0, 5.0),
+              500, 100, std::normal_distribution<>(50, 5),
+              std::normal_distribution<>(20.0, 5.0),
               std::default_random_engine(42), exec)),
           dense_mtx(gko::test::generate_random_dense_matrix<value_type>(
-              500, 100, std::normal_distribution<real_type>(20.0, 5.0),
+              500, 100, std::normal_distribution<>(20.0, 5.0),
               std::default_random_engine(41), exec)),
           l_mtx(gko::test::generate_random_lower_triangular_matrix<mtx_type>(
-              4, true, std::normal_distribution<real_type>(50, 5),
-              std::normal_distribution<real_type>(20.0, 5.0),
+              4, true, std::normal_distribution<>(50, 5),
+              std::normal_distribution<>(20.0, 5.0),
               std::default_random_engine(42), exec)),
           u_mtx(gko::test::generate_random_upper_triangular_matrix<mtx_type>(
-              4, true, std::normal_distribution<real_type>(50, 5),
-              std::normal_distribution<real_type>(20.0, 5.0),
+              4, true, std::normal_distribution<>(50, 5),
+              std::normal_distribution<>(20.0, 5.0),
               std::default_random_engine(42), exec)),
           lower_bandwidth(2),
           upper_bandwidth(3),
           band_mtx(gko::test::generate_random_band_matrix<mtx_type>(
               100, lower_bandwidth, upper_bandwidth,
-              std::normal_distribution<real_type>(20.0, 5.0),
+              std::normal_distribution<>(20.0, 5.0),
               std::default_random_engine(42), exec)),
           nnz_per_row_sample(500, 0),
           values_sample(0),
@@ -127,15 +129,15 @@ protected:
 
 
     template <typename InputIterator, typename ValueType, typename Closure>
-    ValueType get_nth_moment(int n, ValueType c, InputIterator sample_start,
-                             InputIterator sample_end, Closure closure_op)
+    check_type get_nth_moment(int n, ValueType c, InputIterator sample_start,
+                              InputIterator sample_end, Closure closure_op)
     {
         using std::pow;
-        ValueType res = 0;
-        ValueType num_elems = 0;
+        check_type res = 0;
+        check_type num_elems = 0;
         while (sample_start != sample_end) {
             auto tmp = *(sample_start++);
-            res += pow(closure_op(tmp) - c, n);
+            res += pow(check_type{closure_op(tmp)} - check_type{c}, n);
             num_elems += 1;
         }
         return res / num_elems;

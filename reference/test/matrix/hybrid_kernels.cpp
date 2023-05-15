@@ -64,7 +64,7 @@ protected:
     using Mtx = gko::matrix::Hybrid<value_type, index_type>;
     using Vec = gko::matrix::Dense<value_type>;
     using Csr = gko::matrix::Csr<value_type, index_type>;
-    using MixedVec = gko::matrix::Dense<gko::next_precision<value_type>>;
+    using MixedVec = gko::matrix::Dense<next_precision<value_type>>;
 
     Hybrid()
         : exec(gko::ReferenceExecutor::create()),
@@ -265,7 +265,7 @@ TYPED_TEST(Hybrid, ConvertsToPrecision)
 {
     using ValueType = typename TestFixture::value_type;
     using IndexType = typename TestFixture::index_type;
-    using OtherType = typename gko::next_precision<ValueType>;
+    using OtherType = next_precision<ValueType>;
     using Hybrid = typename TestFixture::Mtx;
     using OtherHybrid = gko::matrix::Hybrid<OtherType, IndexType>;
     auto tmp = OtherHybrid::create(this->exec);
@@ -273,7 +273,9 @@ TYPED_TEST(Hybrid, ConvertsToPrecision)
     // If OtherType is more precise: 0, otherwise r
     auto residual = r<OtherType>::value < r<ValueType>::value
                         ? gko::remove_complex<ValueType>{0}
-                        : gko::remove_complex<ValueType>{r<OtherType>::value};
+                        : gko::remove_complex<ValueType>{
+                              static_cast<gko::remove_complex<ValueType>>(
+                                  r<OtherType>::value)};
 
     this->mtx1->convert_to(tmp);
     tmp->convert_to(res);
@@ -286,7 +288,7 @@ TYPED_TEST(Hybrid, MovesToPrecision)
 {
     using ValueType = typename TestFixture::value_type;
     using IndexType = typename TestFixture::index_type;
-    using OtherType = typename gko::next_precision<ValueType>;
+    using OtherType = next_precision<ValueType>;
     using Hybrid = typename TestFixture::Mtx;
     using OtherHybrid = gko::matrix::Hybrid<OtherType, IndexType>;
     auto tmp = OtherHybrid::create(this->exec);
@@ -294,7 +296,9 @@ TYPED_TEST(Hybrid, MovesToPrecision)
     // If OtherType is more precise: 0, otherwise r
     auto residual = r<OtherType>::value < r<ValueType>::value
                         ? gko::remove_complex<ValueType>{0}
-                        : gko::remove_complex<ValueType>{r<OtherType>::value};
+                        : gko::remove_complex<ValueType>{
+                              static_cast<gko::remove_complex<ValueType>>(
+                                  r<OtherType>::value)};
 
     this->mtx1->move_to(tmp);
     tmp->move_to(res);
@@ -396,7 +400,7 @@ TYPED_TEST(Hybrid, ConvertsEmptyToPrecision)
 {
     using ValueType = typename TestFixture::value_type;
     using IndexType = typename TestFixture::index_type;
-    using OtherType = typename gko::next_precision<ValueType>;
+    using OtherType = next_precision<ValueType>;
     using Hybrid = typename TestFixture::Mtx;
     using OtherHybrid = gko::matrix::Hybrid<OtherType, IndexType>;
     auto other = Hybrid::create(this->exec);
@@ -413,7 +417,7 @@ TYPED_TEST(Hybrid, MovesEmptyToPrecision)
 {
     using ValueType = typename TestFixture::value_type;
     using IndexType = typename TestFixture::index_type;
-    using OtherType = typename gko::next_precision<ValueType>;
+    using OtherType = next_precision<ValueType>;
     using Hybrid = typename TestFixture::Mtx;
     using OtherHybrid = gko::matrix::Hybrid<OtherType, IndexType>;
     auto other = Hybrid::create(this->exec);
@@ -727,8 +731,7 @@ TYPED_TEST(Hybrid, AppliesToComplex)
 
 TYPED_TEST(Hybrid, AppliesToMixedComplex)
 {
-    using mixed_value_type =
-        gko::next_precision<typename TestFixture::value_type>;
+    using mixed_value_type = next_precision<typename TestFixture::value_type>;
     using mixed_complex_type = gko::to_complex<mixed_value_type>;
     using Vec = gko::matrix::Dense<mixed_complex_type>;
     auto exec = gko::ReferenceExecutor::create();
@@ -784,8 +787,7 @@ TYPED_TEST(Hybrid, AdvancedAppliesToComplex)
 
 TYPED_TEST(Hybrid, AdvancedAppliesToMixedComplex)
 {
-    using mixed_value_type =
-        gko::next_precision<typename TestFixture::value_type>;
+    using mixed_value_type = next_precision<typename TestFixture::value_type>;
     using mixed_complex_type = gko::to_complex<mixed_value_type>;
     using MixedDense = gko::matrix::Dense<mixed_value_type>;
     using MixedDenseComplex = gko::matrix::Dense<mixed_complex_type>;

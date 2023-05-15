@@ -71,6 +71,10 @@ template <typename ValueType = default_precision, typename IndexType = int32>
 class Sellp : public EnableLinOp<Sellp<ValueType, IndexType>>,
               public EnableCreateMethod<Sellp<ValueType, IndexType>>,
               public ConvertibleTo<Sellp<next_precision<ValueType>, IndexType>>,
+#if GINKGO_ENABLE_HALF
+              public ConvertibleTo<
+                  Sellp<next_precision<next_precision<ValueType>>, IndexType>>,
+#endif
               public ConvertibleTo<Dense<ValueType>>,
               public ConvertibleTo<Csr<ValueType, IndexType>>,
               public DiagonalExtractable<ValueType>,
@@ -102,12 +106,27 @@ public:
     using device_mat_data = device_matrix_data<ValueType, IndexType>;
     using absolute_type = remove_complex<Sellp>;
 
-    friend class Sellp<next_precision<ValueType>, IndexType>;
+    friend class Sellp<previous_precision<ValueType>, IndexType>;
 
     void convert_to(
         Sellp<next_precision<ValueType>, IndexType>* result) const override;
 
     void move_to(Sellp<next_precision<ValueType>, IndexType>* result) override;
+
+#if GINKGO_ENABLE_HALF
+    friend class Sellp<previous_precision<previous_precision<ValueType>>,
+                       IndexType>;
+    using ConvertibleTo<Sellp<next_precision<next_precision<ValueType>>,
+                              IndexType>>::convert_to;
+    using ConvertibleTo<
+        Sellp<next_precision<next_precision<ValueType>>, IndexType>>::move_to;
+
+    void convert_to(Sellp<next_precision<next_precision<ValueType>>, IndexType>*
+                        result) const override;
+
+    void move_to(Sellp<next_precision<next_precision<ValueType>>, IndexType>*
+                     result) override;
+#endif
 
     void convert_to(Dense<ValueType>* other) const override;
 
@@ -265,8 +284,8 @@ public:
     /**
      * @copydoc Sellp::val_at(size_type, size_type, size_type)
      */
-    value_type val_at(size_type row, size_type slice_set, size_type idx) const
-        noexcept
+    value_type val_at(size_type row, size_type slice_set,
+                      size_type idx) const noexcept
     {
         return values_
             .get_const_data()[this->linearize_index(row, slice_set, idx)];
@@ -293,8 +312,8 @@ public:
     /**
      * @copydoc Sellp::col_at(size_type, size_type, size_type)
      */
-    index_type col_at(size_type row, size_type slice_set, size_type idx) const
-        noexcept
+    index_type col_at(size_type row, size_type slice_set,
+                      size_type idx) const noexcept
     {
         return this
             ->get_const_col_idxs()[this->linearize_index(row, slice_set, idx)];

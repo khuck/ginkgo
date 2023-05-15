@@ -1,5 +1,5 @@
 /*******************************<GINKGO LICENSE>******************************
-Copyright (c) 2017-2022, the Ginkgo authors
+Copyright (c) 2017-2023, the Ginkgo authors
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -116,12 +116,12 @@ __device__ __forceinline__ void modify_rows_below_curr_row(
 
 template <typename ValueType>
 __global__
-    __launch_bounds__(default_block_size) void generate_exact_ilu0_kernel(
-        const size_type batch_size, const int nrows, const int nnz,
-        const int* const __restrict__ diag_ptrs,
-        const int* const __restrict__ mat_row_ptrs,
-        const int* const __restrict__ mat_col_idxs,
-        ValueType* const __restrict__ mat_values)
+__launch_bounds__(default_block_size) void generate_exact_ilu0_kernel(
+    const size_type batch_size, const int nrows, const int nnz,
+    const int* const __restrict__ diag_ptrs,
+    const int* const __restrict__ mat_row_ptrs,
+    const int* const __restrict__ mat_col_idxs,
+    ValueType* const __restrict__ mat_values)
 {
     for (size_type batch_id = blockIdx.x; batch_id < batch_size;
          batch_id += gridDim.x) {

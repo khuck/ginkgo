@@ -73,9 +73,8 @@ void finish_arnoldi_CGS(matrix::Dense<ValueType>* next_krylov_basis,
     const rc_vtype eta = 1.0 / sqrt(2.0);
 #pragma omp declare reduction(add:ValueType : omp_out = omp_out + omp_in)
 #pragma omp declare reduction(addnc:rc_vtype : omp_out = omp_out + omp_in)
-#pragma omp declare reduction(infnc:rc_vtype \
-                              : omp_out =    \
-                                    (omp_out >= omp_in ? omp_out : omp_in))
+#pragma omp declare reduction(infnc:rc_vtype : omp_out = \
+                                  (omp_out >= omp_in ? omp_out : omp_in))
 
     for (size_type i = 0; i < next_krylov_basis->get_size()[1]; ++i) {
         if (stop_status[i].has_stopped()) {
@@ -342,7 +341,8 @@ void initialize(std::shared_ptr<const OmpExecutor> exec,
     }
 }
 
-GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_CB_GMRES_INITIALIZE_KERNEL);
+GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE_NO_HALF(
+    GKO_DECLARE_CB_GMRES_INITIALIZE_KERNEL);
 
 
 template <typename ValueType, typename Accessor3d>
@@ -366,9 +366,8 @@ void restart(std::shared_ptr<const OmpExecutor> exec,
         auto res_inf = zero<rc_vtype>();
 
 #pragma omp declare reduction(addnc:rc_vtype : omp_out = omp_out + omp_in)
-#pragma omp declare reduction(infnc:rc_vtype \
-                              : omp_out =    \
-                                    (omp_out >= omp_in ? omp_out : omp_in))
+#pragma omp declare reduction(infnc:rc_vtype : omp_out = \
+                                  (omp_out >= omp_in ? omp_out : omp_in))
 
 #pragma omp parallel for reduction(addnc : res_norm) reduction(infnc : res_inf)
         for (size_type i = 0; i < residual->get_size()[0]; ++i) {
