@@ -772,7 +772,7 @@ public:
      * transposed matrix.
      */
     std::pair<std::unique_ptr<Csr>, std::unique_ptr<Permutation<IndexType>>>
-    transpose_reusable() const;
+    transpose_reuse() const;
 
     using Permutable<IndexType>::permute;
     using Permutable<IndexType>::row_permute;

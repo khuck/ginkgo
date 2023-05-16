@@ -556,7 +556,7 @@ transform_reusable(const Csr<ValueType, IndexType>* input, gko::dim<2> out_size,
 template <typename ValueType, typename IndexType>
 std::pair<std::unique_ptr<Csr<ValueType, IndexType>>,
           std::unique_ptr<Permutation<IndexType>>>
-Csr<ValueType, IndexType>::transpose_reusable() const
+Csr<ValueType, IndexType>::transpose_reuse() const
 {
     return transform_reusable(
         this, gko::transpose(this->get_size()), this->get_num_stored_elements(),

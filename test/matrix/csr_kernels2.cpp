@@ -516,10 +516,10 @@ TEST_F(Csr, AdvancedApplyToCsrMatrixIsEquivalentToRef)
 {
     set_up_apply_data<Mtx::classical>();
     auto trans = mtx->transpose();
-    auto d_trans = dmtx->transpose();
+    auto dtrans = dmtx->transpose();
 
     mtx->apply(alpha, trans, beta, square_mtx);
-    dmtx->apply(dalpha, d_trans, dbeta, dsquare_mtx);
+    dmtx->apply(dalpha, dtrans, dbeta, dsquare_mtx);
 
     GKO_ASSERT_MTX_NEAR(dsquare_mtx, square_mtx, r<value_type>::value);
     GKO_ASSERT_MTX_EQ_SPARSITY(dsquare_mtx, square_mtx);
@@ -531,10 +531,10 @@ TEST_F(Csr, SimpleApplyToCsrMatrixIsEquivalentToRef)
 {
     set_up_apply_data<Mtx::classical>();
     auto trans = mtx->transpose();
-    auto d_trans = dmtx->transpose();
+    auto dtrans = dmtx->transpose();
 
     mtx->apply(trans, square_mtx);
-    dmtx->apply(d_trans, dsquare_mtx);
+    dmtx->apply(dtrans, dsquare_mtx);
 
     GKO_ASSERT_MTX_NEAR(dsquare_mtx, square_mtx, r<value_type>::value);
     GKO_ASSERT_MTX_EQ_SPARSITY(dsquare_mtx, square_mtx);
@@ -656,10 +656,10 @@ TEST_F(Csr, TransposeIsEquivalentToRef)
     set_up_apply_data<Mtx::classical>();
 
     auto trans = gko::as<Mtx>(mtx->transpose());
-    auto d_trans = gko::as<Mtx>(dmtx->transpose());
+    auto dtrans = gko::as<Mtx>(dmtx->transpose());
 
-    GKO_ASSERT_MTX_NEAR(d_trans, trans, 0.0);
-    ASSERT_TRUE(d_trans->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(dtrans, trans, 0.0);
+    ASSERT_TRUE(dtrans->is_sorted_by_column_index());
 }
 
 
@@ -670,10 +670,57 @@ TEST_F(Csr, Transpose64IsEquivalentToRef)
     auto dmtx = gko::clone(exec, mtx);
 
     auto trans = gko::as<Mtx64>(mtx->transpose());
-    auto d_trans = gko::as<Mtx64>(dmtx->transpose());
+    auto dtrans = gko::as<Mtx64>(dmtx->transpose());
 
-    GKO_ASSERT_MTX_NEAR(d_trans, trans, 0.0);
-    ASSERT_TRUE(d_trans->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(dtrans, trans, 0.0);
+    ASSERT_TRUE(dtrans->is_sorted_by_column_index());
+}
+
+
+TEST_F(Csr, TransposeReuseIsEquivalentToRef)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto trans = mtx->transpose_reuse();
+    auto dtrans = dmtx->transpose_reuse();
+
+    GKO_ASSERT_MTX_NEAR(dtrans.first, trans.first, 0);
+    ASSERT_TRUE(dtrans.first->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_EQ_SPARSITY(dtrans.second, trans.second);
+    // test that the value permutation works: modify input values
+    mtx->create_value_view()->scale(alpha);
+    dmtx->create_value_view()->scale(dalpha);
+    mtx->create_const_value_view()->row_permute(
+        trans.second, trans.first->create_value_view());
+    dmtx->create_const_value_view()->row_permute(
+        dtrans.second, dtrans.first->create_value_view());
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(mtx->transpose()), trans.first, 0);
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(dmtx->transpose()), dtrans.first, 0);
+}
+
+
+TEST_F(Csr, TransposeReuse64IsEquivalentToRef)
+{
+    using Mtx64 = gko::matrix::Csr<value_type, gko::int64>;
+    set_up_apply_data<Mtx::classical>();
+    auto mtx = gen_mtx<Mtx64>(123, 234, 0);
+    auto dmtx = gko::clone(exec, mtx);
+
+    auto trans = mtx->transpose_reuse();
+    auto dtrans = dmtx->transpose_reuse();
+
+    GKO_ASSERT_MTX_NEAR(dtrans.first, trans.first, 0);
+    ASSERT_TRUE(dtrans.first->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_EQ_SPARSITY(dtrans.second, trans.second);
+    // test that the value permutation works: modify input values
+    mtx->create_value_view()->scale(alpha);
+    dmtx->create_value_view()->scale(dalpha);
+    mtx->create_const_value_view()->row_permute(
+        trans.second, trans.first->create_value_view());
+    dmtx->create_const_value_view()->row_permute(
+        dtrans.second, dtrans.first->create_value_view());
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx64>(mtx->transpose()), trans.first, 0);
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx64>(dmtx->transpose()), dtrans.first, 0);
 }
 
 
@@ -682,10 +729,10 @@ TEST_F(Csr, ConjugateTransposeIsEquivalentToRef)
     set_up_apply_complex_data<ComplexMtx::classical>();
 
     auto trans = gko::as<ComplexMtx>(complex_mtx->conj_transpose());
-    auto d_trans = gko::as<ComplexMtx>(complex_dmtx->conj_transpose());
+    auto dtrans = gko::as<ComplexMtx>(complex_dmtx->conj_transpose());
 
-    GKO_ASSERT_MTX_NEAR(d_trans, trans, 0.0);
-    ASSERT_TRUE(d_trans->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(dtrans, trans, 0.0);
+    ASSERT_TRUE(dtrans->is_sorted_by_column_index());
 }
 
 
@@ -696,10 +743,10 @@ TEST_F(Csr, ConjugateTranspose64IsEquivalentToRef)
     auto dmtx = gko::clone(exec, mtx);
 
     auto trans = gko::as<Mtx64>(mtx->transpose());
-    auto d_trans = gko::as<Mtx64>(dmtx->transpose());
+    auto dtrans = gko::as<Mtx64>(dmtx->transpose());
 
-    GKO_ASSERT_MTX_NEAR(d_trans, trans, 0.0);
-    ASSERT_TRUE(d_trans->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(dtrans, trans, 0.0);
+    ASSERT_TRUE(dtrans->is_sorted_by_column_index());
 }
 
 
