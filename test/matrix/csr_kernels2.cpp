@@ -48,6 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ginkgo/core/matrix/ell.hpp>
 #include <ginkgo/core/matrix/hybrid.hpp>
 #include <ginkgo/core/matrix/identity.hpp>
+#include <ginkgo/core/matrix/permutation.hpp>
 #include <ginkgo/core/matrix/sellp.hpp>
 #include <ginkgo/core/matrix/sparsity_csr.hpp>
 
@@ -55,6 +56,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "core/components/prefix_sum_kernels.hpp"
 #include "core/matrix/csr_kernels.hpp"
 #include "core/test/utils.hpp"
+#include "core/test/utils/assertions.hpp"
 #include "core/test/utils/unsort_matrix.hpp"
 #include "core/utils/matrix_utils.hpp"
 #include "test/utils/executor.hpp"
@@ -62,12 +64,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class Csr : public CommonTestFixture {
 protected:
-    using Arr = gko::array<int>;
+    using Arr = gko::array<index_type>;
     using Vec = gko::matrix::Dense<value_type>;
     using Vec2 = gko::matrix::Dense<gko::next_precision<value_type>>;
     using Mtx = gko::matrix::Csr<value_type>;
     using ComplexVec = gko::matrix::Dense<std::complex<value_type>>;
     using ComplexMtx = gko::matrix::Csr<std::complex<value_type>>;
+    using Permutation = gko::matrix::Permutation<index_type>;
 
     Csr()
 #ifdef GINKGO_FAST_TESTS
@@ -162,8 +165,8 @@ protected:
         beta2 = gko::initialize<Vec2>({-1.0}, ref);
         dmtx = Mtx::create(exec, strategy);
         dmtx->copy_from(mtx);
-        square_dmtx = Mtx::create(exec, strategy);
-        square_dmtx->copy_from(square_mtx);
+        dsquare_mtx = Mtx::create(exec, strategy);
+        dsquare_mtx->copy_from(square_mtx);
         dresult = gko::clone(exec, expected);
         dresult2 = gko::clone(exec, expected2);
         dy = gko::clone(exec, y);
@@ -182,6 +185,10 @@ protected:
         std::shuffle(tmp2.begin(), tmp2.end(), rng);
         rpermute_idxs = std::make_unique<Arr>(ref, tmp.begin(), tmp.end());
         cpermute_idxs = std::make_unique<Arr>(ref, tmp2.begin(), tmp2.end());
+        rpermute = Permutation::create(
+            exec, gko::dim<2>(tmp.size(), tmp.size()), Arr{*rpermute_idxs});
+        cpermute = Permutation::create(
+            exec, gko::dim<2>(tmp2.size(), tmp2.size()), Arr{*cpermute_idxs});
     }
 
     template <typename StrategyType>
@@ -221,7 +228,7 @@ protected:
     std::unique_ptr<Mtx> dmtx;
     std::unique_ptr<Mtx> dmtx2;
     std::unique_ptr<ComplexMtx> complex_dmtx;
-    std::unique_ptr<Mtx> square_dmtx;
+    std::unique_ptr<Mtx> dsquare_mtx;
     std::unique_ptr<Vec> dresult;
     std::unique_ptr<Vec2> dresult2;
     std::unique_ptr<Vec> dy;
@@ -232,6 +239,8 @@ protected:
     std::unique_ptr<Vec2> dbeta2;
     std::unique_ptr<Arr> rpermute_idxs;
     std::unique_ptr<Arr> cpermute_idxs;
+    std::unique_ptr<Permutation> rpermute;
+    std::unique_ptr<Permutation> cpermute;
 };
 
 
@@ -510,11 +519,11 @@ TEST_F(Csr, AdvancedApplyToCsrMatrixIsEquivalentToRef)
     auto d_trans = dmtx->transpose();
 
     mtx->apply(alpha, trans, beta, square_mtx);
-    dmtx->apply(dalpha, d_trans, dbeta, square_dmtx);
+    dmtx->apply(dalpha, d_trans, dbeta, dsquare_mtx);
 
-    GKO_ASSERT_MTX_NEAR(square_dmtx, square_mtx, r<value_type>::value);
-    GKO_ASSERT_MTX_EQ_SPARSITY(square_dmtx, square_mtx);
-    ASSERT_TRUE(square_dmtx->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(dsquare_mtx, square_mtx, r<value_type>::value);
+    GKO_ASSERT_MTX_EQ_SPARSITY(dsquare_mtx, square_mtx);
+    ASSERT_TRUE(dsquare_mtx->is_sorted_by_column_index());
 }
 
 
@@ -525,11 +534,11 @@ TEST_F(Csr, SimpleApplyToCsrMatrixIsEquivalentToRef)
     auto d_trans = dmtx->transpose();
 
     mtx->apply(trans, square_mtx);
-    dmtx->apply(d_trans, square_dmtx);
+    dmtx->apply(d_trans, dsquare_mtx);
 
-    GKO_ASSERT_MTX_NEAR(square_dmtx, square_mtx, r<value_type>::value);
-    GKO_ASSERT_MTX_EQ_SPARSITY(square_dmtx, square_mtx);
-    ASSERT_TRUE(square_dmtx->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(dsquare_mtx, square_mtx, r<value_type>::value);
+    GKO_ASSERT_MTX_EQ_SPARSITY(dsquare_mtx, square_mtx);
+    ASSERT_TRUE(dsquare_mtx->is_sorted_by_column_index());
 }
 
 
@@ -542,11 +551,11 @@ TEST_F(Csr, SimpleApplyToSparseCsrMatrixIsEquivalentToRef)
     dmtx2->copy_from(mtx2);
 
     mtx->apply(mtx2, square_mtx);
-    dmtx->apply(dmtx2, square_dmtx);
+    dmtx->apply(dmtx2, dsquare_mtx);
 
-    GKO_ASSERT_MTX_EQ_SPARSITY(square_dmtx, square_mtx);
-    GKO_ASSERT_MTX_NEAR(square_dmtx, square_mtx, r<value_type>::value);
-    ASSERT_TRUE(square_dmtx->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_EQ_SPARSITY(dsquare_mtx, square_mtx);
+    GKO_ASSERT_MTX_NEAR(dsquare_mtx, square_mtx, r<value_type>::value);
+    ASSERT_TRUE(dsquare_mtx->is_sorted_by_column_index());
 }
 
 
@@ -560,11 +569,11 @@ TEST_F(Csr, SimpleApplySparseToSparseCsrMatrixIsEquivalentToRef)
     auto dmtx2 = gko::clone(exec, mtx2);
 
     mtx1->apply(mtx2, square_mtx);
-    dmtx1->apply(dmtx2, square_dmtx);
+    dmtx1->apply(dmtx2, dsquare_mtx);
 
-    GKO_ASSERT_MTX_EQ_SPARSITY(square_dmtx, square_mtx);
-    GKO_ASSERT_MTX_NEAR(square_dmtx, square_mtx, r<value_type>::value);
-    ASSERT_TRUE(square_dmtx->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_EQ_SPARSITY(dsquare_mtx, square_mtx);
+    GKO_ASSERT_MTX_NEAR(dsquare_mtx, square_mtx, r<value_type>::value);
+    ASSERT_TRUE(dsquare_mtx->is_sorted_by_column_index());
 }
 
 
@@ -581,11 +590,11 @@ TEST_F(Csr, SimpleApplyToEmptyCsrMatrixIsEquivalentToRef)
     dmtx2->copy_from(mtx2);
 
     mtx->apply(mtx2, square_mtx);
-    dmtx->apply(dmtx2, square_dmtx);
+    dmtx->apply(dmtx2, dsquare_mtx);
 
-    GKO_ASSERT_MTX_EQ_SPARSITY(square_dmtx, square_mtx);
-    GKO_ASSERT_MTX_NEAR(square_dmtx, square_mtx, r<value_type>::value);
-    ASSERT_TRUE(square_dmtx->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_EQ_SPARSITY(dsquare_mtx, square_mtx);
+    GKO_ASSERT_MTX_NEAR(dsquare_mtx, square_mtx, r<value_type>::value);
+    ASSERT_TRUE(dsquare_mtx->is_sorted_by_column_index());
 }
 
 
@@ -873,10 +882,48 @@ TEST_F(Csr, IsPermutable)
     set_up_apply_data<Mtx::classical>();
 
     auto permuted = gko::as<Mtx>(square_mtx->permute(rpermute_idxs.get()));
-    auto dpermuted = gko::as<Mtx>(square_dmtx->permute(rpermute_idxs.get()));
+    auto dpermuted = gko::as<Mtx>(dsquare_mtx->permute(rpermute_idxs.get()));
 
+    ASSERT_TRUE(dpermuted->is_sorted_by_column_index());
     GKO_ASSERT_MTX_EQ_SPARSITY(permuted, dpermuted);
     GKO_ASSERT_MTX_NEAR(permuted, dpermuted, 0);
+}
+
+
+TEST_F(Csr, IsPermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto permuted = gko::as<Mtx>(square_mtx->permute(rpermute));
+    auto dpermuted = gko::as<Mtx>(dsquare_mtx->permute(rpermute));
+
+    ASSERT_TRUE(dpermuted->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_EQ_SPARSITY(permuted, dpermuted);
+    GKO_ASSERT_MTX_NEAR(permuted, dpermuted, 0);
+}
+
+
+TEST_F(Csr, IsReusePermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto permuted = square_mtx->permute_reuse(rpermute);
+    auto dpermuted = dsquare_mtx->permute_reuse(rpermute);
+
+    ASSERT_TRUE(dpermuted.first->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(permuted.first, dpermuted.first, 0);
+    GKO_ASSERT_MTX_EQ_SPARSITY(permuted.second, dpermuted.second);
+    // test that the value permutation works: modify input values
+    square_mtx->create_value_view()->scale(alpha);
+    dsquare_mtx->create_value_view()->scale(dalpha);
+    square_mtx->create_const_value_view()->row_permute(
+        permuted.second, permuted.first->create_value_view());
+    dsquare_mtx->create_const_value_view()->row_permute(
+        dpermuted.second, dpermuted.first->create_value_view());
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(square_mtx->permute(rpermute)),
+                        permuted.first, 0);
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(dsquare_mtx->permute(rpermute)),
+                        dpermuted.first, 0);
 }
 
 
@@ -887,10 +934,48 @@ TEST_F(Csr, IsInversePermutable)
     auto permuted =
         gko::as<Mtx>(square_mtx->inverse_permute(rpermute_idxs.get()));
     auto dpermuted =
-        gko::as<Mtx>(square_dmtx->inverse_permute(rpermute_idxs.get()));
+        gko::as<Mtx>(dsquare_mtx->inverse_permute(rpermute_idxs.get()));
 
+    ASSERT_TRUE(dpermuted->is_sorted_by_column_index());
     GKO_ASSERT_MTX_EQ_SPARSITY(permuted, dpermuted);
     GKO_ASSERT_MTX_NEAR(permuted, dpermuted, 0);
+}
+
+
+TEST_F(Csr, IsInversePermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto permuted = gko::as<Mtx>(square_mtx->inverse_permute(rpermute));
+    auto dpermuted = gko::as<Mtx>(dsquare_mtx->inverse_permute(rpermute));
+
+    ASSERT_TRUE(dpermuted->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_EQ_SPARSITY(permuted, dpermuted);
+    GKO_ASSERT_MTX_NEAR(permuted, dpermuted, 0);
+}
+
+
+TEST_F(Csr, IsReuseInversePermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto permuted = square_mtx->inverse_permute_reuse(rpermute);
+    auto dpermuted = dsquare_mtx->inverse_permute_reuse(rpermute);
+
+    ASSERT_TRUE(dpermuted.first->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(permuted.first, dpermuted.first, 0);
+    GKO_ASSERT_MTX_EQ_SPARSITY(permuted.second, dpermuted.second);
+    // test that the value permutation works: modify input values
+    square_mtx->create_value_view()->scale(alpha);
+    dsquare_mtx->create_value_view()->scale(dalpha);
+    square_mtx->create_const_value_view()->row_permute(
+        permuted.second, permuted.first->create_value_view());
+    dsquare_mtx->create_const_value_view()->row_permute(
+        dpermuted.second, dpermuted.first->create_value_view());
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(square_mtx->inverse_permute(rpermute)),
+                        permuted.first, 0);
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(dsquare_mtx->inverse_permute(rpermute)),
+                        dpermuted.first, 0);
 }
 
 
@@ -901,8 +986,46 @@ TEST_F(Csr, IsRowPermutable)
     auto r_permute = gko::as<Mtx>(mtx->row_permute(rpermute_idxs.get()));
     auto dr_permute = gko::as<Mtx>(dmtx->row_permute(rpermute_idxs.get()));
 
+    ASSERT_TRUE(dr_permute->is_sorted_by_column_index());
     GKO_ASSERT_MTX_EQ_SPARSITY(r_permute, dr_permute);
     GKO_ASSERT_MTX_NEAR(r_permute, dr_permute, 0);
+}
+
+
+TEST_F(Csr, IsRowPermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto r_permute = gko::as<Mtx>(mtx->row_permute(rpermute));
+    auto dr_permute = gko::as<Mtx>(dmtx->row_permute(rpermute));
+
+    ASSERT_TRUE(dr_permute->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_EQ_SPARSITY(r_permute, dr_permute);
+    GKO_ASSERT_MTX_NEAR(r_permute, dr_permute, 0);
+}
+
+
+TEST_F(Csr, IsReuseRowPermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto permuted = mtx->row_permute_reuse(rpermute);
+    auto dpermuted = dmtx->row_permute_reuse(rpermute);
+
+    ASSERT_TRUE(dpermuted.first->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(permuted.first, dpermuted.first, 0);
+    GKO_ASSERT_MTX_EQ_SPARSITY(permuted.second, dpermuted.second);
+    // test that the value permutation works: modify input values
+    mtx->create_value_view()->scale(alpha);
+    dmtx->create_value_view()->scale(dalpha);
+    mtx->create_const_value_view()->row_permute(
+        permuted.second, permuted.first->create_value_view());
+    dmtx->create_const_value_view()->row_permute(
+        dpermuted.second, dpermuted.first->create_value_view());
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(mtx->row_permute(rpermute)),
+                        permuted.first, 0);
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(dmtx->row_permute(rpermute)),
+                        dpermuted.first, 0);
 }
 
 
@@ -919,6 +1042,43 @@ TEST_F(Csr, IsColPermutable)
 }
 
 
+TEST_F(Csr, IsColPermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto c_permute = gko::as<Mtx>(mtx->column_permute(cpermute));
+    auto dc_permute = gko::as<Mtx>(dmtx->column_permute(cpermute));
+
+    ASSERT_TRUE(dc_permute->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_EQ_SPARSITY(c_permute, dc_permute);
+    GKO_ASSERT_MTX_NEAR(c_permute, dc_permute, 0);
+}
+
+
+TEST_F(Csr, IsReuseColumnPermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto permuted = mtx->column_permute_reuse(cpermute);
+    auto dpermuted = dmtx->column_permute_reuse(cpermute);
+
+    ASSERT_TRUE(dpermuted.first->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(permuted.first, dpermuted.first, 0);
+    GKO_ASSERT_MTX_EQ_SPARSITY(permuted.second, dpermuted.second);
+    // test that the value permutation works: modify input values
+    mtx->create_value_view()->scale(alpha);
+    dmtx->create_value_view()->scale(dalpha);
+    mtx->create_const_value_view()->row_permute(
+        permuted.second, permuted.first->create_value_view());
+    dmtx->create_const_value_view()->row_permute(
+        dpermuted.second, dpermuted.first->create_value_view());
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(mtx->column_permute(cpermute)),
+                        permuted.first, 0);
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(dmtx->column_permute(cpermute)),
+                        dpermuted.first, 0);
+}
+
+
 TEST_F(Csr, IsInverseRowPermutable)
 {
     set_up_apply_data<Mtx::classical>();
@@ -928,8 +1088,47 @@ TEST_F(Csr, IsInverseRowPermutable)
     auto d_inverse_r_permute =
         gko::as<Mtx>(dmtx->inverse_row_permute(rpermute_idxs.get()));
 
+    ASSERT_TRUE(d_inverse_r_permute->is_sorted_by_column_index());
     GKO_ASSERT_MTX_EQ_SPARSITY(inverse_r_permute, d_inverse_r_permute);
     GKO_ASSERT_MTX_NEAR(inverse_r_permute, d_inverse_r_permute, 0);
+}
+
+
+TEST_F(Csr, IsInverseRowPermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto inverse_r_permute = gko::as<Mtx>(mtx->inverse_row_permute(rpermute));
+    auto d_inverse_r_permute =
+        gko::as<Mtx>(dmtx->inverse_row_permute(rpermute));
+
+    ASSERT_TRUE(d_inverse_r_permute->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_EQ_SPARSITY(inverse_r_permute, d_inverse_r_permute);
+    GKO_ASSERT_MTX_NEAR(inverse_r_permute, d_inverse_r_permute, 0);
+}
+
+
+TEST_F(Csr, IsReuseInverseRowPermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto permuted = mtx->inverse_row_permute_reuse(rpermute);
+    auto dpermuted = dmtx->inverse_row_permute_reuse(rpermute);
+
+    ASSERT_TRUE(dpermuted.first->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(permuted.first, dpermuted.first, 0);
+    GKO_ASSERT_MTX_EQ_SPARSITY(permuted.second, dpermuted.second);
+    // test that the value permutation works: modify input values
+    mtx->create_value_view()->scale(alpha);
+    dmtx->create_value_view()->scale(dalpha);
+    mtx->create_const_value_view()->row_permute(
+        permuted.second, permuted.first->create_value_view());
+    dmtx->create_const_value_view()->row_permute(
+        dpermuted.second, dpermuted.first->create_value_view());
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(mtx->inverse_row_permute(rpermute)),
+                        permuted.first, 0);
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(dmtx->inverse_row_permute(rpermute)),
+                        dpermuted.first, 0);
 }
 
 
@@ -945,6 +1144,45 @@ TEST_F(Csr, IsInverseColPermutable)
     ASSERT_TRUE(d_inverse_c_permute->is_sorted_by_column_index());
     GKO_ASSERT_MTX_EQ_SPARSITY(inverse_c_permute, d_inverse_c_permute);
     GKO_ASSERT_MTX_NEAR(inverse_c_permute, d_inverse_c_permute, 0);
+}
+
+
+TEST_F(Csr, IsInverseColPermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto inverse_c_permute =
+        gko::as<Mtx>(mtx->inverse_column_permute(cpermute));
+    auto d_inverse_c_permute =
+        gko::as<Mtx>(dmtx->inverse_column_permute(cpermute));
+
+    ASSERT_TRUE(d_inverse_c_permute->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_EQ_SPARSITY(inverse_c_permute, d_inverse_c_permute);
+    GKO_ASSERT_MTX_NEAR(inverse_c_permute, d_inverse_c_permute, 0);
+}
+
+
+TEST_F(Csr, IsReuseInverseColumnPermutableFromMatrix)
+{
+    set_up_apply_data<Mtx::classical>();
+
+    auto permuted = mtx->inverse_column_permute_reuse(cpermute);
+    auto dpermuted = dmtx->inverse_column_permute_reuse(cpermute);
+
+    ASSERT_TRUE(dpermuted.first->is_sorted_by_column_index());
+    GKO_ASSERT_MTX_NEAR(permuted.first, dpermuted.first, 0);
+    GKO_ASSERT_MTX_EQ_SPARSITY(permuted.second, dpermuted.second);
+    // test that the value permutation works: modify input values
+    mtx->create_value_view()->scale(alpha);
+    dmtx->create_value_view()->scale(dalpha);
+    mtx->create_const_value_view()->row_permute(
+        permuted.second, permuted.first->create_value_view());
+    dmtx->create_const_value_view()->row_permute(
+        dpermuted.second, dpermuted.first->create_value_view());
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(mtx->inverse_column_permute(cpermute)),
+                        permuted.first, 0);
+    GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(dmtx->inverse_column_permute(cpermute)),
+                        dpermuted.first, 0);
 }
 
 
