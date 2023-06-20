@@ -47,12 +47,14 @@ struct overlapping_partition {
                       [](const auto& a, const auto& b) {
                           return a + b.length();
                       })),
-                  size(std::max_element(this->intervals.begin(),
-                                        this->intervals.end(),
-                                        [](const auto& a, const auto& b) {
-                                            return a.end < b.end;
-                                        })
-                           ->end)
+                  size(this->intervals.empty()
+                           ? 0
+                           : std::max_element(this->intervals.begin(),
+                                              this->intervals.end(),
+                                              [](const auto& a, const auto& b) {
+                                                  return a.end < b.end;
+                                              })
+                                 ->end)
             {}
 
             index_type get_size() const { return size; }
@@ -115,8 +117,9 @@ struct overlapping_partition {
     {
         return std::visit(
             overloaded{
-                [](const typename overlap_indices::blocked& block) {
-                    return static_cast<index_type>(block.get_size());
+                [this](const typename overlap_indices::blocked& block) {
+                    return std::max(static_cast<index_type>(block.get_size()),
+                                    local_idxs_.get_size());
                 },
                 [](const typename overlap_indices::interleaved& interleaved) {
                     return static_cast<index_type>(
@@ -559,7 +562,7 @@ struct overlapping_vector
                 idxs.idxs);
         return as_local_vector()->create_submatrix(
             {this->part_->get_local_indices().get_size(),
-             block_idxs.get_size()},
+             part_->get_overlap_size(idxs)},
             {0, this->get_size()[1]});
     }
 
@@ -571,7 +574,7 @@ struct overlapping_vector
                 idxs.idxs);
         return const_cast<local_vector_type*>(as_local_vector().get())
             ->create_submatrix({this->part_->get_local_indices().get_size(),
-                                block_idxs.get_size()},
+                                part_->get_overlap_size(idxs)},
                                {0, this->get_size()[1]});
     }
 
