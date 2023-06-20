@@ -30,11 +30,12 @@ public:
     using md_type = gko::matrix_data<value_type, index_type>;
     using local_vector_type = gko::matrix::Dense<value_type>;
 
-    std::unique_ptr<local_vector_type> init_local_vector(int rank, gko::size_type local_size,
-                                                         gko::size_type recv_size,
-                                                         value_type fill_value = 0.0){
-        auto vector =
-            local_vector_type ::create(ref, gko::dim<2>{local_size + recv_size, 1});
+    std::unique_ptr<local_vector_type> init_local_vector(
+        int rank, gko::size_type local_size, gko::size_type recv_size,
+        value_type fill_value = 0.0)
+    {
+        auto vector = local_vector_type ::create(
+            ref, gko::dim<2>{local_size + recv_size, 1});
         vector->fill(fill_value);
         for (int i = 0; i < local_size; ++i) {
             vector->at(i) = i + 100 * (rank + 1);
@@ -58,7 +59,7 @@ TEST_F(VectorCreation, CanCreatePartition)
     auto rank = comm.rank();
     auto prev_rank = (rank + comm.size() - 1) % comm.size();
     auto next_rank = (rank + 1) % comm.size();
-    gko::array<comm_index_type> targets_ids {exec, {prev_rank, next_rank}};
+    gko::array<comm_index_type> targets_ids{exec, {prev_rank, next_rank}};
     gko::array<gko::size_type> group_sizes{exec, {1, 1}};
     auto part = part_type::build_from_grouped_recv1(
         exec, 2, {}, targets_ids, group_sizes);  // no send indices
@@ -79,13 +80,11 @@ TEST_F(VectorCreation, CanMakeConsistent)
     auto rank = comm.rank();
     auto prev_rank = (rank + comm.size() - 1) % comm.size();
     auto next_rank = (rank + 1) % comm.size();
-    gko::array<comm_index_type> targets_ids{
-        exec, {prev_rank}};
+    gko::array<comm_index_type> targets_ids{exec, {prev_rank}};
     gko::array<gko::size_type> group_sizes{exec, {1}};
     auto part = part_type::build_from_grouped_recv1(
-        exec, 2,
-        {std::make_pair(index_set{exec, {1}}, next_rank)},
-        targets_ids, group_sizes);
+        exec, 2, {std::make_pair(index_set{exec, {1}}, next_rank)}, targets_ids,
+        group_sizes);
     auto neighbor_comm =
         gko::experimental::distributed::create_neighborhood_comm(comm,
                                                                  part.get());
@@ -170,5 +169,58 @@ TEST_F(VectorCreation, CanMakeConsistentLarge)
         gko::initialize<local_vector_type>({208, 209}, exec),
         gko::initialize<local_vector_type>({100, 101, 302, 303}, exec),
         gko::initialize<local_vector_type>({210, 211}, exec)};
+    GKO_ASSERT_MTX_NEAR(non_local, ref_non_local[rank], 0);
+}
+
+
+TEST_F(VectorCreation, CanMakeConsistentLargeAsymmetric)
+{
+    ASSERT_EQ(comm.size(), 6);
+    using index_set = gko::index_set<index_type>;
+    auto rank = comm.rank();
+    auto send_idxs = to_std_array(
+        make_vector(std::make_pair(index_set(exec, gko::span{4, 7}), 1)),
+        make_vector(std::make_pair(index_set(exec, gko::span{7, 10}), 2),
+                    std::make_pair(index_set(exec, gko::span{4, 6}), 5)),
+        make_vector(std::make_pair(index_set(exec, gko::span{9, 11}), 4)),
+        make_vector(std::make_pair(index_set(exec, gko::span{0, 2}), 1)),
+        make_vector(std::make_pair(index_set(exec, gko::span{1, 3}), 0)),
+        make_vector(std::make_pair(index_set(exec, gko::span{0, 2}), 1)));
+    std::array<gko::array<comm_index_type>, 6> targets_ids = {{
+        {exec, {4}},
+        {exec, {0, 5, 3}},
+        {exec, {1}},
+        gko::array<comm_index_type>{exec},
+        {exec, {2}},
+        gko::array<comm_index_type>{exec},
+    }};
+    std::array<gko::array<gko::size_type>, 6> group_sizes = {
+        {{exec, {2}},
+         {exec, {3, 2, 2}},
+         {exec, {3}},
+         gko::array<gko::size_type>{exec},
+         {exec, {2}},
+         gko::array<gko::size_type>{exec}}};
+    std::array<int, 6> recv_sizes = {2, 7, 3, 0, 2, 0};
+    auto part = part_type::build_from_grouped_recv1(
+        exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
+    auto neighbor_comm =
+        gko::experimental::distributed::create_neighborhood_comm(comm,
+                                                                 part.get());
+    auto init_vector = init_local_vector(rank, 12, recv_sizes[rank]);
+    auto vec = vector_type::create(exec, neighbor_comm, part,
+                                   gko::make_dense_view(init_vector));
+
+    vec->make_consistent(gko::experimental::distributed::transformation::set);
+
+    auto non_local = vec->extract_non_local();
+    std::array<std::unique_ptr<local_vector_type>, 6> ref_non_local = {
+        gko::initialize<local_vector_type>({501, 502}, exec),
+        gko::initialize<local_vector_type>({104, 105, 106, 600, 601, 400, 401},
+                                           exec),
+        gko::initialize<local_vector_type>({207, 208, 209}, exec),
+        local_vector_type::create(exec, gko::dim<2>{0, 1}),
+        gko::initialize<local_vector_type>({309, 310}, exec),
+        local_vector_type::create(exec, gko::dim<2>{0, 1})};
     GKO_ASSERT_MTX_NEAR(non_local, ref_non_local[rank], 0);
 }
