@@ -1,3 +1,35 @@
+/*******************************<GINKGO LICENSE>******************************
+Copyright (c) 2017-2023, the Ginkgo authors
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+******************************<GINKGO LICENSE>*******************************/
+
 #ifndef OVERLAPPING_VECTOR_OVERLAPPING_VECTOR_HPP
 #define OVERLAPPING_VECTOR_OVERLAPPING_VECTOR_HPP
 
@@ -57,6 +89,7 @@ struct overlapping_partition {
                                  ->end)
             {}
 
+            // conformity with index_set interface (necessary?)
             index_type get_size() const { return size; }
             index_type get_num_local_indices() const
             {
@@ -71,19 +104,45 @@ struct overlapping_partition {
         };
 
         // ids with same index subset
-        using interleaved = std::vector<index_set<index_type>>;
+        struct interleaved {
+            interleaved(std::vector<index_set<index_type>> sets)
+                : sets(std::move(sets)),
+                  num_local_indices(
+                      std::accumulate(this->sets.begin(), this->sets.end(), 0,
+                                      [](const auto& a, const auto& b) {
+                                          return a + b.get_num_local_indices();
+                                      })),
+                  size(this->sets.empty()
+                           ? 0
+                           : std::max_element(
+                                 this->sets.begin(), this->sets.end(),
+                                 [](const auto& a, const auto& b) {
+                                     return a.get_size() < b.get_size();
+                                 })
+                                 ->get_size())
+            {}
+
+            // conformity with index_set interface (necessary?)
+            index_type get_size() const { return size; }
+            index_type get_num_local_indices() const
+            {
+                return num_local_indices;
+            }
+
+            std::vector<index_set<index_type>>
+                sets;  // a single index set per target id
+            size_type num_local_indices;
+            index_type size;
+        };
 
         array<comm_index_type> target_ids;
         std::variant<blocked, interleaved> idxs;
     };
 
-
     const index_set<index_type>& get_local_indices() const
     {
         return local_idxs_;
     }
-
-    array<mask_type> get_local_mask();
 
     const overlap_indices& get_send_indices() const
     {
@@ -98,18 +157,9 @@ struct overlapping_partition {
     size_type get_overlap_num_elems(const overlap_indices& idxs) const
     {
         return std::visit(
-            overloaded{
-                [](const typename overlap_indices::blocked& block) {
-                    return static_cast<size_type>(
-                        block.get_num_local_indices());
-                },
-                [](const typename overlap_indices::interleaved& interleaved) {
-                    return static_cast<size_type>(std::accumulate(
-                        interleaved.begin(), interleaved.end(), size_type{},
-                        [](const auto& a, const auto& b) {
-                            return a + b.get_num_local_indices();
-                        }));
-                }},
+            [](const auto& idxs) {
+                return static_cast<size_type>(idxs.get_num_local_indices());
+            },
             idxs.idxs);
     }
 
@@ -122,22 +172,10 @@ struct overlapping_partition {
                                     local_idxs_.get_size());
                 },
                 [](const typename overlap_indices::interleaved& interleaved) {
-                    return static_cast<index_type>(
-                        interleaved.empty()
-                            ? 0
-                            : std::max_element(
-                                  interleaved.begin(), interleaved.end(),
-                                  [](const auto& a, const auto& b) {
-                                      return a.get_size() < b.get_size();
-                                  })
-                                  ->get_size());
+                    return static_cast<index_type>(interleaved.get_size());
                 }},
             idxs.idxs);
     }
-
-    array<int8> get_overlapping_mask();
-
-    array<index_type> get_multiplicity();
 
     size_type get_size()
     {
@@ -146,25 +184,20 @@ struct overlapping_partition {
                                  get_overlap_size(overlap_recv_idxs_)));
     }
 
+    // only recv indices are relevant, since they are written to
     bool has_grouped_indices()
     {
         return std::holds_alternative<typename overlap_indices::blocked>(
             overlap_recv_idxs_.idxs);
     }
 
-    //    index_set<index_type> get_non_local_indices();
-
-    array<index_type> get_target_ids();
-
-    // returns process id and overlap size
-    index_type get_group_target_id(index_type group);
-    index_type get_group_size(index_type group);
-
     std::shared_ptr<const Executor> get_executor();
 
     /*
      * Indices are grouped first by local indices and then receiving overlapping
      * indices
+     * the recv indices of different target-ids can't overlap, need other
+     * constructor for that
      */
     static std::shared_ptr<overlapping_partition> build_from_grouped_recv1(
         std::shared_ptr<const Executor> exec, size_type local_size,
@@ -229,8 +262,6 @@ struct overlapping_partition {
             {std::move(target_id), std::move(intervals)}}};
     }
 
-    static std::shared_ptr<overlapping_partition> build_from_arbitrary();
-
 private:
     overlapping_partition(index_set<index_type> local_idxs,
                           overlap_indices overlap_send_idxs,
@@ -242,9 +273,9 @@ private:
 
     // owned by this process (exclusively or shared)
     index_set<index_type> local_idxs_;
-    // shared ownership by this process (subset of local_idxs_)
+    // owned by this and used by other processes (subset of local_idxs_)
     overlap_indices overlap_send_idxs_;
-    // not owned by this process
+    // owned by other processes (doesn't exclude this also owning them)
     overlap_indices overlap_recv_idxs_;
 
     // store local multiplicity, i.e. if the index is owned by this process,
@@ -287,12 +318,13 @@ mpi::communicator create_neighborhood_comm(
  * perhaps fix index type to int32?
  * since that is only local indices it might be enough
  */
-struct communication_pattern {
+struct sparse_communication {
     /**
      * throw if index set size is larger than int32
+     * should comm be a neighborhood comm, or should we make it into one?
      */
     template <typename IndexType>
-    communication_pattern(
+    sparse_communication(
         mpi::communicator comm,
         std::shared_ptr<const overlapping_partition<IndexType>> part);
 
@@ -310,6 +342,8 @@ struct communication_pattern {
     std::vector<comm_index_type> recv_offsets_;
 
     // need mutex for these
+    gko::array<char> recv_buffer_;
+    gko::array<char> send_buffer_;
     //    detail::DenseCache<ValueType> recv_cache_;
     //    detail::DenseCache<ValueType> send_cache_;
 };
@@ -414,8 +448,8 @@ struct overlapping_vector
                     },
                     [&](const typename partition_type::overlap_indices::
                             interleaved& idxs) {
-                        for (int i = 0; i < idxs.size(); ++i) {
-                            sizes[i + 1] = idxs[i].get_num_local_indices();
+                        for (int i = 0; i < idxs.sets.size(); ++i) {
+                            sizes[i + 1] = idxs.sets[i].get_num_local_indices();
                         }
                         std::partial_sum(sizes.begin(), sizes.end(),
                                          offsets.begin());
@@ -430,7 +464,8 @@ struct overlapping_vector
             std::unique_ptr<local_vector_type,
                             std::function<void(local_vector_type*)>>;
         auto recv_ptr = [&] {
-            if (std::holds_alternative<
+            if (mode == transformation::set &&
+                std::holds_alternative<
                     typename partition_type::overlap_indices::blocked>(
                     recv_idxs.idxs)) {
                 return recv_handle_t{
@@ -460,9 +495,9 @@ struct overlapping_vector
                 auto idxs = std::get<
                     typename partition_type::overlap_indices::interleaved>(
                     send_idxs.idxs);
-                for (int i = 0; i < idxs.size(); ++i) {
+                for (int i = 0; i < idxs.sets.size(); ++i) {
                     // need direct support for index_set
-                    auto full_idxs = idxs[i].to_global_indices();
+                    auto full_idxs = idxs.sets[i].to_global_indices();
                     as_local_vector()->row_gather(
                         &full_idxs,
                         send_cache_->create_submatrix(
@@ -561,8 +596,9 @@ struct overlapping_vector
             std::get<typename partition_type::overlap_indices::blocked>(
                 idxs.idxs);
         return as_local_vector()->create_submatrix(
-            {this->part_->get_local_indices().get_size(),
-             part_->get_overlap_size(idxs)},
+            {static_cast<size_type>(
+                 this->part_->get_local_indices().get_size()),
+             static_cast<size_type>(part_->get_overlap_size(idxs))},
             {0, this->get_size()[1]});
     }
 
@@ -573,9 +609,11 @@ struct overlapping_vector
             std::get<typename partition_type::overlap_indices::blocked>(
                 idxs.idxs);
         return const_cast<local_vector_type*>(as_local_vector().get())
-            ->create_submatrix({this->part_->get_local_indices().get_size(),
-                                part_->get_overlap_size(idxs)},
-                               {0, this->get_size()[1]});
+            ->create_submatrix(
+                {static_cast<size_type>(
+                     this->part_->get_local_indices().get_size()),
+                 static_cast<size_type>(part_->get_overlap_size(idxs))},
+                {0, this->get_size()[1]});
     }
 
 
