@@ -30,6 +30,17 @@ public:
     using md_type = gko::matrix_data<value_type, index_type>;
     using local_vector_type = gko::matrix::Dense<value_type>;
 
+    std::unique_ptr<local_vector_type> init_local_vector(int rank, gko::size_type local_size,
+                                                         gko::size_type recv_size,
+                                                         value_type fill_value = 0.0){
+        auto vector =
+            local_vector_type ::create(ref, gko::dim<2>{local_size + recv_size, 1});
+        vector->fill(fill_value);
+        for (int i = 0; i < local_size; ++i) {
+            vector->at(i) = i + 100 * (rank + 1);
+        }
+        return vector;
+    }
 
     std::array<std::unique_ptr<local_vector_type>, 3> md{
         {gko::initialize<local_vector_type>({0, 0, 1, 2}, this->exec),
@@ -44,24 +55,22 @@ public:
 
 TEST_F(VectorCreation, CanCreatePartition)
 {
+    auto rank = comm.rank();
+    auto prev_rank = (rank + comm.size() - 1) % comm.size();
+    auto next_rank = (rank + comm.size() - 1) % comm.size();
     std::array<gko::array<comm_index_type>, 3> targets_ids = {
         {{exec, {1, 2}}, {exec, {0, 2}}, {exec, {0, 1}}}};
     gko::array<gko::size_type> group_sizes{exec, {1, 1}};
-
-    auto rank = comm.rank();
-
     auto part = part_type::build_from_grouped_recv1(
-        exec, 2, {}, targets_ids[rank], group_sizes);
-
+        exec, 2, {}, targets_ids, group_sizes);  // no send indices
+    auto local_vec = init_local_vector(rank, 2, 2, -prev_rank - next_rank);
     auto vec =
         vector_type::create(exec, comm, part, gko::make_dense_view(md[rank]));
 
     auto non_local = vec->extract_non_local();
 
-    std::array<I<I<value_type>>, 3> ref_non_local = {
-        {{{1}, {2}}, {{0}, {2}}, {{0}, {1}}}};
-
-    GKO_ASSERT_MTX_NEAR(non_local, ref_non_local[rank], 0);
+    auto exp_value = static_cast<value_type>(-prev_rank - next_rank);
+    GKO_ASSERT_MTX_NEAR(non_local, I<value_type>{exp_value, exp_value}, 0);
 }
 
 
@@ -89,9 +98,7 @@ TEST_F(VectorCreation, CanMakeConsistent)
 
     auto non_local = vec->extract_non_local();
 
-    std::array<I<I<value_type>>, 3> ref_non_local = {{{{2}}, {{0}}, {{1}}}};
-
-    GKO_ASSERT_MTX_NEAR(non_local, ref_non_local[rank], 0);
+    GKO_ASSERT_MTX_NEAR(non_local, {static_cast<value_type>((rank + comm.size() - 1) % comm.size())}, 0);
 }
 
 
