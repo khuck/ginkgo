@@ -471,11 +471,19 @@ struct overlapping_vector
                 return recv_handle_t{
                     get_overlap_block(recv_idxs).release(),
                     blocked_deleter{get_overlap_block(recv_idxs), mode}};
-            } else {
-                recv_cache_.init(this->get_executor(),
-                                 {this->part_->get_overlap_num_elems(recv_idxs),
-                                  this->get_size()[1]});
+            }
 
+            recv_cache_.init(this->get_executor(),
+                             {this->part_->get_overlap_num_elems(recv_idxs),
+                              this->get_size()[1]});
+
+            if (std::holds_alternative<
+                    typename partition_type::overlap_indices::blocked>(
+                    recv_idxs.idxs)) {
+                return recv_handle_t{
+                    make_dense_view(recv_cache_.get()).release(),
+                    blocked_deleter{get_overlap_block(recv_idxs), mode}};
+            } else {
                 return recv_handle_t{
                     make_dense_view(recv_cache_.get()).release(),
                     interleaved_deleter{as_local_vector(), mode}};
