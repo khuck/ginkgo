@@ -416,7 +416,7 @@ struct overlapping_vector
 
     size_type get_num_stored_elems() const { return buffer_.get_num_elems(); }
 
-    void make_consistent(transformation mode)
+    auto make_consistent(transformation mode)
     {
         auto recv_idxs = part_->get_recv_indices();
         auto send_idxs = part_->get_send_indices();
@@ -463,7 +463,7 @@ struct overlapping_vector
         using recv_handle_t =
             std::unique_ptr<local_vector_type,
                             std::function<void(local_vector_type*)>>;
-        auto recv_ptr = [&] {
+        auto recv_handle = [&] {
             if (mode == transformation::set &&
                 std::holds_alternative<
                     typename partition_type::overlap_indices::blocked>(
@@ -489,7 +489,7 @@ struct overlapping_vector
                     interleaved_deleter{as_local_vector(), mode}};
             }
         }();
-        auto send_ptr = [&] {
+        auto send_handle = [&] {
             if (std::holds_alternative<
                     typename partition_type::overlap_indices::blocked>(
                     send_idxs.idxs)) {
@@ -517,11 +517,17 @@ struct overlapping_vector
                 return make_dense_view(send_cache_.get());
             }
         }();
+        auto recv_ptr = recv_handle->get_values();
+        auto send_ptr = send_handle->get_values();
 
-        MPI_Neighbor_alltoallv(
-            send_ptr->get_values(), send_sizes.data() + 1, send_offsets.data(),
-            MPI_DOUBLE, recv_ptr->get_values(), recv_sizes.data() + 1,
-            recv_offsets.data(), MPI_DOUBLE, this->get_communicator().get());
+        // request deletes recv_handle on successful wait
+        mpi::request req(
+            [h = std::move(recv_handle)](MPI_Request) mutable { h.reset(); });
+        MPI_Ineighbor_alltoallv(
+            send_ptr, send_sizes.data() + 1, send_offsets.data(), MPI_DOUBLE,
+            recv_ptr, recv_sizes.data() + 1, recv_offsets.data(), MPI_DOUBLE,
+            this->get_communicator().get(), req.get());
+        return req;
     }
 
     template <typename F, typename = std::enable_if_t<
