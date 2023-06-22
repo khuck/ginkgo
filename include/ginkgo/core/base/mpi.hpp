@@ -87,10 +87,13 @@ inline constexpr bool is_gpu_aware()
 int map_rank_to_device_id(MPI_Comm comm, int num_devices);
 
 
-#define GKO_REGISTER_MPI_TYPE(input_type, mpi_type)         \
-    template <>                                             \
-    struct type_impl<input_type> {                          \
-        static MPI_Datatype get_type() { return mpi_type; } \
+#define GKO_REGISTER_MPI_TYPE(input_type, mpi_type) \
+    template <>                                     \
+    struct type_impl<input_type> {                  \
+        static MPI_Datatype get_type()              \
+        {                                           \
+            return mpi_type;                        \
+        }                                           \
     }
 
 /**
@@ -341,28 +344,40 @@ private:
 };
 
 
+namespace detail {
+struct NoOpCallback {
+    void operator()(MPI_Request) {}
+};
+}  // namespace detail
+
 /**
  * The request class is a light, move-only wrapper around the MPI_Request
  * handle.
  */
+template <typename callback = detail::NoOpCallback>
 class request {
 public:
     /**
      * The default constructor. It creates a null MPI_Request of
      * MPI_REQUEST_NULL type.
      */
-    request() : req_(MPI_REQUEST_NULL) {}
+    request(callback&& cb = {})
+        : req_(MPI_REQUEST_NULL), cb_(std::forward<callback>(cb))
+    {}
 
     request(const request&) = delete;
 
     request& operator=(const request&) = delete;
 
-    request(request&& o) noexcept { *this = std::move(o); }
+    request(request&& o) noexcept
+        : req_(std::exchange(o.req_, MPI_REQUEST_NULL)), cb_(std::move(o.cb_))
+    {}
 
     request& operator=(request&& o) noexcept
     {
         if (this != &o) {
-            this->req_ = std::exchange(o.req_, MPI_REQUEST_NULL);
+            req_ = std::exchange(o.req_, MPI_REQUEST_NULL);
+            cb_ = std::move(o.cb_);
         }
         return *this;
     }
@@ -394,12 +409,13 @@ public:
     {
         status status;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Wait(&req_, status.get()));
+        cb_(req_);
         return status;
     }
 
-
 private:
     MPI_Request req_;
+    callback cb_;
 };
 
 
@@ -410,12 +426,14 @@ private:
  *
  * @return status  The vector of status objects that can be queried.
  */
-inline std::vector<status> wait_all(std::vector<request>& req)
+inline std::vector<status> wait_all(std::vector<request<>>& req)
 {
-    std::vector<status> stat;
-    for (std::size_t i = 0; i < req.size(); ++i) {
-        stat.emplace_back(req[i].wait());
-    }
+    std::vector<MPI_Request> bare_reqs;
+    std::transform(req.begin(), req.end(), std::back_inserter(bare_reqs),
+                   [](auto& r) { return *r.get(); });
+    std::vector<status> stat(req.size());
+    MPI_Waitall(bare_reqs.size(), bare_reqs.data(),
+                reinterpret_cast<MPI_Status*>(stat.data()));
     return stat;
 }
 
@@ -580,12 +598,12 @@ public:
      * @return  the request handle for the send call
      */
     template <typename SendType>
-    request i_send(std::shared_ptr<const Executor> exec,
-                   const SendType* send_buffer, const int send_count,
-                   const int destination_rank, const int send_tag) const
+    request<> i_send(std::shared_ptr<const Executor> exec,
+                     const SendType* send_buffer, const int send_count,
+                     const int destination_rank, const int send_tag) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(
             MPI_Isend(send_buffer, send_count, type_impl<SendType>::get_type(),
                       destination_rank, send_tag, this->get(), req.get()));
@@ -636,12 +654,12 @@ public:
      * @return  the request handle for the recv call
      */
     template <typename RecvType>
-    request i_recv(std::shared_ptr<const Executor> exec, RecvType* recv_buffer,
-                   const int recv_count, const int source_rank,
-                   const int recv_tag) const
+    request<> i_recv(std::shared_ptr<const Executor> exec,
+                     RecvType* recv_buffer, const int recv_count,
+                     const int source_rank, const int recv_tag) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(
             MPI_Irecv(recv_buffer, recv_count, type_impl<RecvType>::get_type(),
                       source_rank, recv_tag, this->get(), req.get()));
@@ -686,11 +704,11 @@ public:
      * @return  the request handle for the call
      */
     template <typename BroadcastType>
-    request i_broadcast(std::shared_ptr<const Executor> exec,
-                        BroadcastType* buffer, int count, int root_rank) const
+    request<> i_broadcast(std::shared_ptr<const Executor> exec,
+                          BroadcastType* buffer, int count, int root_rank) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(
             MPI_Ibcast(buffer, count, type_impl<BroadcastType>::get_type(),
                        root_rank, this->get(), req.get()));
@@ -739,12 +757,12 @@ public:
      * @return  the request handle for the call
      */
     template <typename ReduceType>
-    request i_reduce(std::shared_ptr<const Executor> exec,
-                     const ReduceType* send_buffer, ReduceType* recv_buffer,
-                     int count, MPI_Op operation, int root_rank) const
+    request<> i_reduce(std::shared_ptr<const Executor> exec,
+                       const ReduceType* send_buffer, ReduceType* recv_buffer,
+                       int count, MPI_Op operation, int root_rank) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Ireduce(
             send_buffer, recv_buffer, count, type_impl<ReduceType>::get_type(),
             operation, root_rank, this->get(), req.get()));
@@ -790,12 +808,12 @@ public:
      * @return  the request handle for the call
      */
     template <typename ReduceType>
-    request i_all_reduce(std::shared_ptr<const Executor> exec,
-                         ReduceType* recv_buffer, int count,
-                         MPI_Op operation) const
+    request<> i_all_reduce(std::shared_ptr<const Executor> exec,
+                           ReduceType* recv_buffer, int count,
+                           MPI_Op operation) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Iallreduce(
             MPI_IN_PLACE, recv_buffer, count, type_impl<ReduceType>::get_type(),
             operation, this->get(), req.get()));
@@ -844,12 +862,13 @@ public:
      * @return  the request handle for the call
      */
     template <typename ReduceType>
-    request i_all_reduce(std::shared_ptr<const Executor> exec,
-                         const ReduceType* send_buffer, ReduceType* recv_buffer,
-                         int count, MPI_Op operation) const
+    request<> i_all_reduce(std::shared_ptr<const Executor> exec,
+                           const ReduceType* send_buffer,
+                           ReduceType* recv_buffer, int count,
+                           MPI_Op operation) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Iallreduce(
             send_buffer, recv_buffer, count, type_impl<ReduceType>::get_type(),
             operation, this->get(), req.get()));
@@ -905,13 +924,13 @@ public:
      * @return  the request handle for the call
      */
     template <typename SendType, typename RecvType>
-    request i_gather(std::shared_ptr<const Executor> exec,
-                     const SendType* send_buffer, const int send_count,
-                     RecvType* recv_buffer, const int recv_count,
-                     int root_rank) const
+    request<> i_gather(std::shared_ptr<const Executor> exec,
+                       const SendType* send_buffer, const int send_count,
+                       RecvType* recv_buffer, const int recv_count,
+                       int root_rank) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Igather(
             send_buffer, send_count, type_impl<SendType>::get_type(),
             recv_buffer, recv_count, type_impl<RecvType>::get_type(), root_rank,
@@ -971,13 +990,13 @@ public:
      * @return  the request handle for the call
      */
     template <typename SendType, typename RecvType>
-    request i_gather_v(std::shared_ptr<const Executor> exec,
-                       const SendType* send_buffer, const int send_count,
-                       RecvType* recv_buffer, const int* recv_counts,
-                       const int* displacements, int root_rank) const
+    request<> i_gather_v(std::shared_ptr<const Executor> exec,
+                         const SendType* send_buffer, const int send_count,
+                         RecvType* recv_buffer, const int* recv_counts,
+                         const int* displacements, int root_rank) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Igatherv(
             send_buffer, send_count, type_impl<SendType>::get_type(),
             recv_buffer, recv_counts, displacements,
@@ -1032,12 +1051,12 @@ public:
      * @return  the request handle for the call
      */
     template <typename SendType, typename RecvType>
-    request i_all_gather(std::shared_ptr<const Executor> exec,
-                         const SendType* send_buffer, const int send_count,
-                         RecvType* recv_buffer, const int recv_count) const
+    request<> i_all_gather(std::shared_ptr<const Executor> exec,
+                           const SendType* send_buffer, const int send_count,
+                           RecvType* recv_buffer, const int recv_count) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Iallgather(
             send_buffer, send_count, type_impl<SendType>::get_type(),
             recv_buffer, recv_count, type_impl<RecvType>::get_type(),
@@ -1092,13 +1111,13 @@ public:
      * @return  the request handle for the call
      */
     template <typename SendType, typename RecvType>
-    request i_scatter(std::shared_ptr<const Executor> exec,
-                      const SendType* send_buffer, const int send_count,
-                      RecvType* recv_buffer, const int recv_count,
-                      int root_rank) const
+    request<> i_scatter(std::shared_ptr<const Executor> exec,
+                        const SendType* send_buffer, const int send_count,
+                        RecvType* recv_buffer, const int recv_count,
+                        int root_rank) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Iscatter(
             send_buffer, send_count, type_impl<SendType>::get_type(),
             recv_buffer, recv_count, type_impl<RecvType>::get_type(), root_rank,
@@ -1158,13 +1177,13 @@ public:
      * @return  the request handle for the call
      */
     template <typename SendType, typename RecvType>
-    request i_scatter_v(std::shared_ptr<const Executor> exec,
-                        const SendType* send_buffer, const int* send_counts,
-                        const int* displacements, RecvType* recv_buffer,
-                        const int recv_count, int root_rank) const
+    request<> i_scatter_v(std::shared_ptr<const Executor> exec,
+                          const SendType* send_buffer, const int* send_counts,
+                          const int* displacements, RecvType* recv_buffer,
+                          const int recv_count, int root_rank) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(
             MPI_Iscatterv(send_buffer, send_counts, displacements,
                           type_impl<SendType>::get_type(), recv_buffer,
@@ -1219,11 +1238,11 @@ public:
      * buffers are the same.
      */
     template <typename RecvType>
-    request i_all_to_all(std::shared_ptr<const Executor> exec,
-                         RecvType* recv_buffer, const int recv_count) const
+    request<> i_all_to_all(std::shared_ptr<const Executor> exec,
+                           RecvType* recv_buffer, const int recv_count) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Ialltoall(
             MPI_IN_PLACE, recv_count, type_impl<RecvType>::get_type(),
             recv_buffer, recv_count, type_impl<RecvType>::get_type(),
@@ -1278,12 +1297,12 @@ public:
      * @return  the request handle for the call
      */
     template <typename SendType, typename RecvType>
-    request i_all_to_all(std::shared_ptr<const Executor> exec,
-                         const SendType* send_buffer, const int send_count,
-                         RecvType* recv_buffer, const int recv_count) const
+    request<> i_all_to_all(std::shared_ptr<const Executor> exec,
+                           const SendType* send_buffer, const int send_count,
+                           RecvType* recv_buffer, const int recv_count) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Ialltoall(
             send_buffer, send_count, type_impl<SendType>::get_type(),
             recv_buffer, recv_count, type_impl<RecvType>::get_type(),
@@ -1368,15 +1387,15 @@ public:
      * @note This overload allows specifying the MPI_Datatype for both
      *       the send and received data.
      */
-    request i_all_to_all_v(std::shared_ptr<const Executor> exec,
-                           const void* send_buffer, const int* send_counts,
-                           const int* send_offsets, MPI_Datatype send_type,
-                           void* recv_buffer, const int* recv_counts,
-                           const int* recv_offsets,
-                           MPI_Datatype recv_type) const
+    request<> i_all_to_all_v(std::shared_ptr<const Executor> exec,
+                             const void* send_buffer, const int* send_counts,
+                             const int* send_offsets, MPI_Datatype send_type,
+                             void* recv_buffer, const int* recv_counts,
+                             const int* recv_offsets,
+                             MPI_Datatype recv_type) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Ialltoallv(
             send_buffer, send_counts, send_offsets, send_type, recv_buffer,
             recv_counts, recv_offsets, recv_type, this->get(), req.get()));
@@ -1404,11 +1423,11 @@ public:
      * @return  the request handle for the call
      */
     template <typename SendType, typename RecvType>
-    request i_all_to_all_v(std::shared_ptr<const Executor> exec,
-                           const SendType* send_buffer, const int* send_counts,
-                           const int* send_offsets, RecvType* recv_buffer,
-                           const int* recv_counts,
-                           const int* recv_offsets) const
+    request<> i_all_to_all_v(std::shared_ptr<const Executor> exec,
+                             const SendType* send_buffer,
+                             const int* send_counts, const int* send_offsets,
+                             RecvType* recv_buffer, const int* recv_counts,
+                             const int* recv_offsets) const
     {
         return this->i_all_to_all_v(
             std::move(exec), send_buffer, send_counts, send_offsets,
@@ -1454,15 +1473,15 @@ public:
      *                   has a specialization of type_impl that defines its
      *                   MPI_Datatype.
      *
-     * @return  the request handle for the call
+     * @return  the request<> handle for the call
      */
     template <typename ScanType>
-    request i_scan(std::shared_ptr<const Executor> exec,
-                   const ScanType* send_buffer, ScanType* recv_buffer,
-                   int count, MPI_Op operation) const
+    request<> i_scan(std::shared_ptr<const Executor> exec,
+                     const ScanType* send_buffer, ScanType* recv_buffer,
+                     int count, MPI_Op operation) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Iscan(send_buffer, recv_buffer, count,
                                            type_impl<ScanType>::get_type(),
                                            operation, this->get(), req.get()));
@@ -1767,13 +1786,13 @@ public:
      * @return  the request handle for the send call
      */
     template <typename PutType>
-    request r_put(std::shared_ptr<const Executor> exec,
-                  const PutType* origin_buffer, const int origin_count,
-                  const int target_rank, const unsigned int target_disp,
-                  const int target_count) const
+    request<> r_put(std::shared_ptr<const Executor> exec,
+                    const PutType* origin_buffer, const int origin_count,
+                    const int target_rank, const unsigned int target_disp,
+                    const int target_count) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Rput(
             origin_buffer, origin_count, type_impl<PutType>::get_type(),
             target_rank, target_disp, target_count,
@@ -1819,13 +1838,14 @@ public:
      * @return  the request handle for the send call
      */
     template <typename PutType>
-    request r_accumulate(std::shared_ptr<const Executor> exec,
-                         const PutType* origin_buffer, const int origin_count,
-                         const int target_rank, const unsigned int target_disp,
-                         const int target_count, MPI_Op operation) const
+    request<> r_accumulate(std::shared_ptr<const Executor> exec,
+                           const PutType* origin_buffer, const int origin_count,
+                           const int target_rank,
+                           const unsigned int target_disp,
+                           const int target_count, MPI_Op operation) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Raccumulate(
             origin_buffer, origin_count, type_impl<PutType>::get_type(),
             target_rank, target_disp, target_count,
@@ -1842,7 +1862,7 @@ public:
      * @param origin_count  the number of elements to get
      * @param target_rank  the rank to get the data from
      * @param target_disp  the displacement at the target window
-     * @param target_count  the request handle for the send call
+     * @param target_count  the request<> handle for the send call
      */
     template <typename GetType>
     void get(std::shared_ptr<const Executor> exec, GetType* origin_buffer,
@@ -1869,12 +1889,13 @@ public:
      * @return  the request handle for the send call
      */
     template <typename GetType>
-    request r_get(std::shared_ptr<const Executor> exec, GetType* origin_buffer,
-                  const int origin_count, const int target_rank,
-                  const unsigned int target_disp, const int target_count) const
+    request<> r_get(std::shared_ptr<const Executor> exec,
+                    GetType* origin_buffer, const int origin_count,
+                    const int target_rank, const unsigned int target_disp,
+                    const int target_count) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Rget(
             origin_buffer, origin_count, type_impl<GetType>::get_type(),
             target_rank, target_disp, target_count,
@@ -1926,15 +1947,15 @@ public:
      * @return  the request handle for the send call
      */
     template <typename GetType>
-    request r_get_accumulate(std::shared_ptr<const Executor> exec,
-                             GetType* origin_buffer, const int origin_count,
-                             GetType* result_buffer, const int result_count,
-                             const int target_rank,
-                             const unsigned int target_disp,
-                             const int target_count, MPI_Op operation) const
+    request<> r_get_accumulate(std::shared_ptr<const Executor> exec,
+                               GetType* origin_buffer, const int origin_count,
+                               GetType* result_buffer, const int result_count,
+                               const int target_rank,
+                               const unsigned int target_disp,
+                               const int target_count, MPI_Op operation) const
     {
         auto guard = exec->get_scoped_device_id_guard();
-        request req;
+        request<> req;
         GKO_ASSERT_NO_MPI_ERRORS(MPI_Rget_accumulate(
             origin_buffer, origin_count, type_impl<GetType>::get_type(),
             result_buffer, result_count, type_impl<GetType>::get_type(),

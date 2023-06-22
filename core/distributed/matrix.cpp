@@ -264,7 +264,7 @@ void Matrix<ValueType, LocalIndexType, GlobalIndexType>::read_distributed(
 
 
 template <typename ValueType, typename LocalIndexType, typename GlobalIndexType>
-mpi::request Matrix<ValueType, LocalIndexType, GlobalIndexType>::communicate(
+auto Matrix<ValueType, LocalIndexType, GlobalIndexType>::communicate(
     const local_vector_type* local_b) const
 {
     auto exec = this->get_executor();
