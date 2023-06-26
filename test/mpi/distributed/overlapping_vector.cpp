@@ -313,3 +313,76 @@ TEST_F(VectorCreation, CanMakeConsistentLargeAdditive)
         gko::initialize<local_vector_type>({1210, 1211}, exec)};
     GKO_ASSERT_MTX_NEAR(non_local, ref_non_local[rank], 0);
 }
+
+
+TEST_F(VectorCreation, CanCommunicateInverse)
+{
+    ASSERT_EQ(comm.size(), 6);
+    using index_set = gko::index_set<index_type>;
+    auto rank = comm.rank();
+    auto send_idxs = to_std_array(
+        make_vector(std::make_pair(index_set(exec, gko::span{9, 12}), 1),
+                    std::make_pair(index_set(exec, gko::span{0, 2}), 4)),
+        make_vector(std::make_pair(index_set(exec, gko::span{0, 3}), 0),
+                    std::make_pair(index_set(exec, gko::span{3, 6}), 2),
+                    std::make_pair(index_set(exec, gko::span{8, 10}), 3),
+                    std::make_pair(index_set(exec, gko::span{10, 12}), 5)),
+        make_vector(std::make_pair(index_set(exec, gko::span{2, 4}), 4),
+                    std::make_pair(index_set(exec, gko::span{6, 9}), 1)),
+        make_vector(std::make_pair(index_set(exec, gko::span{7, 9}), 1)),
+        make_vector(std::make_pair(index_set(exec, gko::span{0, 2}), 0),
+                    std::make_pair(index_set(exec, gko::span{1, 3}), 2)),
+        make_vector(std::make_pair(index_set(exec, gko::span{5, 7}), 1)));
+    std::array<gko::array<comm_index_type>, 6> targets_ids = {{
+        {exec, {1, 4}},
+        {exec, {5, 3, 2, 0}},
+        {exec, {1, 4}},
+        {exec, {1}},
+        {exec, {0, 2}},
+        {exec, {1}},
+    }};
+    std::array<gko::array<gko::size_type>, 6> group_sizes = {
+        {{exec, {3, 2}},
+         {exec, {2, 2, 3, 3}},
+         {exec, {3, 2}},
+         {exec, {2}},
+         {exec, {2, 2}},
+         {exec, {2}}}};
+    std::array<int, 6> recv_sizes = {5, 10, 5, 2, 4, 2};
+    auto part = part_type::build_from_grouped_recv1(
+        exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
+    auto sparse_comm = sparse_communication::create(comm, part);
+    auto init_vector =
+        init_local_vector(rank, 12, recv_sizes[rank], (rank + 1) * 1000);
+    auto vec = vector_type::create(exec, sparse_comm,
+                                   gko::make_dense_view(init_vector));
+
+    sparse_comm
+        ->communicate_inverse(
+            vec->as_dense().get(),
+            gko::experimental::distributed::transformation::add)
+        .wait();
+
+    auto local = vec->extract_local();
+    std::array<std::unique_ptr<local_vector_type>, 6> ref_local = {
+        gko::initialize<local_vector_type>(
+            {5100, 5101, 102, 103, 104, 105, 106, 107, 108, 2109, 2110, 2111},
+            exec),
+        gko::initialize<local_vector_type>({1200, 1201, 1202, 3203, 3204, 3205,
+                                            206, 207, 4208, 4209, 6210, 6211},
+                                           exec),
+        gko::initialize<local_vector_type>(
+            {300, 301, 5302, 5303, 304, 305, 2306, 2307, 2308, 309, 310, 311},
+            exec),
+        gko::initialize<local_vector_type>(
+            {400, 401, 402, 403, 404, 405, 406, 2407, 2408, 409, 410, 411},
+            exec),
+        gko::initialize<local_vector_type>(
+            {1500, 4501, 3502, 503, 504, 505, 506, 507, 508, 509, 510, 511},
+            exec),
+        gko::initialize<local_vector_type>(
+            {600, 601, 602, 603, 604, 2605, 2606, 607, 608, 609, 610, 611},
+            exec),
+    };
+    GKO_ASSERT_MTX_NEAR(local, ref_local[rank], 0);
+}
