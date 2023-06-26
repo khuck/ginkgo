@@ -58,7 +58,7 @@ public:
     using index_type = gko::int32;
 
     using part_type = overlapping_partition<index_type>;
-    using vector_type = overlapping_vector<value_type, index_type>;
+    using vector_type = overlapping_vector<value_type>;
     using md_type = gko::matrix_data<value_type, index_type>;
     using local_vector_type = gko::matrix::Dense<value_type>;
 
@@ -95,9 +95,10 @@ TEST_F(VectorCreation, CanCreatePartition)
     gko::array<gko::size_type> group_sizes{exec, {1, 1}};
     auto part = part_type::build_from_grouped_recv1(
         exec, 2, {}, targets_ids, group_sizes);  // no send indices
+    auto sparse_comm = sparse_communication::create(comm, part);
     auto local_vec = init_local_vector(rank, 2, 2, -prev_rank - next_rank);
     auto vec =
-        vector_type::create(exec, comm, part, gko::make_dense_view(local_vec));
+        vector_type::create(exec, sparse_comm, gko::make_dense_view(local_vec));
 
     auto non_local = vec->extract_non_local();
 
@@ -117,12 +118,10 @@ TEST_F(VectorCreation, CanMakeConsistent)
     auto part = part_type::build_from_grouped_recv1(
         exec, 2, {std::make_pair(index_set{exec, {1}}, next_rank)}, targets_ids,
         group_sizes);
-    auto neighbor_comm =
-        gko::experimental::distributed::create_neighborhood_comm(comm,
-                                                                 part.get());
+    auto sparse_comm = sparse_communication::create(comm, part);
     auto local_vec = init_local_vector(rank, 2, 1);
-    auto vec = vector_type::create(exec, neighbor_comm, part,
-                                   gko::make_dense_view(local_vec));
+    auto vec =
+        vector_type::create(exec, sparse_comm, gko::make_dense_view(local_vec));
 
     vec->make_consistent(gko::experimental::distributed::transformation::set)
         .wait();
@@ -184,11 +183,9 @@ TEST_F(VectorCreation, CanMakeConsistentLarge)
     std::array<int, 6> recv_sizes = {5, 10, 5, 2, 4, 2};
     auto part = part_type::build_from_grouped_recv1(
         exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
-    auto neighbor_comm =
-        gko::experimental::distributed::create_neighborhood_comm(comm,
-                                                                 part.get());
+    auto sparse_comm = sparse_communication::create(comm, part);
     auto init_vector = init_local_vector(rank, 12, recv_sizes[rank]);
-    auto vec = vector_type::create(exec, neighbor_comm, part,
+    auto vec = vector_type::create(exec, sparse_comm,
                                    gko::make_dense_view(init_vector));
 
     vec->make_consistent(gko::experimental::distributed::transformation::set)
@@ -238,11 +235,9 @@ TEST_F(VectorCreation, CanMakeConsistentLargeAsymmetric)
     std::array<int, 6> recv_sizes = {2, 7, 3, 0, 2, 0};
     auto part = part_type::build_from_grouped_recv1(
         exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
-    auto neighbor_comm =
-        gko::experimental::distributed::create_neighborhood_comm(comm,
-                                                                 part.get());
+    auto sparse_comm = sparse_communication::create(comm, part);
     auto init_vector = init_local_vector(rank, 12, recv_sizes[rank]);
-    auto vec = vector_type::create(exec, neighbor_comm, part,
+    auto vec = vector_type::create(exec, sparse_comm,
                                    gko::make_dense_view(init_vector));
 
     vec->make_consistent(gko::experimental::distributed::transformation::set)
@@ -297,11 +292,9 @@ TEST_F(VectorCreation, CanMakeConsistentLargeAdditive)
     std::array<int, 6> recv_sizes = {5, 10, 5, 2, 4, 2};
     auto part = part_type::build_from_grouped_recv1(
         exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
-    auto neighbor_comm =
-        gko::experimental::distributed::create_neighborhood_comm(comm,
-                                                                 part.get());
+    auto sparse_comm = sparse_communication::create(comm, part);
     auto init_vector = init_local_vector(rank, 12, recv_sizes[rank], 1000);
-    auto vec = vector_type::create(exec, neighbor_comm, part,
+    auto vec = vector_type::create(exec, sparse_comm,
                                    gko::make_dense_view(init_vector));
 
     vec->make_consistent(gko::experimental::distributed::transformation::add)

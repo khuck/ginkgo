@@ -177,7 +177,7 @@ struct overlapping_partition {
             idxs.idxs);
     }
 
-    size_type get_size()
+    size_type get_size() const
     {
         return std::max(local_idxs_.get_size(),
                         std::max(get_overlap_size(overlap_send_idxs_),
@@ -185,13 +185,46 @@ struct overlapping_partition {
     }
 
     // only recv indices are relevant, since they are written to
-    bool has_grouped_indices()
+    bool has_grouped_indices() const
     {
         return std::holds_alternative<typename overlap_indices::blocked>(
             overlap_recv_idxs_.idxs);
     }
 
-    std::shared_ptr<const Executor> get_executor();
+    std::shared_ptr<const Executor> get_executor() const
+    {
+        return local_idxs_.get_executor();
+    }
+
+    template <typename ValueType>
+    std::unique_ptr<const gko::matrix::Dense<ValueType>> extract_local(
+        std::unique_ptr<gko::matrix::Dense<ValueType>> vector) const
+    {
+        GKO_ASSERT(vector->get_size()[0] == get_size());
+        if (has_grouped_indices()) {
+            return vector->create_submatrix(span{0, local_idxs_.get_size()},
+                                            span{0, vector->get_size()[1]});
+        } else {
+            // not yet done
+            return nullptr;
+        }
+    }
+
+    template <typename ValueType>
+    std::unique_ptr<const gko::matrix::Dense<ValueType>> extract_non_local(
+        std::unique_ptr<gko::matrix::Dense<ValueType>> vector) const
+    {
+        GKO_ASSERT(vector->get_size()[0] == get_size());
+        if (has_grouped_indices()) {
+            return vector->create_submatrix(
+                span{local_idxs_.get_size(),
+                     get_overlap_size(overlap_recv_idxs_)},
+                span{0, vector->get_size()[1]});
+        } else {
+            // not yet done
+            return nullptr;
+        }
+    }
 
     /*
      * Indices are grouped first by local indices and then receiving overlapping
@@ -286,33 +319,96 @@ private:
  * maybe allow for processes owning multiple parts by mapping target_ids to
  * rank?
  */
-template <typename IndexType>
 mpi::communicator create_neighborhood_comm(
-    mpi::communicator base, const overlapping_partition<IndexType>* part)
+    mpi::communicator base, const array<comm_index_type>& sources,
+    const array<comm_index_type>& destinations)
 {
-    auto host_exec = part->get_local_indices().get_executor()->get_master();
+    auto in_degree = static_cast<comm_index_type>(sources.get_num_elems());
+    auto out_degree =
+        static_cast<comm_index_type>(destinations.get_num_elems());
 
-    auto in_degree = part->get_recv_indices().target_ids.get_num_elems();
-    auto out_degree = part->get_send_indices().target_ids.get_num_elems();
-
-    array<comm_index_type> sources{host_exec,
-                                   part->get_recv_indices().target_ids};
-    array<comm_index_type> destinations{host_exec,
-                                        part->get_send_indices().target_ids};
+    auto sources_host =
+        make_temporary_clone(sources.get_executor()->get_master(), &sources);
+    auto destinations_host = make_temporary_clone(
+        destinations.get_executor()->get_master(), &destinations);
 
     // adjacent constructor guarantees that querying sources/destinations
     // will result in the array having the same order as defined here
     MPI_Comm new_comm;
-    MPI_Dist_graph_create_adjacent(base.get(), in_degree, sources.get_data(),
-                                   MPI_UNWEIGHTED, out_degree,
-                                   destinations.get_data(), MPI_UNWEIGHTED,
-                                   MPI_INFO_NULL, false, &new_comm);
+    MPI_Dist_graph_create_adjacent(
+        base.get(), in_degree, sources_host->get_const_data(), MPI_UNWEIGHTED,
+        out_degree, destinations_host->get_const_data(), MPI_UNWEIGHTED,
+        MPI_INFO_NULL, false, &new_comm);
     mpi::communicator neighbor_comm{new_comm};  // need to make this owning
-
 
     return neighbor_comm;
 }
+template <typename IndexType>
+mpi::communicator create_neighborhood_comm(
+    mpi::communicator base, const overlapping_partition<IndexType>* part)
+{
+    return create_neighborhood_comm(base, part->get_recv_indices().target_ids,
+                                    part->get_send_indices().target_ids);
+}
 
+template <typename ValueType>
+struct interleaved_deleter {
+    using vector_type = gko::matrix::Dense<ValueType>;
+
+    void operator()(vector_type* ptr)
+    {
+        if (mode == transformation::set) {
+            // normal scatter
+        }
+        if (mode == transformation::add) {
+            // scatter with add
+        }
+        delete ptr;
+    }
+
+    interleaved_deleter(std::unique_ptr<vector_type>&& original,
+                        transformation mode)
+        : original(std::move(original)), mode(mode)
+    {}
+
+    interleaved_deleter(const interleaved_deleter& other)
+        : original(make_dense_view(other.original)), mode(other.mode)
+    {}
+
+    std::unique_ptr<vector_type> original;
+    transformation mode;
+};
+
+template <typename ValueType>
+struct blocked_deleter {
+    using vector_type = gko::matrix::Dense<ValueType>;
+
+    void operator()(vector_type* ptr)
+    {
+        if (mode == transformation::set) {
+            // do nothing
+        }
+        if (mode == transformation::add) {
+            // need to put the 1.0 into outside storage for reuse
+            original->add_scaled(
+                gko::initialize<vector_type>({1.0}, original->get_executor()),
+                ptr);
+        }
+        delete ptr;
+    }
+
+    blocked_deleter(std::unique_ptr<vector_type>&& original,
+                    transformation mode)
+        : original(std::move(original)), mode(mode)
+    {}
+
+    blocked_deleter(const blocked_deleter& other)
+        : original(make_dense_view(other.original)), mode(other.mode)
+    {}
+
+    std::unique_ptr<vector_type> original;
+    transformation mode;
+};
 
 /**
  * perhaps fix index type to int32?
@@ -323,115 +419,23 @@ struct sparse_communication {
      * throw if index set size is larger than int32
      * should comm be a neighborhood comm, or should we make it into one?
      */
-    template <typename IndexType>
     sparse_communication(
         mpi::communicator comm,
-        std::shared_ptr<const overlapping_partition<IndexType>> part);
-
-    /**
-     * thread safety: only one thread can execute this concurrently
-     */
-    template <typename ValueType>
-    void communicate(matrix::Dense<ValueType>* local_vector) const;
-
-    std::shared_ptr<const overlapping_partition<int32>> part_;
-
-    std::vector<comm_index_type> send_sizes_;
-    std::vector<comm_index_type> send_offsets_;
-    std::vector<comm_index_type> recv_sizes_;
-    std::vector<comm_index_type> recv_offsets_;
-
-    // need mutex for these
-    gko::array<char> recv_buffer_;
-    gko::array<char> send_buffer_;
-    //    detail::DenseCache<ValueType> recv_cache_;
-    //    detail::DenseCache<ValueType> send_cache_;
-};
-
-
-template <typename ValueType, typename IndexType = int32>
-struct overlapping_vector
-    : public EnableDistributedLinOp<overlapping_vector<ValueType, IndexType>>,
-      public DistributedBase,
-      public gko::EnableCreateMethod<overlapping_vector<ValueType, IndexType>> {
-    using value_type = ValueType;
-    using index_type = IndexType;
-    using local_vector_type = matrix::Dense<value_type>;
-    using partition_type = overlapping_partition<index_type>;
-
-    struct interleaved_deleter {
-        void operator()(local_vector_type* ptr)
-        {
-            if (mode == transformation::set) {
-                // normal scatter
-            }
-            if (mode == transformation::add) {
-                // scatter with add
-            }
-            delete ptr;
-        }
-
-        interleaved_deleter(std::unique_ptr<local_vector_type>&& original,
-                            transformation mode)
-            : original(std::move(original)), mode(mode)
-        {}
-
-        interleaved_deleter(const interleaved_deleter& other)
-            : original(make_dense_view(other.original)), mode(other.mode)
-        {}
-
-        std::unique_ptr<local_vector_type> original;
-        transformation mode;
-    };
-
-    struct blocked_deleter {
-        void operator()(local_vector_type* ptr)
-        {
-            if (mode == transformation::set) {
-                // do nothing
-            }
-            if (mode == transformation::add) {
-                original->add_scaled(gko::initialize<local_vector_type>(
-                                         {1.0}, original->get_executor()),
-                                     ptr);
-            }
-            delete ptr;
-        }
-
-        blocked_deleter(std::unique_ptr<local_vector_type>&& original,
-                        transformation mode)
-            : original(std::move(original)), mode(mode)
-        {}
-
-        blocked_deleter(const blocked_deleter& other)
-            : original(make_dense_view(other.original)), mode(other.mode)
-        {}
-
-        std::unique_ptr<local_vector_type> original;
-        transformation mode;
-    };
-
-
-    size_type get_stride() const { return stride_; }
-
-    size_type get_num_stored_elems() const { return buffer_.get_num_elems(); }
-
-    auto make_consistent(transformation mode)
+        std::shared_ptr<const overlapping_partition<int32>> part)
+        : default_comm_(create_neighborhood_comm(
+              comm, part->get_recv_indices().target_ids,
+              part->get_send_indices().target_ids)),
+          inverse_comm_(create_neighborhood_comm(
+              comm, part->get_send_indices().target_ids,
+              part->get_recv_indices().target_ids)),
+          part_(std::move(part)),
+          send_sizes_(comm.size()),
+          send_offsets_(comm.size() + 1),
+          recv_sizes_(comm.size()),
+          recv_offsets_(comm.size() + 1)
     {
-        auto recv_idxs = part_->get_recv_indices();
-        auto send_idxs = part_->get_send_indices();
-
-        auto idxs_ =
-            std::get<typename partition_type::overlap_indices::blocked>(
-                recv_idxs.idxs);
-
-        std::vector<int> send_sizes(send_idxs.target_ids.get_num_elems() +
-                                    1);  // first value is ignored
-        std::vector<int> send_offsets(send_sizes.size());
-        std::vector<int> recv_sizes(recv_idxs.target_ids.get_num_elems() + 1);
-        std::vector<int> recv_offsets(recv_sizes.size());
-
-        auto exec = this->get_executor();  // should be exec of part_
+        using partition_type = overlapping_partition<int32>;
+        auto exec = part_->get_executor();  // should be exec of part_
         auto host_exec = exec->get_master();
         auto fill_size_offsets = [&](std::vector<int>& sizes,
                                      std::vector<int>& offsets,
@@ -441,28 +445,64 @@ struct overlapping_vector
                     [&](const typename partition_type::overlap_indices::blocked&
                             idxs) {
                         for (int i = 0; i < idxs.intervals.size(); ++i) {
-                            sizes[i + 1] = idxs.intervals[i].length();
+                            sizes[i] = idxs.intervals[i].length();
                         }
                         std::partial_sum(sizes.begin(), sizes.end(),
-                                         offsets.begin());
+                                         offsets.begin() + 1);
                     },
                     [&](const typename partition_type::overlap_indices::
                             interleaved& idxs) {
                         for (int i = 0; i < idxs.sets.size(); ++i) {
-                            sizes[i + 1] = idxs.sets[i].get_num_local_indices();
+                            sizes[i] = idxs.sets[i].get_num_local_indices();
                         }
                         std::partial_sum(sizes.begin(), sizes.end(),
-                                         offsets.begin());
+                                         offsets.begin() + 1);
                     }},
                 overlap.idxs);
         };
-        fill_size_offsets(send_sizes, send_offsets, send_idxs);
-        fill_size_offsets(recv_sizes, recv_offsets, recv_idxs);
+        fill_size_offsets(recv_sizes_, recv_offsets_,
+                          part_->get_recv_indices());
+        fill_size_offsets(send_sizes_, send_offsets_,
+                          part_->get_send_indices());
+    }
+
+    static std::shared_ptr<sparse_communication> create(
+        mpi::communicator comm,
+        std::shared_ptr<const overlapping_partition<int32>> part)
+    {
+        return std::shared_ptr<sparse_communication>{
+            new sparse_communication(std::move(comm), std::move(part))};
+    }
+
+    using partition_type = overlapping_partition<int32>;
+
+    /**
+     * thread safety: only one thread can execute this concurrently
+     */
+    template <typename ValueType>
+    auto communicate(matrix::Dense<ValueType>* local_vector,
+                     transformation mode) const
+    {
+        GKO_ASSERT(this->part_->get_size() == local_vector->get_size()[0]);
+
+        using vector_type = matrix::Dense<ValueType>;
+        auto recv_idxs = part_->get_recv_indices();
+        auto send_idxs = part_->get_send_indices();
+
+        auto exec = local_vector->get_executor();
+
+        auto get_overlap_block =
+            [&](const typename partition_type::overlap_indices& idxs) {
+                return local_vector->create_submatrix(
+                    {static_cast<size_type>(
+                         this->part_->get_local_indices().get_size()),
+                     static_cast<size_type>(part_->get_overlap_size(idxs))},
+                    {0, local_vector->get_size()[1]});
+            };
 
         // automatically copies back/adds if necessary
         using recv_handle_t =
-            std::unique_ptr<local_vector_type,
-                            std::function<void(local_vector_type*)>>;
+            std::unique_ptr<vector_type, std::function<void(vector_type*)>>;
         auto recv_handle = [&] {
             if (mode == transformation::set &&
                 std::holds_alternative<
@@ -473,20 +513,20 @@ struct overlapping_vector
                     blocked_deleter{get_overlap_block(recv_idxs), mode}};
             }
 
-            recv_cache_.init(this->get_executor(),
-                             {this->part_->get_overlap_num_elems(recv_idxs),
-                              this->get_size()[1]});
+            recv_buffer_.init<ValueType>(
+                exec, {this->part_->get_overlap_num_elems(recv_idxs),
+                       local_vector->get_size()[1]});
 
             if (std::holds_alternative<
                     typename partition_type::overlap_indices::blocked>(
                     recv_idxs.idxs)) {
                 return recv_handle_t{
-                    make_dense_view(recv_cache_.get()).release(),
+                    make_dense_view(recv_buffer_.get<ValueType>()).release(),
                     blocked_deleter{get_overlap_block(recv_idxs), mode}};
             } else {
                 return recv_handle_t{
-                    make_dense_view(recv_cache_.get()).release(),
-                    interleaved_deleter{as_local_vector(), mode}};
+                    make_dense_view(recv_buffer_.get<ValueType>()).release(),
+                    interleaved_deleter{make_dense_view(local_vector), mode}};
             }
         }();
         auto send_handle = [&] {
@@ -495,9 +535,9 @@ struct overlapping_vector
                     send_idxs.idxs)) {
                 return get_overlap_block(send_idxs);
             } else {
-                send_cache_.init(this->get_executor(),
-                                 {this->part_->get_overlap_num_elems(send_idxs),
-                                  this->get_size()[1]});
+                send_buffer_.init<ValueType>(
+                    exec, {this->part_->get_overlap_num_elems(send_idxs),
+                           local_vector->get_size()[1]});
 
                 size_type offset = 0;
                 auto idxs = std::get<
@@ -506,15 +546,15 @@ struct overlapping_vector
                 for (int i = 0; i < idxs.sets.size(); ++i) {
                     // need direct support for index_set
                     auto full_idxs = idxs.sets[i].to_global_indices();
-                    as_local_vector()->row_gather(
+                    local_vector->row_gather(
                         &full_idxs,
-                        send_cache_->create_submatrix(
+                        send_buffer_.get<ValueType>()->create_submatrix(
                             {offset, offset + full_idxs.get_num_elems()},
-                            {0, this->get_size()[1]}));
+                            {0, local_vector->get_size()[1]}));
                     offset += full_idxs.get_num_elems();
                 }
 
-                return make_dense_view(send_cache_.get());
+                return make_dense_view(send_buffer_.get<ValueType>());
             }
         }();
         auto recv_ptr = recv_handle->get_values();
@@ -523,11 +563,59 @@ struct overlapping_vector
         // request deletes recv_handle on successful wait
         mpi::request req(
             [h = std::move(recv_handle)](MPI_Request) mutable { h.reset(); });
-        MPI_Ineighbor_alltoallv(
-            send_ptr, send_sizes.data() + 1, send_offsets.data(), MPI_DOUBLE,
-            recv_ptr, recv_sizes.data() + 1, recv_offsets.data(), MPI_DOUBLE,
-            this->get_communicator().get(), req.get());
+        MPI_Ineighbor_alltoallv(send_ptr, send_sizes_.data(),
+                                send_offsets_.data(), MPI_DOUBLE, recv_ptr,
+                                recv_sizes_.data(), recv_offsets_.data(),
+                                MPI_DOUBLE, default_comm_.get(), req.get());
         return req;
+    }
+
+    /**
+     * inverts the roles of sender/receiver compared to communicate
+     */
+    template <typename ValueType>
+    mpi::request<> communicate_inverse(matrix::Dense<ValueType>* local_vector,
+                                       transformation mode) const
+    {}
+
+    mpi::communicator default_comm_;
+    mpi::communicator inverse_comm_;
+
+    std::shared_ptr<const overlapping_partition<int32>> part_;
+
+    std::vector<comm_index_type> send_sizes_;
+    std::vector<comm_index_type> send_offsets_;
+    std::vector<comm_index_type> recv_sizes_;
+    std::vector<comm_index_type> recv_offsets_;
+
+    // need mutex for these, can only be released by mpi request
+    gko::detail::DenseCache2 recv_buffer_;
+    gko::detail::DenseCache2 send_buffer_;
+};
+
+
+enum class partition_of_unity {
+    unique,  // alternative: restricted, shared indices are owned by exactly one
+             // process
+    shared,  // alternative: additive, shared indices are mutually owned by all
+             // involved processes
+};
+
+
+template <typename ValueType>
+struct overlapping_vector
+    : public EnableLinOp<overlapping_vector<ValueType>>,
+      public gko::EnableCreateMethod<overlapping_vector<ValueType>> {
+    using value_type = ValueType;
+    using local_vector_type = matrix::Dense<value_type>;
+
+    size_type get_stride() const { return stride_; }
+
+    size_type get_num_stored_elems() const { return buffer_.get_num_elems(); }
+
+    auto make_consistent(transformation mode)
+    {
+        return sparse_comm_->communicate(as_dense().get(), mode);
     }
 
     template <typename F, typename = std::enable_if_t<
@@ -537,38 +625,14 @@ struct overlapping_vector
     /**
      * could add non-const versions with custom deleter to write back changes
      */
-    std::unique_ptr<const local_vector_type> extract_local() const
+    std::unique_ptr<const local_vector_type> extract_local()
     {
-        auto local_size =
-            dim<2>{part_->get_local_indices().get_size(), this->get_size()[1]};
-        if (part_->has_grouped_indices()) {
-            auto exec = this->get_executor();
-            return local_vector_type::create_const(
-                exec, local_size, buffer_.as_const_view(), this->get_stride());
-        } else {
-            // extract / weight vector
-        }
+        return sparse_comm_->part_->extract_local(as_dense());
     }
 
-    std::unique_ptr<const local_vector_type> extract_non_local() const
+    std::unique_ptr<const local_vector_type> extract_non_local()
     {
-        if (part_->has_grouped_indices()) {
-            return get_overlap_block(part_->get_recv_indices());
-        } else {
-            // extract / weight vector
-        }
-    }
-
-    std::unique_ptr<local_vector_type, std::function<void(local_vector_type*)>>
-    extract_writable_non_local()
-    {
-        if (part_->has_grouped_indices()) {
-            return {get_overlap_block(part_->get_recv_indices()).release(),
-                    blocked_deleter{nullptr, transformation::set}};
-        } else {
-            // extract / weight vector
-            // use interleaved deleter
-        }
+        return sparse_comm_->part_->extract_non_local(as_dense());
     }
 
     void apply_impl(const LinOp* b, LinOp* x) const override {}
@@ -576,69 +640,36 @@ struct overlapping_vector
                     LinOp* x) const override
     {}
 
-    overlapping_vector(
-        std::shared_ptr<const Executor> exec, mpi::communicator comm,
-        std::shared_ptr<overlapping_partition<index_type>> part = {},
-        std::unique_ptr<local_vector_type> local_vector = {})
-        : EnableDistributedLinOp<overlapping_vector<ValueType, IndexType>>(
-              exec, {part->get_size(), 1}),
-          DistributedBase(std::move(comm)),
-          part_(std::move(part)),
+    overlapping_vector(std::shared_ptr<const Executor> exec,
+                       std::shared_ptr<sparse_communication> sparse_comm = {},
+                       std::unique_ptr<local_vector_type> local_vector = {})
+        : EnableLinOp<overlapping_vector<ValueType>>(
+              exec, {sparse_comm->part_->get_size(), 1}),
+          sparse_comm_(std::move(sparse_comm)),
           buffer_(exec, make_array_view(local_vector->get_executor(),
                                         local_vector->get_num_stored_elements(),
                                         local_vector->get_values())),
           stride_(local_vector->get_stride())
     {}
 
-    std::unique_ptr<local_vector_type> as_local_vector()
-    {
-        return local_vector_type::create(this->get_executor(), this->get_size(),
-                                         buffer_.as_view(), this->get_stride());
-    }
-
-    std::unique_ptr<const local_vector_type> as_local_vector() const
+    std::unique_ptr<const local_vector_type> as_dense() const
     {
         return local_vector_type::create_const(
             this->get_executor(), this->get_size(), buffer_.as_const_view(),
             this->get_stride());
     }
 
-    std::unique_ptr<local_vector_type> get_overlap_block(
-        const typename partition_type::overlap_indices& idxs)
+    std::unique_ptr<local_vector_type> as_dense()
     {
-        const auto& block_idxs =
-            std::get<typename partition_type::overlap_indices::blocked>(
-                idxs.idxs);
-        return as_local_vector()->create_submatrix(
-            {static_cast<size_type>(
-                 this->part_->get_local_indices().get_size()),
-             static_cast<size_type>(part_->get_overlap_size(idxs))},
-            {0, this->get_size()[1]});
+        return local_vector_type::create(this->get_executor(), this->get_size(),
+                                         buffer_.as_view(), this->get_stride());
     }
 
-    std::unique_ptr<const local_vector_type> get_overlap_block(
-        const typename partition_type::overlap_indices& idxs) const
-    {
-        const auto& block_idxs =
-            std::get<typename partition_type::overlap_indices::blocked>(
-                idxs.idxs);
-        return const_cast<local_vector_type*>(as_local_vector().get())
-            ->create_submatrix(
-                {static_cast<size_type>(
-                     this->part_->get_local_indices().get_size()),
-                 static_cast<size_type>(part_->get_overlap_size(idxs))},
-                {0, this->get_size()[1]});
-    }
-
-
-    std::shared_ptr<overlapping_partition<index_type>> part_;
+    std::shared_ptr<sparse_communication> sparse_comm_;
     // contains local+nonlocal values
     // might switch to dense directly
     array<double> buffer_;
     size_type stride_;
-
-    detail::DenseCache<ValueType> recv_cache_;
-    detail::DenseCache<ValueType> send_cache_;
 };
 
 
