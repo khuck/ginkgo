@@ -362,20 +362,40 @@ struct interleaved_deleter {
         }
         if (mode == transformation::add) {
             // scatter with add
+            auto host_exec = ptr->get_executor()->get_master();
+            auto host_ptr = make_temporary_clone(host_exec, ptr);
+            auto offset = 0;
+            for (auto cur_idxs : idxs.sets) {
+                auto full_idxs = cur_idxs.to_global_indices();
+                full_idxs.set_executor(host_exec);
+                for (int i = 0; i < full_idxs.get_num_elems(); ++i) {
+                    auto row = full_idxs.get_const_data()[i];
+                    for (int col = 0; col < ptr->get_size()[1]; ++col) {
+                        original->at(row, col) += host_ptr->at(i + offset, col);
+                    }
+                }
+                offset += cur_idxs.get_num_local_indices();
+            }
         }
         delete ptr;
     }
 
-    interleaved_deleter(std::unique_ptr<vector_type>&& original,
-                        transformation mode)
-        : original(std::move(original)), mode(mode)
+    interleaved_deleter(
+        std::unique_ptr<vector_type>&& original,
+        overlapping_partition<int32>::overlap_indices::interleaved idxs,
+        transformation mode)
+        : original(std::move(original)), idxs(std::move(idxs)), mode(mode)
     {}
 
     interleaved_deleter(const interleaved_deleter& other)
-        : original(make_dense_view(other.original)), mode(other.mode)
+        : original(make_dense_view(other.original)),
+          idxs(other.idxs),
+          mode(other.mode)
     {}
 
     std::unique_ptr<vector_type> original;
+    overlapping_partition<int32>::overlap_indices::interleaved
+        idxs;  // figure out something lighter
     transformation mode;
 };
 
@@ -526,7 +546,11 @@ struct sparse_communication {
             } else {
                 return recv_handle_t{
                     make_dense_view(recv_buffer_.get<ValueType>()).release(),
-                    interleaved_deleter{make_dense_view(local_vector), mode}};
+                    interleaved_deleter{
+                        make_dense_view(local_vector),
+                        std::get<partition_type ::overlap_indices::interleaved>(
+                            recv_idxs.idxs),
+                        mode}};
             }
         }();
         auto send_handle = [&] {
@@ -574,9 +598,99 @@ struct sparse_communication {
      * inverts the roles of sender/receiver compared to communicate
      */
     template <typename ValueType>
-    mpi::request<> communicate_inverse(matrix::Dense<ValueType>* local_vector,
-                                       transformation mode) const
-    {}
+    auto communicate_inverse(matrix::Dense<ValueType>* local_vector,
+                             transformation mode) const
+    {
+        GKO_ASSERT(this->part_->get_size() == local_vector->get_size()[0]);
+
+        using vector_type = matrix::Dense<ValueType>;
+        auto recv_idxs = part_->get_send_indices();
+        auto send_idxs = part_->get_recv_indices();
+
+        auto exec = local_vector->get_executor();
+
+        auto get_overlap_block =
+            [&](const typename partition_type::overlap_indices& idxs) {
+                return local_vector->create_submatrix(
+                    {static_cast<size_type>(
+                         this->part_->get_local_indices().get_size()),
+                     static_cast<size_type>(part_->get_overlap_size(idxs))},
+                    {0, local_vector->get_size()[1]});
+            };
+
+        // automatically copies back/adds if necessary
+        using recv_handle_t =
+            std::unique_ptr<vector_type, std::function<void(vector_type*)>>;
+        auto recv_handle = [&] {
+            if (mode == transformation::set &&
+                std::holds_alternative<
+                    typename partition_type::overlap_indices::blocked>(
+                    recv_idxs.idxs)) {
+                return recv_handle_t{
+                    get_overlap_block(recv_idxs).release(),
+                    blocked_deleter{get_overlap_block(recv_idxs), mode}};
+            }
+
+            recv_buffer_.init<ValueType>(
+                exec, {this->part_->get_overlap_num_elems(recv_idxs),
+                       local_vector->get_size()[1]});
+
+            if (std::holds_alternative<
+                    typename partition_type::overlap_indices::blocked>(
+                    recv_idxs.idxs)) {
+                return recv_handle_t{
+                    make_dense_view(recv_buffer_.get<ValueType>()).release(),
+                    blocked_deleter{get_overlap_block(recv_idxs), mode}};
+            } else {
+                return recv_handle_t{
+                    make_dense_view(recv_buffer_.get<ValueType>()).release(),
+                    interleaved_deleter{
+                        make_dense_view(local_vector),
+                        std::get<partition_type ::overlap_indices::interleaved>(
+                            recv_idxs.idxs),
+                        mode}};
+            }
+        }();
+        auto send_handle = [&] {
+            if (std::holds_alternative<
+                    typename partition_type::overlap_indices::blocked>(
+                    send_idxs.idxs)) {
+                return get_overlap_block(send_idxs);
+            } else {
+                send_buffer_.init<ValueType>(
+                    exec, {this->part_->get_overlap_num_elems(send_idxs),
+                           local_vector->get_size()[1]});
+
+                size_type offset = 0;
+                auto idxs = std::get<
+                    typename partition_type::overlap_indices::interleaved>(
+                    send_idxs.idxs);
+                for (int i = 0; i < idxs.sets.size(); ++i) {
+                    // need direct support for index_set
+                    auto full_idxs = idxs.sets[i].to_global_indices();
+                    local_vector->row_gather(
+                        &full_idxs,
+                        send_buffer_.get<ValueType>()->create_submatrix(
+                            {offset, offset + full_idxs.get_num_elems()},
+                            {0, local_vector->get_size()[1]}));
+                    offset += full_idxs.get_num_elems();
+                }
+
+                return make_dense_view(send_buffer_.get<ValueType>());
+            }
+        }();
+        auto recv_ptr = recv_handle->get_values();
+        auto send_ptr = send_handle->get_values();
+
+        // request deletes recv_handle on successful wait
+        mpi::request req(
+            [h = std::move(recv_handle)](MPI_Request) mutable { h.reset(); });
+        MPI_Ineighbor_alltoallv(send_ptr, recv_sizes_.data(),
+                                recv_offsets_.data(), MPI_DOUBLE, recv_ptr,
+                                send_sizes_.data(), send_offsets_.data(),
+                                MPI_DOUBLE, inverse_comm_.get(), req.get());
+        return req;
+    }
 
     mpi::communicator default_comm_;
     mpi::communicator inverse_comm_;
