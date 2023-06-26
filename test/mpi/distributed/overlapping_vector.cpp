@@ -93,7 +93,7 @@ TEST_F(VectorCreation, CanCreatePartition)
     auto next_rank = (rank + 1) % comm.size();
     gko::array<comm_index_type> targets_ids{exec, {prev_rank, next_rank}};
     gko::array<gko::size_type> group_sizes{exec, {1, 1}};
-    auto part = part_type::build_from_grouped_recv1(
+    auto part = part_type::build_from_blocked_recv(
         exec, 2, {}, targets_ids, group_sizes);  // no send indices
     auto sparse_comm = sparse_communication::create(comm, part);
     auto local_vec = init_local_vector(rank, 2, 2, -prev_rank - next_rank);
@@ -115,7 +115,7 @@ TEST_F(VectorCreation, CanMakeConsistent)
     auto next_rank = (rank + 1) % comm.size();
     gko::array<comm_index_type> targets_ids{exec, {prev_rank}};
     gko::array<gko::size_type> group_sizes{exec, {1}};
-    auto part = part_type::build_from_grouped_recv1(
+    auto part = part_type::build_from_blocked_recv(
         exec, 2, {std::make_pair(index_set{exec, {1}}, next_rank)}, targets_ids,
         group_sizes);
     auto sparse_comm = sparse_communication::create(comm, part);
@@ -181,7 +181,7 @@ TEST_F(VectorCreation, CanMakeConsistentLarge)
          {exec, {2, 2}},
          {exec, {2}}}};
     std::array<int, 6> recv_sizes = {5, 10, 5, 2, 4, 2};
-    auto part = part_type::build_from_grouped_recv1(
+    auto part = part_type::build_from_blocked_recv(
         exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
     auto sparse_comm = sparse_communication::create(comm, part);
     auto init_vector = init_local_vector(rank, 12, recv_sizes[rank]);
@@ -233,7 +233,7 @@ TEST_F(VectorCreation, CanMakeConsistentLargeAsymmetric)
          {exec, {2}},
          gko::array<gko::size_type>{exec}}};
     std::array<int, 6> recv_sizes = {2, 7, 3, 0, 2, 0};
-    auto part = part_type::build_from_grouped_recv1(
+    auto part = part_type::build_from_blocked_recv(
         exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
     auto sparse_comm = sparse_communication::create(comm, part);
     auto init_vector = init_local_vector(rank, 12, recv_sizes[rank]);
@@ -290,7 +290,7 @@ TEST_F(VectorCreation, CanMakeConsistentLargeAdditive)
          {exec, {2, 2}},
          {exec, {2}}}};
     std::array<int, 6> recv_sizes = {5, 10, 5, 2, 4, 2};
-    auto part = part_type::build_from_grouped_recv1(
+    auto part = part_type::build_from_blocked_recv(
         exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
     auto sparse_comm = sparse_communication::create(comm, part);
     auto init_vector = init_local_vector(rank, 12, recv_sizes[rank], 1000);
@@ -349,7 +349,7 @@ TEST_F(VectorCreation, CanCommunicateInverse)
          {exec, {2, 2}},
          {exec, {2}}}};
     std::array<int, 6> recv_sizes = {5, 10, 5, 2, 4, 2};
-    auto part = part_type::build_from_grouped_recv1(
+    auto part = part_type::build_from_blocked_recv(
         exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
     auto sparse_comm = sparse_communication::create(comm, part);
     auto init_vector =
