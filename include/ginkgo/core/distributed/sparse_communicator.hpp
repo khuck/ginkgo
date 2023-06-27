@@ -245,8 +245,9 @@ public:
      *         request.wait() has finished
      */
     template <typename ValueType>
-    auto communicate(std::shared_ptr<matrix::Dense<ValueType>> local_vector,
-                     transformation mode) const
+    mpi::request communicate(
+        std::shared_ptr<matrix::Dense<ValueType>> local_vector,
+        transformation mode) const
     {
         return communicate_impl_(default_comm_.get(), part_->get_send_indices(),
                                  send_sizes_, send_offsets_,
@@ -264,7 +265,7 @@ public:
      * @copydoc communicate
      */
     template <typename ValueType>
-    auto communicate_inverse(
+    mpi::request communicate_inverse(
         std::shared_ptr<matrix::Dense<ValueType>> local_vector,
         transformation mode) const
     {
@@ -330,7 +331,7 @@ private:
     }
 
     template <typename ValueType>
-    auto communicate_impl_(
+    mpi::request communicate_impl_(
         MPI_Comm comm, const overlap_idxs_type& send_idxs,
         const std::vector<comm_index_type>& send_sizes,
         const std::vector<comm_index_type>& send_offsets,
@@ -434,7 +435,7 @@ private:
         // request deletes recv_handle on successful wait (or at destructor),
         // while keeping this alive
         mpi::request req([h = std::move(recv_handle), g = std::move(guard),
-                          sp = shared_from_this()](MPI_Request) mutable {
+                          sp = shared_from_this()](mpi::request*) mutable {
             h.reset();
             g.release();
             sp.reset();
