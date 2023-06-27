@@ -95,7 +95,7 @@ TEST_F(VectorCreation, CanCreatePartition)
     gko::array<gko::size_type> group_sizes{exec, {1, 1}};
     auto part = part_type::build_from_blocked_recv(
         exec, 2, {}, targets_ids, group_sizes);  // no send indices
-    auto sparse_comm = sparse_communication::create(comm, part);
+    auto sparse_comm = sparse_communicator::create(comm, part);
     auto local_vec = init_local_vector(rank, 2, 2, -prev_rank - next_rank);
     auto vec =
         vector_type::create(exec, sparse_comm, gko::make_dense_view(local_vec));
@@ -118,7 +118,7 @@ TEST_F(VectorCreation, CanMakeConsistent)
     auto part = part_type::build_from_blocked_recv(
         exec, 2, {std::make_pair(index_set{exec, {1}}, next_rank)}, targets_ids,
         group_sizes);
-    auto sparse_comm = sparse_communication::create(comm, part);
+    auto sparse_comm = sparse_communicator::create(comm, part);
     auto local_vec = init_local_vector(rank, 2, 1);
     auto vec =
         vector_type::create(exec, sparse_comm, gko::make_dense_view(local_vec));
@@ -183,7 +183,7 @@ TEST_F(VectorCreation, CanMakeConsistentLarge)
     std::array<int, 6> recv_sizes = {5, 10, 5, 2, 4, 2};
     auto part = part_type::build_from_blocked_recv(
         exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
-    auto sparse_comm = sparse_communication::create(comm, part);
+    auto sparse_comm = sparse_communicator::create(comm, part);
     auto init_vector = init_local_vector(rank, 12, recv_sizes[rank]);
     auto vec = vector_type::create(exec, sparse_comm,
                                    gko::make_dense_view(init_vector));
@@ -235,7 +235,7 @@ TEST_F(VectorCreation, CanMakeConsistentLargeAsymmetric)
     std::array<int, 6> recv_sizes = {2, 7, 3, 0, 2, 0};
     auto part = part_type::build_from_blocked_recv(
         exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
-    auto sparse_comm = sparse_communication::create(comm, part);
+    auto sparse_comm = sparse_communicator::create(comm, part);
     auto init_vector = init_local_vector(rank, 12, recv_sizes[rank]);
     auto vec = vector_type::create(exec, sparse_comm,
                                    gko::make_dense_view(init_vector));
@@ -292,7 +292,7 @@ TEST_F(VectorCreation, CanMakeConsistentLargeAdditive)
     std::array<int, 6> recv_sizes = {5, 10, 5, 2, 4, 2};
     auto part = part_type::build_from_blocked_recv(
         exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
-    auto sparse_comm = sparse_communication::create(comm, part);
+    auto sparse_comm = sparse_communicator::create(comm, part);
     auto init_vector = init_local_vector(rank, 12, recv_sizes[rank], 1000);
     auto vec = vector_type::create(exec, sparse_comm,
                                    gko::make_dense_view(init_vector));
@@ -351,7 +351,7 @@ TEST_F(VectorCreation, CanCommunicateInverse)
     std::array<int, 6> recv_sizes = {5, 10, 5, 2, 4, 2};
     auto part = part_type::build_from_blocked_recv(
         exec, 12, send_idxs[rank], targets_ids[rank], group_sizes[rank]);
-    auto sparse_comm = sparse_communication::create(comm, part);
+    auto sparse_comm = sparse_communicator::create(comm, part);
     auto init_vector =
         init_local_vector(rank, 12, recv_sizes[rank], (rank + 1) * 1000);
     auto vec = vector_type::create(exec, sparse_comm,
@@ -359,7 +359,7 @@ TEST_F(VectorCreation, CanCommunicateInverse)
 
     sparse_comm
         ->communicate_inverse(
-            vec->as_dense().get(),
+            vec->as_dense(),
             gko::experimental::distributed::transformation::add)
         .wait();
 
