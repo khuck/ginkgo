@@ -1,7 +1,7 @@
 .before_script_template:
   before_script:
-    - export NUM_CORES=${CI_PARALLELISM}
-    - export OMP_NUM_THREADS=${NUM_CORES}
+    - export NUM_CORES=${CI_BUILD_PARALLELISM}
+    - export OMP_NUM_THREADS=${CI_TEST_PARALLELISM}
     - export CCACHE_DIR=${CCACHE_DIR}
     - export CCACHE_MAXSIZE=${CCACHE_MAXSIZE}
 
@@ -75,7 +75,9 @@
     - if [[ "${BUILD_MPI}" == "ON" ]]; then
       MPI_STR=-DGINKGO_MPI_EXEC_SUFFIX=${MPI_SUFFIX};
       fi
+    - mkdir ${CI_PROJECT_DIR}${CI_PROJECT_DIR_SUFFIX}/install
     - cmake ${CI_PROJECT_DIR}${CI_PROJECT_DIR_SUFFIX}
+        -DCMAKE_INSTALL_PREFIX=${CI_PROJECT_DIR}${CI_PROJECT_DIR_SUFFIX}/install
         -GNinja
         -DCMAKE_C_COMPILER=${C_COMPILER} -DCMAKE_CXX_COMPILER=${CXX_COMPILER}
         -DCMAKE_CUDA_COMPILER=${CUDA_COMPILER} -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
@@ -125,7 +127,7 @@
     - if [ -n "${SYCL_DEVICE_TYPE}" ]; then unset SYCL_DEVICE_TYPE; fi
     - if [ -n "${SYCL_DEVICE_FILTER}" ]; then unset SYCL_DEVICE_FILTER; fi
     - if [ "${EXPORT_BUILD_DIR}" == "ON" ]; then ninja test_exportbuild; fi
-    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH ninja test_pkgconfig
+    - PKG_CONFIG_PATH=${CI_PROJECT_DIR}${CI_PROJECT_DIR_SUFFIX}/install/lib/pkgconfig:$PKG_CONFIG_PATH LD_LIBRARY_PATH=${CI_PROJECT_DIR}${CI_PROJECT_DIR_SUFFIX}/install/lib:$LD_LIBRARY_PATH ninja test_pkgconfig
   dependencies: []
 
 
