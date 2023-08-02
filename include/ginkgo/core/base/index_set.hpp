@@ -471,6 +471,8 @@ struct temporary_clone_helper<const index_set<T>> {
         return std::make_unique<const index_set<T>>(std::move(exec), *ptr);
     }
 };
+
+
 }  // namespace detail
 
 

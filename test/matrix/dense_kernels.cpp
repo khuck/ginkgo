@@ -163,7 +163,7 @@ protected:
         rscatter_idxs = std::unique_ptr<Arr>(
             new Arr{ref, tmp2.begin(), tmp2.begin() + u->get_size()[0]});
         rscatter_idxs_sub = std::unique_ptr<Arr>(
-            new Arr{ref, tmp2.begin(), tmp2.begin() + u->get_size()[0]});
+            new Arr{ref, tmp4.begin(), tmp4.begin() + u->get_size()[0]});
     }
 
     template <typename ConvertedType, typename InputType>
@@ -1324,8 +1324,8 @@ TEST_F(Dense, CanScatterRowsIntoDenseCrossExecutor)
 {
     set_up_apply_data();
 
-    u->row_scatter(rgather_idxs.get(), x);
-    u->row_scatter(rgather_idxs.get(), dx);
+    u->row_scatter(rscatter_idxs.get(), x);
+    u->row_scatter(rscatter_idxs.get(), dx);
 
     GKO_ASSERT_MTX_NEAR(x, dx, 0);
 }

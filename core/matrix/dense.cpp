@@ -1447,7 +1447,8 @@ void Dense<ValueType>::row_gather(ptr_param<const LinOp> alpha,
 
 
 template <typename ValueType>
-void Dense<ValueType>::row_scatter(const array<int32>* row_idxs,
+template <typename IndexType>
+void Dense<ValueType>::row_scatter(const array<IndexType>* row_idxs,
                                    ptr_param<LinOp> row_collection) const
 {
     gather_mixed_real_complex<ValueType>(
@@ -1457,27 +1458,8 @@ void Dense<ValueType>::row_scatter(const array<int32>* row_idxs,
 
 
 template <typename ValueType>
-void Dense<ValueType>::row_scatter(const array<int64>* row_idxs,
-                                   ptr_param<LinOp> row_collection) const
-{
-    gather_mixed_real_complex<ValueType>(
-        [&](auto dense) { this->row_scatter_impl(row_idxs, dense); },
-        row_collection.get());
-}
-
-
-template <typename ValueType>
-void Dense<ValueType>::row_scatter(const index_set<int32>* row_idxs,
-                                   ptr_param<LinOp> row_collection) const
-{
-    gather_mixed_real_complex<ValueType>(
-        [&](auto dense) { this->row_scatter_impl(row_idxs, dense); },
-        row_collection.get());
-}
-
-
-template <typename ValueType>
-void Dense<ValueType>::row_scatter(const index_set<int64>* row_idxs,
+template <typename IndexType>
+void Dense<ValueType>::row_scatter(const index_set<IndexType>* row_idxs,
                                    ptr_param<LinOp> row_collection) const
 {
     gather_mixed_real_complex<ValueType>(
@@ -1785,6 +1767,18 @@ std::unique_ptr<Dense<ValueType>> Dense<ValueType>::create_submatrix_impl(
 
 #define GKO_DECLARE_DENSE_MATRIX(_type) class Dense<_type>
 GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_DENSE_MATRIX);
+
+#define GKO_DECLARE_DENSE_ROW_SCATTER_ARRAY(_vtype, _itype)        \
+    void Dense<_vtype>::row_scatter(const array<_itype>* row_idxs, \
+                                    ptr_param<LinOp> row_collection) const
+GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
+    GKO_DECLARE_DENSE_ROW_SCATTER_ARRAY);
+
+#define GKO_DECLARE_DENSE_ROW_SCATTER_INDEX_SET(_vtype, _itype)        \
+    void Dense<_vtype>::row_scatter(const index_set<_itype>* row_idxs, \
+                                    ptr_param<LinOp> row_collection) const
+GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
+    GKO_DECLARE_DENSE_ROW_SCATTER_INDEX_SET);
 
 
 }  // namespace matrix
