@@ -264,13 +264,13 @@ namespace kernels {
     void row_scatter(std::shared_ptr<const DefaultExecutor> exec,    \
                      const array<_itype>* gather_indices,            \
                      const matrix::Dense<_vtype>* orig,              \
-                     matrix::Dense<_otype>* target)
+                     matrix::Dense<_otype>* target, bool& invalid_access)
 
 #define GKO_DECLARE_DENSE_ROW_SCATTER_INDEX_SET_KERNEL(_vtype, _otype, _itype) \
     void row_scatter(std::shared_ptr<const DefaultExecutor> exec,              \
                      const index_set<_itype>* gather_indices,                  \
                      const matrix::Dense<_vtype>* orig,                        \
-                     matrix::Dense<_otype>* target)
+                     matrix::Dense<_otype>* target, bool& invalid_access)
 
 #define GKO_DECLARE_DENSE_COLUMN_PERMUTE_KERNEL(_vtype, _itype)      \
     void column_permute(std::shared_ptr<const DefaultExecutor> exec, \

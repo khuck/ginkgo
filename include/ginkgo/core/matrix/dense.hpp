@@ -1316,14 +1316,6 @@ protected:
                          const Dense<ValueType>* beta,
                          Dense<OutputType>* row_collection) const;
 
-    template <typename OutputType, typename IndexType>
-    void row_scatter_impl(const array<IndexType>* row_idxs,
-                          Dense<OutputType>* target) const;
-
-    template <typename OutputType, typename IndexType>
-    void row_scatter_impl(const index_set<IndexType>* row_idxs,
-                          Dense<OutputType>* target) const;
-
     template <typename IndexType>
     void column_permute_impl(const array<IndexType>* permutation,
                              Dense* output) const;
