@@ -42,6 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ginkgo/core/base/lin_op.hpp>
 #include <ginkgo/core/base/math.hpp>
 #include <ginkgo/core/base/types.hpp>
+#include <ginkgo/core/config/registry.hpp>
 #include <ginkgo/core/log/logger.hpp>
 #include <ginkgo/core/matrix/dense.hpp>
 #include <ginkgo/core/matrix/identity.hpp>
@@ -100,6 +101,22 @@ public:
 
     GKO_ENABLE_LIN_OP_FACTORY(Cg, parameters, Factory);
     GKO_ENABLE_BUILD_METHOD(Factory);
+    static auto build_from_config(const gko::config::Config& config,
+                                  const gko::config::registry& context)
+        -> decltype(Factory::create())
+    {
+        auto factory = Factory::create();
+        {
+            auto str = config.find("generated_preconditioner");
+            if (str != config.end()) {
+                auto linop = context.search_data<gko::LinOp>(str->second);
+                factory.with_generated_preconditioner(linop);
+            }
+        }
+        // can also handle preconditioner, criterion here if they are in
+        // context.
+        return factory;
+    }
 
 protected:
     void apply_impl(const LinOp* b, LinOp* x) const override;
