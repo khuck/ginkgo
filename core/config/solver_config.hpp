@@ -30,46 +30,40 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************<GINKGO LICENSE>*******************************/
 
-#ifndef GKO_PUBLIC_CORE_CONFIG_CONFIG_HPP_
-#define GKO_PUBLIC_CORE_CONFIG_CONFIG_HPP_
+#ifndef GKO_CORE_CONFIG_SOLVER_CONFIG_HPP_
+#define GKO_CORE_CONFIG_SOLVER_CONFIG_HPP_
 
 
-#include <map>
-#include <string>
-#include <unordered_map>
-
-
-#include <ginkgo/core/base/lin_op.hpp>
-#include <ginkgo/core/base/types.hpp>
+#include <ginkgo/core/config/config.hpp>
 #include <ginkgo/core/config/registry.hpp>
 
+
+#include "core/config/config.hpp"
+#include "core/config/dispatch.hpp"
 
 namespace gko {
 namespace config {
 
 
-enum LinOpFactoryType : int { Cg = 0, Bicg, Bicgstab, Fcg, Cgs };
-
-
-// It is only an intermediate step. If we do not provide the SolverType with VT,
-// IT selection, it can be in detail namespace or hide it by structure
-template <int flag>
-std::unique_ptr<gko::LinOpFactory> build_from_config(
-    const pnode& config, const registry& context,
-    std::shared_ptr<const Executor>& exec, type_descriptor td = {"", ""});
-
-
-// The main function
-std::unique_ptr<gko::LinOpFactory> build_from_config(
-    const pnode& config, const registry& context,
-    std::shared_ptr<const Executor>& exec, type_descriptor td = {"", ""});
-
-
-buildfromconfig_map generate_config_map();
+template <typename SolverFactory>
+inline void common_solver_configure(SolverFactory& factory, const pnode& config,
+                                    const registry& context,
+                                    std::shared_ptr<const Executor> exec,
+                                    type_descriptor td_for_child)
+{
+    SET_POINTER(factory, const LinOp, generated_preconditioner, config, context,
+                exec, td_for_child);
+    // handle parameter requires exec
+    // criteria and preconditioner are almost in each solver -> to another
+    // function.
+    SET_POINTER_VECTOR(factory, const stop::CriterionFactory, criteria, config,
+                       context, exec, td_for_child);
+    SET_POINTER(factory, const LinOpFactory, preconditioner, config, context,
+                exec, td_for_child);
+}
 
 
 }  // namespace config
 }  // namespace gko
 
-
-#endif  // GKO_PUBLIC_CORE_CONFIG_CONFIG_HPP_
+#endif  // GKO_CORE_CONFIG_SOLVER_CONFIG_HPP_

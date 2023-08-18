@@ -40,63 +40,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ginkgo/core/base/name_demangling.hpp>
 #include <ginkgo/core/base/precision_dispatch.hpp>
 #include <ginkgo/core/base/utils.hpp>
-#include <ginkgo/core/config/config.hpp>
-#include <ginkgo/core/stop/iteration.hpp>
 
 
-#include "core/config/config.hpp"
-#include "core/config/dispatch.hpp"
 #include "core/distributed/helpers.hpp"
 #include "core/solver/cg_kernels.hpp"
 #include "core/solver/solver_boilerplate.hpp"
 
 
 namespace gko {
-namespace config {
-
-
-// It can also be directly in solver::Cg (or in proteced part) if we also allow
-// the executor as input there.
-template <typename ValueType>
-class CgConfigurer {
-public:
-    static std::unique_ptr<typename solver::Cg<ValueType>::Factory>
-    build_from_config(const pnode& config, const registry& context,
-                      std::shared_ptr<const Executor> exec,
-                      type_descriptor td_for_child)
-    {
-        auto factory = solver::Cg<ValueType>::build();
-        SET_POINTER(factory, const LinOp, generated_preconditioner, config,
-                    context, exec, td_for_child);
-        // handle parameter requires exec
-        // criteria and preconditioner are almost in each solver -> to another
-        // function.
-        SET_POINTER_VECTOR(factory, const stop::CriterionFactory, criteria,
-                           config, context, exec, td_for_child);
-        SET_POINTER(factory, const LinOpFactory, preconditioner, config,
-                    context, exec, td_for_child);
-        // can also handle preconditioner, criterion here if they are in
-        // context.
-        return factory.on(exec);
-    }
-};
-
-
-template <>
-std::unique_ptr<gko::LinOpFactory>
-build_from_config<static_cast<int>(LinOpFactoryType::Cg)>(
-    const pnode& config, const registry& context,
-    std::shared_ptr<const Executor>& exec, gko::config::type_descriptor td)
-{
-    auto updated = update_type(config, td);
-    return dispatch<gko::LinOpFactory, CgConfigurer>(
-        updated.first, config, context, exec, updated, value_type_list());
-}
-
-
-}  // namespace config
-
-
 namespace solver {
 namespace cg {
 namespace {
