@@ -47,7 +47,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ginkgo/core/matrix/permutation.hpp>
 
 
-#include "core/reorder/mc64_kernels.hpp"
+#include "core/components/addressable_pq.hpp"
 #include "core/test/utils.hpp"
 #include "core/test/utils/assertions.hpp"
 #include "matrices/config.hpp"
