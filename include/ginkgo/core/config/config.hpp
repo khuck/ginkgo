@@ -69,7 +69,11 @@ enum LinOpFactoryType : int {
     ParIc,
     ParIct,
     ParIlu,
-    ParIlut
+    ParIlut,
+    Ic,
+    Ilu,
+    Isai,
+    Jacobi
 };
 
 
