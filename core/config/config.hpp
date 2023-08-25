@@ -82,17 +82,24 @@ inline std::shared_ptr<T> get_pointer(const pnode& config,
 {
     std::shared_ptr<T> ptr;
     using T_non_const = std::remove_const_t<T>;
-    ptr = context.search_data<T_non_const>(config.get_data<std::string>());
+    if (config.is(pnode::status_t::object)) {
+        ptr = context.search_data<T_non_const>(config.get_data<std::string>());
+    } else if (config.is(pnode::status_t::list) &&
+               std::is_convertible<T_non_const*, LinOpFactory*>::value) {
+        ptr = std::dynamic_pointer_cast<T_non_const>(
+            gko::share(build_from_config(config, context, exec, td)));
+    }
     assert(ptr.get() != nullptr);
     return std::move(ptr);
 }
+
 
 template <>
 inline std::shared_ptr<const LinOpFactory> get_pointer<const LinOpFactory>(
     const pnode& config, const registry& context,
     std::shared_ptr<const Executor> exec, type_descriptor td)
 {
-    std::shared_ptr<const LinOpFactory> ptr;
+    std::shared_ptr<LinOpFactory> ptr;
     if (config.is(pnode::status_t::object)) {
         ptr = context.search_data<LinOpFactory>(config.get_data<std::string>());
     } else if (config.is(pnode::status_t::list)) {
