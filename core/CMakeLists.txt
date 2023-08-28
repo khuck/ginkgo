@@ -22,6 +22,7 @@ target_sources(ginkgo
     config/preconditioner_config.cpp
     config/stop_config.cpp
     config/solver_config.cpp
+    config/multigrid_config.cpp
     distributed/partition.cpp
     factorization/cholesky.cpp
     factorization/elimination_forest.cpp
