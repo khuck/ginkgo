@@ -121,14 +121,28 @@ public:
      *
      * @return the number of elements in the array view
      */
-    size_type get_num_elems() const noexcept { return num_elems_; }
+    size_type size() const noexcept { return num_elems_; }
+
+    /** @copydoc size() */
+    [[deprecated("use size() instead")]] size_type get_num_elems()
+        const noexcept
+    {
+        return size();
+    }
 
     /**
      * Returns a constant pointer to the first element of this array view.
      *
      * @return a constant pointer to the first element of this array view.
      */
-    const value_type* get_const_data() const noexcept { return data_; }
+    const value_type* const_data() const noexcept { return data_; }
+
+    /** @copydoc const_data() */
+    [[deprecated("use const_data() instead")]] const value_type*
+    get_const_data() const noexcept
+    {
+        return const_data();
+    }
 
     /**
      * Returns the Executor associated with the array view.
@@ -417,8 +431,7 @@ public:
      */
     array<ValueType> as_view()
     {
-        return view(this->get_executor(), this->get_num_elems(),
-                    this->get_data());
+        return view(this->get_executor(), this->size(), this->data());
     }
 
     /**
@@ -427,8 +440,8 @@ public:
      */
     detail::const_array_view<ValueType> as_const_view() const
     {
-        return const_view(this->get_executor(), this->get_num_elems(),
-                          this->get_const_data());
+        return const_view(this->get_executor(), this->size(),
+                          this->const_data());
     }
 
     /**
@@ -462,13 +475,12 @@ public:
         }
 
         if (this->is_owning()) {
-            this->resize_and_reset(other.get_num_elems());
+            this->resize_and_reset(other.size());
         } else {
-            GKO_ENSURE_COMPATIBLE_BOUNDS(other.get_num_elems(),
-                                         this->num_elems_);
+            GKO_ENSURE_COMPATIBLE_BOUNDS(other.size(), this->num_elems_);
         }
-        exec_->copy_from(other.get_executor(), other.get_num_elems(),
-                         other.get_const_data(), this->get_data());
+        exec_->copy_from(other.get_executor(), other.size(), other.const_data(),
+                         this->data());
         return *this;
     }
 
@@ -558,20 +570,18 @@ public:
         }
 
         if (this->is_owning()) {
-            this->resize_and_reset(other.get_num_elems());
+            this->resize_and_reset(other.size());
         } else {
-            GKO_ENSURE_COMPATIBLE_BOUNDS(other.get_num_elems(),
-                                         this->num_elems_);
+            GKO_ENSURE_COMPATIBLE_BOUNDS(other.size(), this->num_elems_);
         }
         array<OtherValueType> tmp{this->exec_};
-        const OtherValueType* source = other.get_const_data();
+        const OtherValueType* source = other.const_data();
         // if we are on different executors: copy, then convert
         if (this->exec_ != other.get_executor()) {
             tmp = other;
-            source = tmp.get_const_data();
+            source = tmp.const_data();
         }
-        detail::convert_data(this->exec_, other.get_num_elems(), source,
-                             this->get_data());
+        detail::convert_data(this->exec_, other.size(), source, this->data());
         return *this;
     }
 
@@ -579,7 +589,7 @@ public:
      * Deallocates all data used by the array.
      *
      * The array is left in a valid, but empty state, so the same array can be
-     * used to allocate new memory. Calls to array::get_data() will return
+     * used to allocate new memory. Calls to array::data() will return
      * a `nullptr`.
      */
     void clear() noexcept
@@ -634,7 +644,14 @@ public:
      *
      * @return the number of elements in the array
      */
-    size_type get_num_elems() const noexcept { return num_elems_; }
+    size_type size() const noexcept { return num_elems_; }
+
+    /** @copydoc size() */
+    [[deprecated("use size() instead")]] size_type get_num_elems()
+        const noexcept
+    {
+        return size();
+    }
 
     /**
      * Returns a pointer to the block of memory used to store the elements of
@@ -643,7 +660,15 @@ public:
      * @return a pointer to the block of memory used to store the elements of
      * the array
      */
-    value_type* get_data() noexcept { return data_.get(); }
+    value_type* data() noexcept { return data_.get(); }
+
+    /**
+     * @copydoc data()
+     */
+    [[deprecated("use data() instead")]] value_type* get_data() noexcept
+    {
+        return data();
+    }
 
     /**
      * Returns a constant pointer to the block of memory used to store the
@@ -652,7 +677,14 @@ public:
      * @return a constant pointer to the block of memory used to store the
      * elements of the array
      */
-    const value_type* get_const_data() const noexcept { return data_.get(); }
+    const value_type* const_data() const noexcept { return data_.get(); }
+
+    /** @copydoc const_data() */
+    [[deprecated("use const_data() instead")]] const value_type*
+    get_const_data() const noexcept
+    {
+        return const_data();
+    }
 
     /**
      * Returns the Executor associated with the array.
@@ -794,8 +826,7 @@ struct temporary_clone_helper<array<T>> {
         if (copy_data) {
             return std::make_unique<array<T>>(std::move(exec), *ptr);
         } else {
-            return std::make_unique<array<T>>(std::move(exec),
-                                              ptr->get_num_elems());
+            return std::make_unique<array<T>>(std::move(exec), ptr->size());
         }
     }
 };
@@ -855,19 +886,17 @@ private:
 template <typename ValueType>
 array<ValueType> array_const_cast(const_array_view<ValueType> view)
 {
-    return array<ValueType>::view(
-        view.get_executor(), view.get_num_elems(),
-        const_cast<ValueType*>(view.get_const_data()));
+    return array<ValueType>::view(view.get_executor(), view.size(),
+                                  const_cast<ValueType*>(view.const_data()));
 }
 
 
 template <typename ValueType>
 array<ValueType> const_array_view<ValueType>::copy_to_array() const
 {
-    array<ValueType> result(this->get_executor(), this->get_num_elems());
-    result.get_executor()->copy_from(this->get_executor(),
-                                     this->get_num_elems(),
-                                     this->get_const_data(), result.get_data());
+    array<ValueType> result(this->get_executor(), this->size());
+    result.get_executor()->copy_from(this->get_executor(), this->size(),
+                                     this->const_data(), result.data());
     return result;
 }
 
