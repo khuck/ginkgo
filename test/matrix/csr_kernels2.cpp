@@ -1189,8 +1189,8 @@ TEST_F(Csr, ComputeSubmatrixIsEquivalentToRef)
     gko::kernels::reference::csr::calculate_nonzeros_per_row_in_span(
         this->ref, this->mtx2.get(), rspan, cspan, &row_nnz);
     gko::kernels::reference::components::prefix_sum_nonnegative(
-        this->ref, row_nnz.get_data(), row_nnz.get_num_elems());
-    auto num_nnz = row_nnz.get_data()[rspan.length()];
+        this->ref, row_nnz.data(), row_nnz.size());
+    auto num_nnz = row_nnz.data()[rspan.length()];
     auto drow_nnz = gko::array<int>(this->exec, row_nnz);
     auto smat1 =
         Mtx::create(this->ref, gko::dim<2>(rspan.length(), cspan.length()),
@@ -1231,9 +1231,9 @@ TEST_F(Csr, CalculateNnzPerRowInIndexSetIsEquivalentToRef)
     auto drow_nnz = gko::array<int>(this->exec, row_nnz);
 
     gko::kernels::reference::csr::calculate_nonzeros_per_row_in_index_set(
-        this->ref, this->mtx2.get(), rset, cset, row_nnz.get_data());
+        this->ref, this->mtx2.get(), rset, cset, row_nnz.data());
     gko::kernels::EXEC_NAMESPACE::csr::calculate_nonzeros_per_row_in_index_set(
-        this->exec, this->dmtx2.get(), drset, dcset, drow_nnz.get_data());
+        this->exec, this->dmtx2.get(), drset, dcset, drow_nnz.data());
 
     GKO_ASSERT_ARRAY_EQ(row_nnz, drow_nnz);
 }
@@ -1252,10 +1252,10 @@ TEST_F(Csr, ComputeSubmatrixFromIndexSetIsEquivalentToRef)
     auto row_nnz = gko::array<int>(this->ref, rset.get_num_elems() + 1);
     row_nnz.fill(gko::zero<int>());
     gko::kernels::reference::csr::calculate_nonzeros_per_row_in_index_set(
-        this->ref, this->mtx2.get(), rset, cset, row_nnz.get_data());
+        this->ref, this->mtx2.get(), rset, cset, row_nnz.data());
     gko::kernels::reference::components::prefix_sum_nonnegative(
-        this->ref, row_nnz.get_data(), row_nnz.get_num_elems());
-    auto num_nnz = row_nnz.get_data()[rset.get_num_elems()];
+        this->ref, row_nnz.data(), row_nnz.size());
+    auto num_nnz = row_nnz.data()[rset.get_num_elems()];
     auto drow_nnz = gko::array<int>(this->exec, row_nnz);
     auto smat1 = Mtx::create(
         this->ref, gko::dim<2>(rset.get_num_elems(), cset.get_num_elems()),

@@ -67,7 +67,7 @@ array<ValueType> generate_random_array(size_type num,
                                        std::shared_ptr<const Executor> exec)
 {
     array<ValueType> array(exec->get_master(), num);
-    auto val = array.get_data();
+    auto val = array.data();
     for (int i = 0; i < num; i++) {
         val[i] = detail::get_rand_value<ValueType>(value_dist, engine);
     }

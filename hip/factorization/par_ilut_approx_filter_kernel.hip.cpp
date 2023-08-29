@@ -111,14 +111,13 @@ void threshold_filter_approx(syn::value_list<int, subwarp_size>,
         tmp_size_totals + tmp_size_partials + tmp_size_oracles + tmp_size_tree;
     tmp->resize_and_reset(tmp_size);
 
-    auto total_counts = reinterpret_cast<IndexType*>(tmp->get_data());
+    auto total_counts = reinterpret_cast<IndexType*>(tmp->data());
     auto partial_counts =
-        reinterpret_cast<IndexType*>(tmp->get_data() + tmp_size_totals);
+        reinterpret_cast<IndexType*>(tmp->data() + tmp_size_totals);
     auto oracles = reinterpret_cast<unsigned char*>(
-        tmp->get_data() + tmp_size_totals + tmp_size_partials);
-    auto tree =
-        reinterpret_cast<AbsType*>(tmp->get_data() + tmp_size_totals +
-                                   tmp_size_partials + tmp_size_oracles);
+        tmp->data() + tmp_size_totals + tmp_size_partials);
+    auto tree = reinterpret_cast<AbsType*>(
+        tmp->data() + tmp_size_totals + tmp_size_partials + tmp_size_oracles);
 
     sampleselect_count(exec, values, size, tree, oracles, partial_counts,
                        total_counts);

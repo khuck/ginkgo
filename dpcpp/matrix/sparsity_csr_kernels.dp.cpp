@@ -336,7 +336,7 @@ void is_sorted_by_column_index(
     const auto num_rows = to_check->get_size()[0];
     const auto row_ptrs = to_check->get_const_row_ptrs();
     const auto cols = to_check->get_const_col_idxs();
-    auto is_sorted_device = gpu_array.get_data();
+    auto is_sorted_device = gpu_array.data();
     exec->get_queue()->submit([&](sycl::handler& cgh) {
         cgh.parallel_for(sycl::range<1>{num_rows}, [=](sycl::id<1> idx) {
             const auto row = static_cast<size_type>(idx[0]);

@@ -165,14 +165,14 @@ void fill_in_matrix_data(std::shared_ptr<const DefaultExecutor> exec,
         exec, data.get_num_elems()};
     components::soa_to_aos(exec, data, block_ordered);
     const auto in_nnz = data.get_num_elems();
-    auto block_ordered_ptr = block_ordered.get_data();
+    auto block_ordered_ptr = block_ordered.data();
     std::sort(
         block_ordered_ptr, block_ordered_ptr + in_nnz,
         [block_size](auto a, auto b) {
             return std::make_tuple(a.row / block_size, a.column / block_size) <
                    std::make_tuple(b.row / block_size, b.column / block_size);
         });
-    auto row_ptrs_ptr = row_ptrs.get_data();
+    auto row_ptrs_ptr = row_ptrs.data();
     gko::vector<IndexType> col_idx_vec{{exec}};
     gko::vector<ValueType> value_vec{{exec}};
     int64 block_row = -1;
@@ -198,15 +198,15 @@ void fill_in_matrix_data(std::shared_ptr<const DefaultExecutor> exec,
         value_vec[value_vec.size() - block_size * block_size + local_row +
                   local_col * block_size] = entry.value;
     }
-    while (block_row < static_cast<int64>(row_ptrs.get_num_elems() - 1)) {
+    while (block_row < static_cast<int64>(row_ptrs.size() - 1)) {
         // we finished row block_row, so store its end pointer
         row_ptrs_ptr[block_row + 1] = col_idx_vec.size();
         ++block_row;
     }
     values.resize_and_reset(value_vec.size());
     col_idxs.resize_and_reset(col_idx_vec.size());
-    std::copy(value_vec.begin(), value_vec.end(), values.get_data());
-    std::copy(col_idx_vec.begin(), col_idx_vec.end(), col_idxs.get_data());
+    std::copy(value_vec.begin(), value_vec.end(), values.data());
+    std::copy(col_idx_vec.begin(), col_idx_vec.end(), col_idxs.data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(

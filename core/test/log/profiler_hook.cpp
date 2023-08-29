@@ -93,7 +93,7 @@ TEST(ProfilerHook, LogsAllocateCopyOperation)
     {
         int i = 0;
         gko::array<int> data{exec, 1};
-        exec->copy(1, &i, data.get_data());
+        exec->copy(1, &i, data.data());
         exec->run(DummyOperation{});
     }
 

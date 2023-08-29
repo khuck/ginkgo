@@ -76,11 +76,11 @@ void compute(std::shared_ptr<const DefaultExecutor> exec,
     hipsparse::ic0_analysis(handle, num_rows, nnz, desc, m->get_const_values(),
                             m->get_const_row_ptrs(), m->get_const_col_idxs(),
                             info, HIPSPARSE_SOLVE_POLICY_USE_LEVEL,
-                            buffer.get_data());
+                            buffer.data());
 
     hipsparse::ic0(handle, num_rows, nnz, desc, m->get_values(),
                    m->get_const_row_ptrs(), m->get_const_col_idxs(), info,
-                   HIPSPARSE_SOLVE_POLICY_USE_LEVEL, buffer.get_data());
+                   HIPSPARSE_SOLVE_POLICY_USE_LEVEL, buffer.data());
 
     hipsparse::destroy_ic0_info(info);
     hipsparse::destroy(desc);

@@ -52,7 +52,7 @@ void initialize(std::shared_ptr<const DefaultExecutor> exec,
 {
     run_kernel(
         exec, [] GKO_KERNEL(auto i, auto stop) { stop[i].reset(); },
-        stop_status->get_num_elems(), *stop_status);
+        stop_status->size(), *stop_status);
 }
 
 

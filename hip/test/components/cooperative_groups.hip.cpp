@@ -64,17 +64,16 @@ class CooperativeGroups : public HipTestFixture {
 protected:
     CooperativeGroups() : result(ref, 1), dresult(exec)
     {
-        *result.get_data() = true;
+        *result.data() = true;
         dresult = result;
     }
 
     template <typename Kernel>
     void test(Kernel kernel)
     {
-        kernel<<<1, config::warp_size, 0, exec->get_stream()>>>(
-            dresult.get_data());
+        kernel<<<1, config::warp_size, 0, exec->get_stream()>>>(dresult.data());
         result = dresult;
-        auto success = *result.get_const_data();
+        auto success = *result.const_data();
 
         ASSERT_TRUE(success);
     }
@@ -83,9 +82,9 @@ protected:
     void test_subwarp(Kernel kernel)
     {
         kernel<<<1, config::warp_size / 2, 0, exec->get_stream()>>>(
-            dresult.get_data());
+            dresult.data());
         result = dresult;
-        auto success = *result.get_const_data();
+        auto success = *result.const_data();
 
         ASSERT_TRUE(success);
     }
@@ -294,14 +293,14 @@ TEST_F(CooperativeGroups, ShuffleSumDouble)
     gko::array<double> value(ref, config::warp_size);
     gko::array<double> answer(ref, config::warp_size);
     gko::array<double> dvalue(exec);
-    for (int i = 0; i < value.get_num_elems(); i++) {
-        value.get_data()[i] = x_dbl;
-        answer.get_data()[i] = value.get_data()[i] * (1 << num);
+    for (int i = 0; i < value.size(); i++) {
+        value.data()[i] = x_dbl;
+        answer.data()[i] = value.data()[i] * (1 << num);
     }
     dvalue = value;
 
-    cg_shuffle_sum<double><<<1, config::warp_size, 0, exec->get_stream()>>>(
-        num, dvalue.get_data());
+    cg_shuffle_sum<double>
+        <<<1, config::warp_size, 0, exec->get_stream()>>>(num, dvalue.data());
 
     value = dvalue;
     GKO_ASSERT_ARRAY_EQ(value, answer);
@@ -317,16 +316,16 @@ TEST_F(CooperativeGroups, ShuffleSumComplexDouble)
     gko::array<std::complex<double>> value(ref, config::warp_size);
     gko::array<std::complex<double>> answer(ref, config::warp_size);
     gko::array<std::complex<double>> dvalue(exec);
-    for (int i = 0; i < value.get_num_elems(); i++) {
-        value.get_data()[i] = std::complex<double>{x_dbl, x_dbl};
-        answer.get_data()[i] =
+    for (int i = 0; i < value.size(); i++) {
+        value.data()[i] = std::complex<double>{x_dbl, x_dbl};
+        answer.data()[i] =
             std::complex<double>{x_dbl * (1 << num), x_dbl * (1 << num)};
     }
     dvalue = value;
 
     cg_shuffle_sum<thrust::complex<double>>
         <<<1, config::warp_size, 0, exec->get_stream()>>>(
-            num, as_device_type(dvalue.get_data()));
+            num, as_device_type(dvalue.data()));
 
     value = dvalue;
     GKO_ASSERT_ARRAY_EQ(value, answer);

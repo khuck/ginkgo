@@ -98,9 +98,8 @@ void simple_apply(
                 return max_block_size <= compiled_block_size;
             },
             syn::value_list<int, config::min_warps_per_block>(),
-            syn::type_list<>(), exec, num_blocks,
-            block_precisions.get_const_data(), block_pointers.get_const_data(),
-            blocks.get_const_data(), storage_scheme,
+            syn::type_list<>(), exec, num_blocks, block_precisions.const_data(),
+            block_pointers.const_data(), blocks.const_data(), storage_scheme,
             b->get_const_values() + col, b->get_stride(), x->get_values() + col,
             x->get_stride());
     }

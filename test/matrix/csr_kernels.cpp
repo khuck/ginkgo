@@ -215,7 +215,7 @@ void assert_lookup_correct(std::shared_ptr<const gko::EXEC_TYPE> exec,
         },
         num_rows, num_cols, row_ptrs, col_idxs, storage_offsets, storage,
         row_descs, correct);
-    ASSERT_TRUE(exec->copy_val_to_host(correct.get_const_data()));
+    ASSERT_TRUE(exec->copy_val_to_host(correct.const_data()));
 }
 
 
@@ -225,14 +225,14 @@ TYPED_TEST(CsrLookup, BuildLookupWorks)
     using gko::matrix::csr::sparsity_type;
     const auto num_rows = this->mtx->get_size()[0];
     const auto num_cols = this->mtx->get_size()[1];
-    const auto row_descs = this->row_desc_array.get_data();
-    const auto drow_descs = this->drow_desc_array.get_data();
+    const auto row_descs = this->row_desc_array.data();
+    const auto drow_descs = this->drow_desc_array.data();
     const auto row_ptrs = this->mtx->get_const_row_ptrs();
     const auto col_idxs = this->mtx->get_const_col_idxs();
     const auto drow_ptrs = this->dmtx->get_const_row_ptrs();
     const auto dcol_idxs = this->dmtx->get_const_col_idxs();
-    const auto storage_offsets = this->storage_offset_array.get_data();
-    const auto dstorage_offsets = this->dstorage_offset_array.get_data();
+    const auto storage_offsets = this->storage_offset_array.data();
+    const auto dstorage_offsets = this->dstorage_offset_array.data();
     for (auto allowed :
          {sparsity_type::full | sparsity_type::bitmap | sparsity_type::hash,
           sparsity_type::bitmap | sparsity_type::hash,
@@ -250,8 +250,8 @@ TYPED_TEST(CsrLookup, BuildLookupWorks)
 
         this->storage_array.resize_and_reset(storage_offsets[num_rows]);
         this->dstorage_array.resize_and_reset(storage_offsets[num_rows]);
-        const auto storage = this->storage_array.get_data();
-        const auto dstorage = this->dstorage_array.get_data();
+        const auto storage = this->storage_array.data();
+        const auto dstorage = this->dstorage_array.data();
         const auto bitmap_equivalent =
             csr_lookup_allowed(allowed, sparsity_type::bitmap)
                 ? sparsity_type::bitmap
@@ -274,7 +274,7 @@ TYPED_TEST(CsrLookup, BuildLookupWorks)
         // check that all rows use the same lookup type
         gko::array<gko::int64> host_row_desc_array{this->ref,
                                                    this->drow_desc_array};
-        const auto host_row_descs = host_row_desc_array.get_const_data();
+        const auto host_row_descs = host_row_desc_array.const_data();
         for (gko::size_type row = 0; row < num_rows; row++) {
             ASSERT_EQ(host_row_descs[row] & 0xF, row_descs[row] & 0xF);
         }

@@ -856,13 +856,12 @@ void convert_to_fbcsr(std::shared_ptr<const DefaultExecutor> exec,
     array<IndexType> in_row_idxs{exec, nnz};
     array<IndexType> in_col_idxs{exec, nnz};
     array<ValueType> in_values{exec, nnz};
-    exec->copy(nnz, source->get_const_col_idxs(), in_col_idxs.get_data());
-    exec->copy(nnz, source->get_const_values(), in_values.get_data());
+    exec->copy(nnz, source->get_const_col_idxs(), in_col_idxs.data());
+    exec->copy(nnz, source->get_const_values(), in_values.data());
     components::convert_ptrs_to_idxs(exec, source->get_const_row_ptrs(),
-                                     source->get_size()[0],
-                                     in_row_idxs.get_data());
-    auto block_row_ptrs = block_row_ptr_array.get_data();
-    auto num_block_rows = block_row_ptr_array.get_num_elems() - 1;
+                                     source->get_size()[0], in_row_idxs.data());
+    auto block_row_ptrs = block_row_ptr_array.data();
+    auto num_block_rows = block_row_ptr_array.size() - 1;
     if (nnz == 0) {
         components::fill_array(exec, block_row_ptrs, num_block_rows + 1,
                                IndexType{});
@@ -870,9 +869,9 @@ void convert_to_fbcsr(std::shared_ptr<const DefaultExecutor> exec,
         block_value_array.resize_and_reset(0);
         return;
     }
-    auto in_rows = in_row_idxs.get_data();
-    auto in_cols = in_col_idxs.get_data();
-    auto in_vals = as_device_type(in_values.get_data());
+    auto in_rows = in_row_idxs.data();
+    auto in_cols = in_col_idxs.data();
+    auto in_vals = as_device_type(in_values.data());
     auto in_loc_it =
         thrust::make_zip_iterator(thrust::make_tuple(in_rows, in_cols));
     thrust::sort_by_key(thrust_policy(exec), in_loc_it, in_loc_it + nnz,
@@ -899,10 +898,10 @@ void convert_to_fbcsr(std::shared_ptr<const DefaultExecutor> exec,
     array<size_type> block_ptr_array{exec, num_blocks};
     block_col_idx_array.resize_and_reset(num_blocks);
     block_value_array.resize_and_reset(num_blocks * bs * bs);
-    auto row_idxs = block_row_idx_array.get_data();
-    auto col_idxs = block_col_idx_array.get_data();
-    auto values = as_device_type(block_value_array.get_data());
-    auto block_ptrs = block_ptr_array.get_data();
+    auto row_idxs = block_row_idx_array.data();
+    auto col_idxs = block_col_idx_array.data();
+    auto values = as_device_type(block_value_array.data());
+    auto block_ptrs = block_ptr_array.data();
     // write (block_row, block_col, block_start_idx) tuples for each block
     thrust::copy_if(thrust_policy(exec), iota, iota + nnz, block_ptrs,
                     adj_predicate);
@@ -914,12 +913,12 @@ void convert_to_fbcsr(std::shared_ptr<const DefaultExecutor> exec,
             return thrust::make_tuple(in_rows[i] / bs, in_cols[i] / bs);
         });
     // build row pointers from row indices
-    components::convert_idxs_to_ptrs(exec, block_row_idx_array.get_const_data(),
-                                     block_row_idx_array.get_num_elems(),
-                                     num_block_rows, block_row_ptrs);
+    components::convert_idxs_to_ptrs(exec, block_row_idx_array.const_data(),
+                                     block_row_idx_array.size(), num_block_rows,
+                                     block_row_ptrs);
     // fill in values
-    components::fill_array(exec, block_value_array.get_data(),
-                           num_blocks * bs * bs, zero<ValueType>());
+    components::fill_array(exec, block_value_array.data(), num_blocks * bs * bs,
+                           zero<ValueType>());
     thrust::for_each_n(thrust_policy(exec), iota, num_blocks,
                        [block_ptrs, nnz, num_blocks, bs, in_rows, in_cols,
                         in_vals, values] __device__(size_type i) {
@@ -1134,11 +1133,11 @@ void fallback_transpose(std::shared_ptr<const DefaultExecutor> exec,
     components::convert_ptrs_to_idxs(exec, in_row_ptrs, in_num_rows,
                                      out_col_idxs);
     exec->copy(nnz, in_vals, out_vals);
-    exec->copy(nnz, in_col_idxs, out_row_idxs.get_data());
+    exec->copy(nnz, in_col_idxs, out_row_idxs.data());
     auto loc_it = thrust::make_zip_iterator(
-        thrust::make_tuple(out_row_idxs.get_data(), out_col_idxs));
+        thrust::make_tuple(out_row_idxs.data(), out_col_idxs));
     thrust::sort_by_key(thrust_policy(exec), loc_it, loc_it + nnz, out_vals);
-    components::convert_idxs_to_ptrs(exec, out_row_idxs.get_data(), nnz,
+    components::convert_idxs_to_ptrs(exec, out_row_idxs.data(), nnz,
                                      out_num_rows, out_row_ptrs);
 }
 
@@ -1153,7 +1152,7 @@ void fallback_sort(std::shared_ptr<const DefaultExecutor> exec,
     const auto nnz = to_sort->get_num_stored_elements();
     const auto num_rows = to_sort->get_size()[0];
     array<IndexType> row_idx_array(exec, nnz);
-    const auto row_idxs = row_idx_array.get_data();
+    const auto row_idxs = row_idx_array.data();
     components::convert_ptrs_to_idxs(exec, row_ptrs, num_rows, row_idxs);
     const auto row_val_it =
         thrust::make_zip_iterator(thrust::make_tuple(row_idxs, vals));

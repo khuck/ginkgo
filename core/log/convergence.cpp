@@ -89,8 +89,8 @@ void Convergence<ValueType>::on_iteration_complete(
         array<stopping_status> tmp(status->get_executor()->get_master(),
                                    *status);
         this->convergence_status_ = true;
-        for (int i = 0; i < status->get_num_elems(); i++) {
-            if (!tmp.get_data()[i].has_converged()) {
+        for (int i = 0; i < status->size(); i++) {
+            if (!tmp.data()[i].has_converged()) {
                 this->convergence_status_ = false;
                 break;
             }

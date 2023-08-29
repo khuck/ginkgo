@@ -54,9 +54,8 @@ void soa_to_aos(std::shared_ptr<const DefaultExecutor> exec,
                 array<matrix_data_entry<ValueType, IndexType>>& out)
 {
     for (size_type i = 0; i < in.get_num_elems(); i++) {
-        out.get_data()[i] = {in.get_const_row_idxs()[i],
-                             in.get_const_col_idxs()[i],
-                             in.get_const_values()[i]};
+        out.data()[i] = {in.get_const_row_idxs()[i], in.get_const_col_idxs()[i],
+                         in.get_const_values()[i]};
     }
 }
 
@@ -69,8 +68,8 @@ void aos_to_soa(std::shared_ptr<const DefaultExecutor> exec,
                 const array<matrix_data_entry<ValueType, IndexType>>& in,
                 device_matrix_data<ValueType, IndexType>& out)
 {
-    for (size_type i = 0; i < in.get_num_elems(); i++) {
-        const auto entry = in.get_const_data()[i];
+    for (size_type i = 0; i < in.size(); i++) {
+        const auto entry = in.const_data()[i];
         out.get_row_idxs()[i] = entry.row;
         out.get_col_idxs()[i] = entry.column;
         out.get_values()[i] = entry.value;
@@ -86,20 +85,20 @@ void remove_zeros(std::shared_ptr<const DefaultExecutor> exec,
                   array<ValueType>& values, array<IndexType>& row_idxs,
                   array<IndexType>& col_idxs)
 {
-    auto size = values.get_num_elems();
-    auto nnz = static_cast<size_type>(
-        std::count_if(values.get_const_data(), values.get_const_data() + size,
-                      is_nonzero<ValueType>));
+    auto size = values.size();
+    auto nnz = static_cast<size_type>(std::count_if(values.const_data(),
+                                                    values.const_data() + size,
+                                                    is_nonzero<ValueType>));
     if (nnz < size) {
         array<ValueType> new_values{exec, nnz};
         array<IndexType> new_row_idxs{exec, nnz};
         array<IndexType> new_col_idxs{exec, nnz};
         size_type out_i{};
         for (size_type i = 0; i < size; i++) {
-            if (is_nonzero(values.get_const_data()[i])) {
-                new_values.get_data()[out_i] = values.get_const_data()[i];
-                new_row_idxs.get_data()[out_i] = row_idxs.get_const_data()[i];
-                new_col_idxs.get_data()[out_i] = col_idxs.get_const_data()[i];
+            if (is_nonzero(values.const_data()[i])) {
+                new_values.data()[out_i] = values.const_data()[i];
+                new_row_idxs.data()[out_i] = row_idxs.const_data()[i];
+                new_col_idxs.data()[out_i] = col_idxs.const_data()[i];
                 out_i++;
             }
         }
@@ -120,11 +119,11 @@ void sum_duplicates(std::shared_ptr<const DefaultExecutor> exec, size_type,
 {
     auto row = invalid_index<IndexType>();
     auto col = invalid_index<IndexType>();
-    const auto size = values.get_num_elems();
+    const auto size = values.size();
     size_type count_unique{};
     for (size_type i = 0; i < size; i++) {
-        const auto new_row = row_idxs.get_const_data()[i];
-        const auto new_col = col_idxs.get_const_data()[i];
+        const auto new_row = row_idxs.const_data()[i];
+        const auto new_col = col_idxs.const_data()[i];
         if (row != new_row || col != new_col) {
             row = new_row;
             col = new_col;
@@ -139,18 +138,18 @@ void sum_duplicates(std::shared_ptr<const DefaultExecutor> exec, size_type,
         col = invalid_index<IndexType>();
         int64 out_i = -1;
         for (size_type i = 0; i < size; i++) {
-            const auto new_row = row_idxs.get_const_data()[i];
-            const auto new_col = col_idxs.get_const_data()[i];
-            const auto new_val = values.get_const_data()[i];
+            const auto new_row = row_idxs.const_data()[i];
+            const auto new_col = col_idxs.const_data()[i];
+            const auto new_val = values.const_data()[i];
             if (row != new_row || col != new_col) {
                 row = new_row;
                 col = new_col;
                 out_i++;
-                new_row_idxs.get_data()[out_i] = row;
-                new_col_idxs.get_data()[out_i] = col;
-                new_values.get_data()[out_i] = zero<ValueType>();
+                new_row_idxs.data()[out_i] = row;
+                new_col_idxs.data()[out_i] = col;
+                new_values.data()[out_i] = zero<ValueType>();
             }
-            new_values.get_data()[out_i] += new_val;
+            new_values.data()[out_i] += new_val;
         }
         values = std::move(new_values);
         row_idxs = std::move(new_row_idxs);
@@ -169,7 +168,7 @@ void sort_row_major(std::shared_ptr<const DefaultExecutor> exec,
     array<matrix_data_entry<ValueType, IndexType>> tmp{exec,
                                                        data.get_num_elems()};
     soa_to_aos(exec, data, tmp);
-    std::sort(tmp.get_data(), tmp.get_data() + tmp.get_num_elems());
+    std::sort(tmp.data(), tmp.data() + tmp.size());
     aos_to_soa(exec, tmp, data);
 }
 

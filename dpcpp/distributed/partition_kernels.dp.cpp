@@ -134,10 +134,10 @@ void build_starting_indices(std::shared_ptr<const DefaultExecutor> exec,
             exec, num_ranges, num_parts, range_offsets, range_parts,
             range_sizes, tmp_part_ids, permutation);
 
-        auto tmp_part_id_ptr = tmp_part_ids.get_data();
-        auto range_sizes_ptr = range_sizes.get_data();
+        auto tmp_part_id_ptr = tmp_part_ids.data();
+        auto range_sizes_ptr = range_sizes.data();
         auto sort_it = oneapi::dpl::make_zip_iterator(
-            tmp_part_id_ptr, range_sizes_ptr, permutation.get_data());
+            tmp_part_id_ptr, range_sizes_ptr, permutation.data());
         // group range_sizes by part ID
         oneapi::dpl::stable_sort(policy, sort_it, sort_it + num_ranges,
                                  [](const auto t_a, const auto t_b) {

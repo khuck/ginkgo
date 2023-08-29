@@ -129,7 +129,7 @@ void fallback_sort(std::shared_ptr<const DefaultExecutor> exec,
     const auto nnz = to_sort->get_num_nonzeros();
     const auto num_rows = to_sort->get_size()[0];
     array<IndexType> row_idx_array(exec, nnz);
-    const auto row_idxs = row_idx_array.get_data();
+    const auto row_idxs = row_idx_array.data();
     components::convert_ptrs_to_idxs(exec, row_ptrs, num_rows, row_idxs);
     // two sorts by integer keys hopefully enable Thrust to use cub's RadixSort
     thrust::sort_by_key(thrust_policy(exec), col_idxs, col_idxs + nnz,

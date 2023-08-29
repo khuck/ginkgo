@@ -127,8 +127,7 @@ protected:
         stopped.stop(1, false);
         finalized.stop(1, true);
         non_stopped.reset();
-        std::fill_n(small_stop.get_data(), small_stop.get_num_elems(),
-                    non_stopped);
+        std::fill_n(small_stop.data(), small_stop.size(), non_stopped);
     }
 
     std::shared_ptr<const gko::ReferenceExecutor> exec;
@@ -180,7 +179,7 @@ TYPED_TEST(Bicgstab, KernelInitialize)
     this->small_beta->fill(0);
     this->small_gamma->fill(0);
     this->small_omega->fill(0);
-    std::fill_n(this->small_stop.get_data(), this->small_stop.get_num_elems(),
+    std::fill_n(this->small_stop.data(), this->small_stop.size(),
                 this->stopped);
 
     gko::kernels::reference::bicgstab::initialize(
@@ -205,8 +204,8 @@ TYPED_TEST(Bicgstab, KernelInitialize)
     GKO_ASSERT_MTX_NEAR(this->small_beta, l({{1.0, 1.0}}), 0);
     GKO_ASSERT_MTX_NEAR(this->small_gamma, l({{1.0, 1.0}}), 0);
     GKO_ASSERT_MTX_NEAR(this->small_omega, l({{1.0, 1.0}}), 0);
-    ASSERT_EQ(this->small_stop.get_data()[0], this->non_stopped);
-    ASSERT_EQ(this->small_stop.get_data()[1], this->non_stopped);
+    ASSERT_EQ(this->small_stop.data()[0], this->non_stopped);
+    ASSERT_EQ(this->small_stop.data()[1], this->non_stopped);
 }
 
 
@@ -223,7 +222,7 @@ TYPED_TEST(Bicgstab, KernelStep1)
     this->small_alpha->at(1) = 5;
     this->small_omega->at(0) = 8;
     this->small_omega->at(1) = 3;
-    this->small_stop.get_data()[1] = this->stopped;
+    this->small_stop.data()[1] = this->stopped;
 
     gko::kernels::reference::bicgstab::step_1(
         this->exec, this->small_r.get(), this->small_p.get(),
@@ -301,7 +300,7 @@ TYPED_TEST(Bicgstab, KernelStep2)
     this->small_rho->at(1) = 3;
     this->small_beta->at(0) = 8;
     this->small_beta->at(1) = 3;
-    this->small_stop.get_data()[1] = this->stopped;
+    this->small_stop.data()[1] = this->stopped;
 
     gko::kernels::reference::bicgstab::step_2(
         this->exec, this->small_r.get(), this->small_s.get(),
@@ -347,7 +346,7 @@ TYPED_TEST(Bicgstab, KernelStep3)
     this->small_gamma->at(1) = 3;
     this->small_alpha->at(0) = 1;
     this->small_alpha->at(1) = -2;
-    this->small_stop.get_data()[1] = this->stopped;
+    this->small_stop.data()[1] = this->stopped;
 
     gko::kernels::reference::bicgstab::step_3(
         this->exec, this->small_x.get(), this->small_r.get(),
@@ -393,16 +392,16 @@ TYPED_TEST(Bicgstab, KernelFinalize)
     this->small_y->fill(4);
     this->small_alpha->at(0) = 1;
     this->small_alpha->at(1) = -2;
-    this->small_stop.get_data()[0] = this->stopped;
-    this->small_stop.get_data()[1] = this->finalized;
+    this->small_stop.data()[0] = this->stopped;
+    this->small_stop.data()[1] = this->finalized;
 
     gko::kernels::reference::bicgstab::finalize(
         this->exec, this->small_x.get(), this->small_y.get(),
         this->small_alpha.get(), &this->small_stop);
 
     GKO_ASSERT_MTX_NEAR(this->small_x, l({{9.0, 5.0}, {9.0, 5.0}}), 0);
-    ASSERT_EQ(this->small_stop.get_data()[0], this->finalized);
-    ASSERT_EQ(this->small_stop.get_data()[1], this->finalized);
+    ASSERT_EQ(this->small_stop.data()[0], this->finalized);
+    ASSERT_EQ(this->small_stop.data()[1], this->finalized);
 }
 
 

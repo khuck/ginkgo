@@ -229,7 +229,7 @@ public:
         const auto size = mtx_->get_size();
         // randomly permute n/2 rows with limited distances
         gko::array<itype> permutation_array(exec->get_master(), size[0]);
-        auto permutation = permutation_array.get_data();
+        auto permutation = permutation_array.data();
         std::iota(permutation, permutation + size[0], 0);
         std::uniform_int_distribution<itype> start_dist(0, size[0] - 1);
         std::uniform_int_distribution<itype> delta_dist(
@@ -420,9 +420,9 @@ public:
         const auto num_rows = mtx_->get_size()[0];
         exec->run(make_build_lookup_offsets(
             mtx_->get_const_row_ptrs(), mtx_->get_const_col_idxs(), num_rows,
-            allowed_sparsity_, storage_offsets_.get_data()));
-        storage_.resize_and_reset(exec->copy_val_to_host(
-            storage_offsets_.get_const_data() + num_rows));
+            allowed_sparsity_, storage_offsets_.data()));
+        storage_.resize_and_reset(
+            exec->copy_val_to_host(storage_offsets_.const_data() + num_rows));
     }
 
     std::pair<bool, double> validate() const override
@@ -438,9 +438,9 @@ public:
             gko::matrix::csr::device_sparsity_lookup<itype> lookup{
                 row_ptrs,
                 col_idxs,
-                host_storage_offsets.get_const_data(),
-                host_storage.get_const_data(),
-                host_row_descs.get_const_data(),
+                host_storage_offsets.const_data(),
+                host_storage.const_data(),
+                host_row_descs.const_data(),
                 row};
             const auto begin = row_ptrs[row];
             const auto end = row_ptrs[row + 1];
@@ -461,7 +461,7 @@ public:
         // read sparsity pattern and row pointers once, write lookup structures
         return mtx_->get_num_stored_elements() * sizeof(itype) +
                mtx_->get_size()[0] * (2 * sizeof(itype) + sizeof(gko::int64)) +
-               storage_.get_num_elems() * sizeof(gko::int32);
+               storage_.size() * sizeof(gko::int32);
     }
 
     void run() override
@@ -470,11 +470,11 @@ public:
         const auto num_rows = mtx_->get_size()[0];
         exec->run(make_build_lookup_offsets(
             mtx_->get_const_row_ptrs(), mtx_->get_const_col_idxs(), num_rows,
-            allowed_sparsity_, storage_offsets_.get_data()));
+            allowed_sparsity_, storage_offsets_.data()));
         exec->run(make_build_lookup(
             mtx_->get_const_row_ptrs(), mtx_->get_const_col_idxs(), num_rows,
-            allowed_sparsity_, storage_offsets_.get_const_data(),
-            row_descs_.get_data(), storage_.get_data()));
+            allowed_sparsity_, storage_offsets_.const_data(), row_descs_.data(),
+            storage_.data()));
     }
 
 private:
@@ -506,13 +506,13 @@ public:
         results_.resize_and_reset(num_rows * sample_size_);
         exec->run(make_build_lookup_offsets(
             mtx_->get_const_row_ptrs(), mtx_->get_const_col_idxs(), num_rows,
-            allowed_sparsity_, storage_offsets_.get_data()));
-        storage_.resize_and_reset(exec->copy_val_to_host(
-            storage_offsets_.get_const_data() + num_rows));
+            allowed_sparsity_, storage_offsets_.data()));
+        storage_.resize_and_reset(
+            exec->copy_val_to_host(storage_offsets_.const_data() + num_rows));
         exec->run(make_build_lookup(
             mtx_->get_const_row_ptrs(), mtx_->get_const_col_idxs(), num_rows,
-            allowed_sparsity_, storage_offsets_.get_const_data(),
-            row_descs_.get_data(), storage_.get_data()));
+            allowed_sparsity_, storage_offsets_.const_data(), row_descs_.data(),
+            storage_.data()));
     }
 
     std::pair<bool, double> validate() const override
@@ -529,8 +529,8 @@ public:
                 const auto expected =
                     row_len > 0 ? row_len * sample / sample_size_ + row_begin
                                 : -1;
-                if (host_results.get_const_data()[row * sample_size_ +
-                                                  sample] != expected) {
+                if (host_results.const_data()[row * sample_size_ + sample] !=
+                    expected) {
                     return {false, 0.0};
                 }
             }
@@ -546,16 +546,15 @@ public:
         // column index and write a result
         return mtx_->get_size()[0] * (2 * sizeof(itype) + sizeof(gko::int64) +
                                       sample_size_ * 2 * sizeof(itype)) +
-               storage_.get_num_elems() * sizeof(gko::int32);
+               storage_.size() * sizeof(gko::int32);
     }
 
     void run() override
     {
         mtx_->get_executor()->run(make_benchmark_lookup(
             mtx_->get_const_row_ptrs(), mtx_->get_const_col_idxs(),
-            mtx_->get_size()[0], storage_offsets_.get_const_data(),
-            row_descs_.get_data(), storage_.get_data(), sample_size_,
-            results_.get_data()));
+            mtx_->get_size()[0], storage_offsets_.const_data(),
+            row_descs_.data(), storage_.data(), sample_size_, results_.data()));
     }
 
 private:

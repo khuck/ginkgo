@@ -83,7 +83,7 @@ protected:
         }
         gko::array<gko::int32> block_ptrs(ref, block_pointers);
         gko::array<gko::precision_reduction> block_prec(ref, block_precisions);
-        if (block_prec.get_num_elems() == 0) {
+        if (block_prec.size() == 0) {
             bj_factory =
                 Bj::build()
                     .with_max_block_size(max_block_size)
@@ -617,7 +617,7 @@ TEST_F(Jacobi, AvoidsPrecisionsThatOverflow)
     // both blocks are in the same group, both need (7, 8)
     auto h_bj = clone(ref, bj);
     auto prec =
-        h_bj->get_parameters().storage_optimization.block_wise.get_const_data();
+        h_bj->get_parameters().storage_optimization.block_wise.const_data();
     EXPECT_EQ(prec[0], gko::precision_reduction(1, 1));
     ASSERT_EQ(prec[1], gko::precision_reduction(1, 1));
 }

@@ -166,15 +166,15 @@ public:
      *
      * @return the number of elements represented in this data structure.
      */
-    IndexType get_size() const { return parents_.get_num_elems(); }
+    IndexType get_size() const { return parents_.size(); }
 
 private:
     const IndexType& parent(IndexType x) const
     {
-        return parents_.get_const_data()[x];
+        return parents_.const_data()[x];
     }
 
-    IndexType& parent(IndexType x) { return parents_.get_data()[x]; }
+    IndexType& parent(IndexType x) { return parents_.data()[x]; }
 
     array<IndexType> parents_;
 };

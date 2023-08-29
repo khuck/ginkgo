@@ -87,13 +87,13 @@ void agg_to_restrict(std::shared_ptr<const Executor> exec, IndexType num_agg,
                      const gko::array<IndexType>& agg, IndexType* row_ptrs,
                      IndexType* col_idxs)
 {
-    const IndexType num = agg.get_num_elems();
+    const IndexType num = agg.size();
     gko::array<IndexType> row_idxs(exec, agg);
     exec->run(pgm::make_fill_seq_array(col_idxs, num));
     // sort the pair (int, agg) to (row_idxs, col_idxs)
-    exec->run(pgm::make_sort_agg(num, row_idxs.get_data(), col_idxs));
+    exec->run(pgm::make_sort_agg(num, row_idxs.data(), col_idxs));
     // row_idxs->row_ptrs
-    exec->run(pgm::make_convert_idxs_to_ptrs(row_idxs.get_data(), num, num_agg,
+    exec->run(pgm::make_convert_idxs_to_ptrs(row_idxs.data(), num, num_agg,
                                              row_ptrs));
 }
 
@@ -109,21 +109,20 @@ std::shared_ptr<matrix::Csr<ValueType, IndexType>> generate_coarse(
     gko::array<IndexType> row_idxs(exec, nnz);
     gko::array<IndexType> col_idxs(exec, nnz);
     gko::array<ValueType> vals(exec, nnz);
-    exec->copy_from(exec, nnz, fine_csr->get_const_values(), vals.get_data());
+    exec->copy_from(exec, nnz, fine_csr->get_const_values(), vals.data());
     // map row_ptrs to coarse row index
     exec->run(pgm::make_map_row(num, fine_csr->get_const_row_ptrs(),
-                                agg.get_const_data(), row_idxs.get_data()));
+                                agg.const_data(), row_idxs.data()));
     // map col_idxs to coarse col index
     exec->run(pgm::make_map_col(nnz, fine_csr->get_const_col_idxs(),
-                                agg.get_const_data(), col_idxs.get_data()));
+                                agg.const_data(), col_idxs.data()));
     // sort by row, col
-    exec->run(pgm::make_sort_row_major(nnz, row_idxs.get_data(),
-                                       col_idxs.get_data(), vals.get_data()));
+    exec->run(pgm::make_sort_row_major(nnz, row_idxs.data(), col_idxs.data(),
+                                       vals.data()));
     // compute the total nnz and create the fine csr
     size_type coarse_nnz = 0;
-    exec->run(pgm::make_count_unrepeated_nnz(nnz, row_idxs.get_const_data(),
-                                             col_idxs.get_const_data(),
-                                             &coarse_nnz));
+    exec->run(pgm::make_count_unrepeated_nnz(
+        nnz, row_idxs.const_data(), col_idxs.const_data(), &coarse_nnz));
     // reduce by key (row, col)
     auto coarse_coo = matrix::Coo<ValueType, IndexType>::create(
         exec,
@@ -131,8 +130,8 @@ std::shared_ptr<matrix::Csr<ValueType, IndexType>> generate_coarse(
                     static_cast<size_type>(num_agg)},
         coarse_nnz);
     exec->run(pgm::make_compute_coarse_coo(
-        nnz, row_idxs.get_const_data(), col_idxs.get_const_data(),
-        vals.get_const_data(), coarse_coo.get()));
+        nnz, row_idxs.const_data(), col_idxs.const_data(), vals.const_data(),
+        coarse_coo.get()));
     // use move_to
     auto coarse_csr = matrix::Csr<ValueType, IndexType>::create(exec);
     coarse_csr->move_from(coarse_coo);
@@ -167,8 +166,8 @@ void Pgm<ValueType, IndexType>::generate()
         this->set_fine_op(pgm_op_shared_ptr);
     }
     // Initial agg = -1
-    exec->run(pgm::make_fill_array(agg_.get_data(), agg_.get_num_elems(),
-                                   -one<IndexType>()));
+    exec->run(
+        pgm::make_fill_array(agg_.data(), agg_.size(), -one<IndexType>()));
     IndexType num_unagg = num_rows;
     IndexType num_unagg_prev = num_rows;
     // TODO: if mtx is a hermitian matrix, weight_mtx = abs(mtx)
@@ -217,7 +216,7 @@ void Pgm<ValueType, IndexType>::generate()
     // prolong_row_gather is the lightway implementation for prolongation
     auto prolong_row_gather = share(matrix::RowGatherer<IndexType>::create(
         exec, gko::dim<2>{fine_dim, coarse_dim}));
-    exec->copy_from(exec, agg_.get_num_elems(), agg_.get_const_data(),
+    exec->copy_from(exec, agg_.size(), agg_.const_data(),
                     prolong_row_gather->get_row_idxs());
     auto restrict_sparsity =
         share(matrix::SparsityCsr<ValueType, IndexType>::create(

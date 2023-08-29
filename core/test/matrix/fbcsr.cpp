@@ -196,7 +196,7 @@ TYPED_TEST(FbcsrSample, SampleGeneratorsAreCorrect)
     for (index_type irow = 0; irow < fbsample2.nrows; irow++) {
         const index_type* const row_ptrs = csmtx2->get_const_row_ptrs();
         const index_type num_nnz_row = row_ptrs[irow + 1] - row_ptrs[irow];
-        ASSERT_EQ(nnzperrow.get_const_data()[irow], num_nnz_row);
+        ASSERT_EQ(nnzperrow.const_data()[irow], num_nnz_row);
         for (index_type iz = row_ptrs[irow]; iz < row_ptrs[irow + 1]; iz++) {
             const index_type col = csmtx2->get_const_col_idxs()[iz];
             if (irow == col) {

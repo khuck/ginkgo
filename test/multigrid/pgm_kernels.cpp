@@ -90,7 +90,7 @@ protected:
                                          gko::size_type num_agg)
     {
         auto agg_array = gen_array(num, 0, num_agg - 1);
-        auto agg_array_val = agg_array.get_data();
+        auto agg_array_val = agg_array.data();
         std::vector<index_type> select_agg(num);
         std::iota(select_agg.begin(), select_agg.end(), 0);
         // use the first num_agg item as the aggregated index.
@@ -117,9 +117,9 @@ protected:
         agg = gen_agg_array(m, n);
         // only use 0 ~ n-2 and ensure the end isolated and not yet finished
         unfinished_agg = gen_array(m, -1, n - 2);
-        unfinished_agg.get_data()[n - 1] = -1;
+        unfinished_agg.data()[n - 1] = -1;
         strongest_neighbor = gen_array(m, 0, n - 2);
-        strongest_neighbor.get_data()[n - 1] = n - 1;
+        strongest_neighbor.data()[n - 1] = n - 1;
         coarse_vector = gen_mtx(n, nrhs);
         fine_vector = gen_mtx(m, nrhs);
 

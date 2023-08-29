@@ -264,7 +264,7 @@ public:
      */
     const value_type* get_blocks() const noexcept
     {
-        return blocks_.get_const_data();
+        return blocks_.const_data();
     }
 
     /**
@@ -278,7 +278,7 @@ public:
      */
     const remove_complex<value_type>* get_conditioning() const noexcept
     {
-        return conditioning_.get_const_data();
+        return conditioning_.const_data();
     }
 
     /**
@@ -288,7 +288,7 @@ public:
      */
     size_type get_num_stored_elements() const noexcept
     {
-        return blocks_.get_num_elems();
+        return blocks_.size();
     }
 
     void convert_to(matrix::Dense<value_type>* result) const override;
@@ -407,13 +407,13 @@ public:
 
             storage_optimization_type(
                 const array<precision_reduction>& block_wise_opt)
-                : is_block_wise{block_wise_opt.get_num_elems() > 0},
+                : is_block_wise{block_wise_opt.size() > 0},
                   block_wise{block_wise_opt}
             {}
 
             storage_optimization_type(
                 array<precision_reduction>&& block_wise_opt)
-                : is_block_wise{block_wise_opt.get_num_elems() > 0},
+                : is_block_wise{block_wise_opt.size() > 0},
                   block_wise{std::move(block_wise_opt)}
             {}
 
@@ -557,10 +557,10 @@ protected:
           parameters_{factory->get_parameters()},
           storage_scheme_{this->compute_storage_scheme(
               parameters_.max_block_size, parameters_.max_block_stride)},
-          num_blocks_{parameters_.block_pointers.get_num_elems() - 1},
+          num_blocks_{parameters_.block_pointers.size() - 1},
           blocks_(factory->get_executor(),
                   storage_scheme_.compute_storage_space(
-                      parameters_.block_pointers.get_num_elems() - 1)),
+                      parameters_.block_pointers.size() - 1)),
           conditioning_(factory->get_executor())
     {
         parameters_.block_pointers.set_executor(this->get_executor());

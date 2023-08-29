@@ -67,7 +67,7 @@ void residual_norm(std::shared_ptr<const DpcppExecutor> exec,
 {
     static_assert(is_complex_s<ValueType>::value == false,
                   "ValueType must not be complex in this function!");
-    auto device_storage_val = device_storage->get_data();
+    auto device_storage_val = device_storage->data();
     exec->get_queue()->submit([&](sycl::handler& cgh) {
         cgh.parallel_for(sycl::range<1>{1}, [=](sycl::id<1>) {
             device_storage_val[0] = true;
@@ -77,7 +77,7 @@ void residual_norm(std::shared_ptr<const DpcppExecutor> exec,
 
     auto orig_tau_val = orig_tau->get_const_values();
     auto tau_val = tau->get_const_values();
-    auto stop_status_val = stop_status->get_data();
+    auto stop_status_val = stop_status->data();
     exec->get_queue()->submit([&](sycl::handler& cgh) {
         cgh.parallel_for(
             sycl::range<1>{tau->get_size()[1]}, [=](sycl::id<1> idx_id) {
@@ -95,8 +95,8 @@ void residual_norm(std::shared_ptr<const DpcppExecutor> exec,
     });
 
     /* Represents all_converged, one_changed */
-    *all_converged = exec->copy_val_to_host(device_storage->get_const_data());
-    *one_changed = exec->copy_val_to_host(device_storage->get_const_data() + 1);
+    *all_converged = exec->copy_val_to_host(device_storage->const_data());
+    *one_changed = exec->copy_val_to_host(device_storage->const_data() + 1);
 }
 
 GKO_INSTANTIATE_FOR_EACH_NON_COMPLEX_VALUE_TYPE(
@@ -123,7 +123,7 @@ void implicit_residual_norm(
     bool setFinalized, array<stopping_status>* stop_status,
     array<bool>* device_storage, bool* all_converged, bool* one_changed)
 {
-    auto device_storage_val = device_storage->get_data();
+    auto device_storage_val = device_storage->data();
     exec->get_queue()->submit([&](sycl::handler& cgh) {
         cgh.parallel_for(sycl::range<1>{1}, [=](sycl::id<1>) {
             device_storage_val[0] = true;
@@ -133,7 +133,7 @@ void implicit_residual_norm(
 
     auto orig_tau_val = orig_tau->get_const_values();
     auto tau_val = tau->get_const_values();
-    auto stop_status_val = stop_status->get_data();
+    auto stop_status_val = stop_status->data();
     exec->get_queue()->submit([&](sycl::handler& cgh) {
         cgh.parallel_for(
             sycl::range<1>{tau->get_size()[1]}, [=](sycl::id<1> idx_id) {
@@ -152,8 +152,8 @@ void implicit_residual_norm(
     });
 
     /* Represents all_converged, one_changed */
-    *all_converged = exec->copy_val_to_host(device_storage->get_const_data());
-    *one_changed = exec->copy_val_to_host(device_storage->get_const_data() + 1);
+    *all_converged = exec->copy_val_to_host(device_storage->const_data());
+    *one_changed = exec->copy_val_to_host(device_storage->const_data() + 1);
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IMPLICIT_RESIDUAL_NORM_KERNEL);

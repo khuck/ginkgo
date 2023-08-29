@@ -144,7 +144,7 @@ public:
      *
      * @return the values of the matrix.
      */
-    value_type* get_values() noexcept { return values_.get_data(); }
+    value_type* get_values() noexcept { return values_.data(); }
 
     /**
      * @copydoc Csr::get_values()
@@ -155,7 +155,7 @@ public:
      */
     const value_type* get_const_values() const noexcept
     {
-        return values_.get_const_data();
+        return values_.const_data();
     }
 
     /**
@@ -163,7 +163,7 @@ public:
      *
      * @return the column indexes of the matrix.
      */
-    index_type* get_col_idxs() noexcept { return col_idxs_.get_data(); }
+    index_type* get_col_idxs() noexcept { return col_idxs_.data(); }
 
     /**
      * @copydoc Csr::get_col_idxs()
@@ -174,7 +174,7 @@ public:
      */
     const index_type* get_const_col_idxs() const noexcept
     {
-        return col_idxs_.get_const_data();
+        return col_idxs_.const_data();
     }
 
     /**
@@ -182,7 +182,7 @@ public:
      *
      * @return the row indexes of the matrix.
      */
-    index_type* get_row_idxs() noexcept { return row_idxs_.get_data(); }
+    index_type* get_row_idxs() noexcept { return row_idxs_.data(); }
 
     /**
      * @copydoc Csr::get_row_idxs()
@@ -193,7 +193,7 @@ public:
      */
     const index_type* get_const_row_idxs() const noexcept
     {
-        return row_idxs_.get_const_data();
+        return row_idxs_.const_data();
     }
 
     /**
@@ -203,7 +203,7 @@ public:
      */
     size_type get_num_stored_elements() const noexcept
     {
-        return values_.get_num_elems();
+        return values_.size();
     }
 
     /**
@@ -344,8 +344,8 @@ protected:
           col_idxs_{exec, std::forward<ColIdxsArray>(col_idxs)},
           row_idxs_{exec, std::forward<RowIdxsArray>(row_idxs)}
     {
-        GKO_ASSERT_EQ(values_.get_num_elems(), col_idxs_.get_num_elems());
-        GKO_ASSERT_EQ(values_.get_num_elems(), row_idxs_.get_num_elems());
+        GKO_ASSERT_EQ(values_.size(), col_idxs_.size());
+        GKO_ASSERT_EQ(values_.size(), row_idxs_.size());
     }
 
     /**

@@ -63,14 +63,12 @@ TYPED_TEST(PartitionHelpers, CanBuildFromLocalRanges)
             gko::int32, itype>(this->exec, this->comm,
                                local_range[this->comm.rank()]);
 
+    GKO_ASSERT_ARRAY_EQ(expects_ranges, gko::make_const_array_view(
+                                            this->exec, expects_ranges.size(),
+                                            part->get_range_bounds()));
     GKO_ASSERT_ARRAY_EQ(
-        expects_ranges,
-        gko::make_const_array_view(this->exec, expects_ranges.get_num_elems(),
-                                   part->get_range_bounds()));
-    GKO_ASSERT_ARRAY_EQ(
-        expects_pid,
-        gko::make_const_array_view(this->exec, expects_pid.get_num_elems(),
-                                   part->get_part_ids()));
+        expects_pid, gko::make_const_array_view(this->exec, expects_pid.size(),
+                                                part->get_part_ids()));
 }
 
 
@@ -86,14 +84,12 @@ TYPED_TEST(PartitionHelpers, CanBuildFromLocalRangesUnsorted)
             gko::int32, itype>(this->exec, this->comm,
                                local_range[this->comm.rank()]);
 
+    GKO_ASSERT_ARRAY_EQ(expects_ranges, gko::make_const_array_view(
+                                            this->exec, expects_ranges.size(),
+                                            part->get_range_bounds()));
     GKO_ASSERT_ARRAY_EQ(
-        expects_ranges,
-        gko::make_const_array_view(this->exec, expects_ranges.get_num_elems(),
-                                   part->get_range_bounds()));
-    GKO_ASSERT_ARRAY_EQ(
-        expects_pid,
-        gko::make_const_array_view(this->exec, expects_pid.get_num_elems(),
-                                   part->get_part_ids()));
+        expects_pid, gko::make_const_array_view(this->exec, expects_pid.size(),
+                                                part->get_part_ids()));
 }
 
 
@@ -124,12 +120,10 @@ TYPED_TEST(PartitionHelpers, CanBuildFromLocalSize)
         gko::int32, itype>(this->exec, this->comm,
                            local_range[this->comm.rank()]);
 
+    GKO_ASSERT_ARRAY_EQ(expects_ranges, gko::make_const_array_view(
+                                            this->exec, expects_ranges.size(),
+                                            part->get_range_bounds()));
     GKO_ASSERT_ARRAY_EQ(
-        expects_ranges,
-        gko::make_const_array_view(this->exec, expects_ranges.get_num_elems(),
-                                   part->get_range_bounds()));
-    GKO_ASSERT_ARRAY_EQ(
-        expects_pid,
-        gko::make_const_array_view(this->exec, expects_pid.get_num_elems(),
-                                   part->get_part_ids()));
+        expects_pid, gko::make_const_array_view(this->exec, expects_pid.size(),
+                                                part->get_part_ids()));
 }

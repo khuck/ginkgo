@@ -61,24 +61,22 @@ void compute_coo_row_ptrs(std::shared_ptr<const DefaultExecutor> exec,
                           const array<size_type>& row_nnz, size_type ell_lim,
                           int64* coo_row_ptrs)
 {
-    for (size_type row = 0; row < row_nnz.get_num_elems(); row++) {
-        if (row_nnz.get_const_data()[row] <= ell_lim) {
+    for (size_type row = 0; row < row_nnz.size(); row++) {
+        if (row_nnz.const_data()[row] <= ell_lim) {
             coo_row_ptrs[row] = 0;
         } else {
-            coo_row_ptrs[row] = row_nnz.get_const_data()[row] - ell_lim;
+            coo_row_ptrs[row] = row_nnz.const_data()[row] - ell_lim;
         }
     }
-    components::prefix_sum_nonnegative(exec, coo_row_ptrs,
-                                       row_nnz.get_num_elems() + 1);
+    components::prefix_sum_nonnegative(exec, coo_row_ptrs, row_nnz.size() + 1);
 }
 
 
 void compute_row_nnz(std::shared_ptr<const DefaultExecutor> exec,
                      const array<int64>& row_ptrs, size_type* row_nnzs)
 {
-    for (size_type i = 0; i < row_ptrs.get_num_elems() - 1; i++) {
-        row_nnzs[i] =
-            row_ptrs.get_const_data()[i + 1] - row_ptrs.get_const_data()[i];
+    for (size_type i = 0; i < row_ptrs.size() - 1; i++) {
+        row_nnzs[i] = row_ptrs.const_data()[i + 1] - row_ptrs.const_data()[i];
     }
 }
 

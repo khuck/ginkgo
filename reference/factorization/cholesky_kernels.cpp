@@ -71,7 +71,7 @@ void symbolic_count(std::shared_ptr<const DefaultExecutor> exec,
     const auto num_rows = mtx->get_size()[0];
     const auto row_ptrs = mtx->get_const_row_ptrs();
     const auto cols = mtx->get_const_col_idxs();
-    const auto parent = forest.parents.get_const_data();
+    const auto parent = forest.parents.const_data();
     vector<bool> visited(num_rows, {exec});
     for (IndexType row = 0; row < num_rows; row++) {
         IndexType count{};
@@ -110,7 +110,7 @@ void symbolic_factorize(
     const auto cols = mtx->get_const_col_idxs();
     const auto out_row_ptrs = l_factor->get_const_row_ptrs();
     const auto out_cols = l_factor->get_col_idxs();
-    const auto parent = forest.parents.get_const_data();
+    const auto parent = forest.parents.const_data();
     vector<bool> visited(num_rows, {exec});
     for (IndexType row = 0; row < num_rows; row++) {
         auto out_nz = out_row_ptrs[row];
@@ -146,9 +146,9 @@ void forest_from_factor(
     const auto row_ptrs = factors->get_const_row_ptrs();
     const auto col_idxs = factors->get_const_col_idxs();
     const auto num_rows = static_cast<IndexType>(factors->get_size()[0]);
-    const auto parents = forest.parents.get_data();
-    const auto children = forest.children.get_data();
-    const auto child_ptrs = forest.child_ptrs.get_data();
+    const auto parents = forest.parents.data();
+    const auto children = forest.children.data();
+    const auto child_ptrs = forest.child_ptrs.data();
     // filled with sentinel for unattached nodes
     std::fill_n(parents, num_rows, num_rows);
     for (IndexType row = 0; row < num_rows; row++) {
@@ -190,7 +190,7 @@ void initialize(std::shared_ptr<const DefaultExecutor> exec,
     // convert to COO
     const auto nnz = factors->get_num_stored_elements();
     array<IndexType> row_idx_array{exec, nnz};
-    const auto row_idxs = row_idx_array.get_data();
+    const auto row_idxs = row_idx_array.data();
     const auto col_idxs = factors->get_const_col_idxs();
     components::convert_ptrs_to_idxs(exec, factors->get_const_row_ptrs(),
                                      factors->get_size()[0], row_idxs);

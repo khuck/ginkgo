@@ -201,14 +201,14 @@ void sort_by_column_index(std::shared_ptr<const DefaultExecutor> exec,
         const auto handle = exec->get_hipsparse_handle();
         auto descr = hipsparse::create_mat_descr();
         array<IndexType> permutation_array(exec, to_sort->get_num_nonzeros());
-        auto permutation = permutation_array.get_data();
+        auto permutation = permutation_array.data();
         components::fill_seq_array(exec, permutation,
                                    to_sort->get_num_nonzeros());
         size_type buffer_size{};
         hipsparse::csrsort_buffer_size(handle, num_rows, num_cols, nnz,
                                        row_ptrs, col_idxs, buffer_size);
         array<char> buffer_array{exec, buffer_size};
-        auto buffer = buffer_array.get_data();
+        auto buffer = buffer_array.data();
         hipsparse::csrsort(handle, num_rows, num_cols, nnz, descr, row_ptrs,
                            col_idxs, permutation, buffer);
         hipsparse::destroy(descr);
@@ -235,7 +235,7 @@ void is_sorted_by_column_index(
         kernel::check_unsorted<<<num_blocks, default_block_size, 0,
                                  exec->get_stream()>>>(
             to_check->get_const_row_ptrs(), to_check->get_const_col_idxs(),
-            num_rows, gpu_array.get_data());
+            num_rows, gpu_array.data());
     }
     cpu_array = gpu_array;
 }

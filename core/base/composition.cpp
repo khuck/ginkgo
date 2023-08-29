@@ -77,7 +77,7 @@ std::unique_ptr<LinOp> apply_inner_operators(
 
     // apply inner vectors
     auto exec = rhs->get_executor();
-    auto data = storage.get_data();
+    auto data = storage.data();
     // apply last operator
     auto op_size = operators.back()->get_size();
     auto out_dim = gko::dim<2>{op_size[0], num_rhs};

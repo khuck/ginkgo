@@ -145,7 +145,7 @@ TYPED_TEST(ResidualNorm, CanIgorneResidualNorm)
     constexpr gko::uint8 RelativeStoppingId{1};
     bool one_changed{};
     gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-    stop_status.get_data()[0].reset();
+    stop_status.data()[0].reset();
 
     ASSERT_FALSE(criterion->update().ignore_residual_check(true).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
@@ -175,7 +175,7 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoal)
         constexpr gko::uint8 RelativeStoppingId{1};
         bool one_changed{};
         gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-        stop_status.get_data()[0].reset();
+        stop_status.data()[0].reset();
 
         ASSERT_FALSE(rhs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
@@ -183,13 +183,13 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoal)
         res_norm->at(0) = r<TypeParam>::value * 1.1 * rhs_norm->at(0);
         ASSERT_FALSE(rhs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), false);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), false);
         ASSERT_EQ(one_changed, false);
 
         res_norm->at(0) = r<TypeParam>::value * 0.9 * rhs_norm->at(0);
         ASSERT_TRUE(rhs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), true);
         ASSERT_EQ(one_changed, true);
     }
     {
@@ -198,7 +198,7 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoal)
         constexpr gko::uint8 RelativeStoppingId{1};
         bool one_changed{};
         gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-        stop_status.get_data()[0].reset();
+        stop_status.data()[0].reset();
 
         ASSERT_FALSE(rel_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
@@ -206,13 +206,13 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoal)
         res_norm->at(0) = r<TypeParam>::value * 1.1 * init_res_val;
         ASSERT_FALSE(rel_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), false);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), false);
         ASSERT_EQ(one_changed, false);
 
         res_norm->at(0) = r<TypeParam>::value * 0.9 * init_res_val;
         ASSERT_TRUE(rel_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), true);
         ASSERT_EQ(one_changed, true);
     }
     {
@@ -220,7 +220,7 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoal)
         constexpr gko::uint8 RelativeStoppingId{1};
         bool one_changed{};
         gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-        stop_status.get_data()[0].reset();
+        stop_status.data()[0].reset();
 
         ASSERT_FALSE(abs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
@@ -228,13 +228,13 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoal)
         res_norm->at(0) = r<TypeParam>::value * 1.1;
         ASSERT_FALSE(abs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), false);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), false);
         ASSERT_EQ(one_changed, false);
 
         res_norm->at(0) = r<TypeParam>::value * 0.9;
         ASSERT_TRUE(abs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), true);
         ASSERT_EQ(one_changed, true);
     }
 }
@@ -264,7 +264,7 @@ TYPED_TEST(ResidualNorm, SelfCalculatesThrowWithoutMatrix)
         constexpr gko::uint8 RelativeStoppingId{1};
         bool one_changed{};
         gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-        stop_status.get_data()[0].reset();
+        stop_status.data()[0].reset();
 
         ASSERT_THROW(rhs_criterion->update().solution(solution).check(
                          RelativeStoppingId, true, &stop_status, &one_changed),
@@ -277,7 +277,7 @@ TYPED_TEST(ResidualNorm, SelfCalculatesThrowWithoutMatrix)
         constexpr gko::uint8 RelativeStoppingId{1};
         bool one_changed{};
         gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-        stop_status.get_data()[0].reset();
+        stop_status.data()[0].reset();
 
         ASSERT_THROW(rel_criterion->update().solution(solution).check(
                          RelativeStoppingId, true, &stop_status, &one_changed),
@@ -288,7 +288,7 @@ TYPED_TEST(ResidualNorm, SelfCalculatesThrowWithoutMatrix)
         constexpr gko::uint8 RelativeStoppingId{1};
         bool one_changed{};
         gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-        stop_status.get_data()[0].reset();
+        stop_status.data()[0].reset();
 
         ASSERT_THROW(abs_criterion->update().solution(solution).check(
                          RelativeStoppingId, true, &stop_status, &one_changed),
@@ -314,7 +314,7 @@ TYPED_TEST(ResidualNorm, RelativeSelfCalculatesThrowWithoutRhs)
     constexpr gko::uint8 RelativeStoppingId{1};
     bool one_changed{};
     gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-    stop_status.get_data()[0].reset();
+    stop_status.data()[0].reset();
 
     ASSERT_THROW(rel_criterion->update().solution(solution).check(
                      RelativeStoppingId, true, &stop_status, &one_changed),
@@ -347,7 +347,7 @@ TYPED_TEST(ResidualNorm, SelfCalculatesAndWaitsTillResidualGoal)
         constexpr gko::uint8 RelativeStoppingId{1};
         bool one_changed{};
         gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-        stop_status.get_data()[0].reset();
+        stop_status.data()[0].reset();
 
         ASSERT_FALSE(rhs_criterion->update().solution(solution).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
@@ -355,13 +355,13 @@ TYPED_TEST(ResidualNorm, SelfCalculatesAndWaitsTillResidualGoal)
         solution->at(0) = rhs_val - r<T>::value * T{1.1} * rhs_norm->at(0);
         ASSERT_FALSE(rhs_criterion->update().solution(solution).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), false);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), false);
         ASSERT_EQ(one_changed, false);
 
         solution->at(0) = rhs_val - r<T>::value * T{0.5} * rhs_norm->at(0);
         ASSERT_TRUE(rhs_criterion->update().solution(solution).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), true);
         ASSERT_EQ(one_changed, true);
     }
     {
@@ -371,7 +371,7 @@ TYPED_TEST(ResidualNorm, SelfCalculatesAndWaitsTillResidualGoal)
         constexpr gko::uint8 RelativeStoppingId{1};
         bool one_changed{};
         gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-        stop_status.get_data()[0].reset();
+        stop_status.data()[0].reset();
 
         ASSERT_FALSE(rel_criterion->update().solution(solution).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
@@ -379,13 +379,13 @@ TYPED_TEST(ResidualNorm, SelfCalculatesAndWaitsTillResidualGoal)
         solution->at(0) = rhs_val - r<T>::value * T{1.1} * initial_norm;
         ASSERT_FALSE(rel_criterion->update().solution(solution).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), false);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), false);
         ASSERT_EQ(one_changed, false);
 
         solution->at(0) = rhs_val - r<T>::value * T{0.5} * initial_norm;
         ASSERT_TRUE(rel_criterion->update().solution(solution).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), true);
         ASSERT_EQ(one_changed, true);
     }
     {
@@ -393,7 +393,7 @@ TYPED_TEST(ResidualNorm, SelfCalculatesAndWaitsTillResidualGoal)
         constexpr gko::uint8 RelativeStoppingId{1};
         bool one_changed{};
         gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-        stop_status.get_data()[0].reset();
+        stop_status.data()[0].reset();
 
         ASSERT_FALSE(abs_criterion->update().solution(solution).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
@@ -401,13 +401,13 @@ TYPED_TEST(ResidualNorm, SelfCalculatesAndWaitsTillResidualGoal)
         solution->at(0) = rhs_val - r<T>::value * T{1.2};
         ASSERT_FALSE(abs_criterion->update().solution(solution).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), false);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), false);
         ASSERT_EQ(one_changed, false);
 
         solution->at(0) = rhs_val - r<T>::value * T{0.5};
         ASSERT_TRUE(abs_criterion->update().solution(solution).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), true);
         ASSERT_EQ(one_changed, true);
     }
 }
@@ -437,8 +437,8 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoalMultipleRHS)
         bool one_changed{};
         constexpr gko::uint8 RelativeStoppingId{1};
         gko::array<gko::stopping_status> stop_status(this->exec_, 2);
-        stop_status.get_data()[0].reset();
-        stop_status.get_data()[1].reset();
+        stop_status.data()[0].reset();
+        stop_status.data()[1].reset();
 
         ASSERT_FALSE(rhs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
@@ -446,13 +446,13 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoalMultipleRHS)
         res_norm->at(0, 0) = r<TypeParam>::value * 0.9 * rhs_norm->at(0, 0);
         ASSERT_FALSE(rhs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), true);
         ASSERT_EQ(one_changed, true);
 
         res_norm->at(0, 1) = r<TypeParam>::value * 0.9 * rhs_norm->at(0, 1);
         ASSERT_TRUE(rhs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[1].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[1].has_converged(), true);
         ASSERT_EQ(one_changed, true);
     }
     {
@@ -461,8 +461,8 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoalMultipleRHS)
         bool one_changed{};
         constexpr gko::uint8 RelativeStoppingId{1};
         gko::array<gko::stopping_status> stop_status(this->exec_, 2);
-        stop_status.get_data()[0].reset();
-        stop_status.get_data()[1].reset();
+        stop_status.data()[0].reset();
+        stop_status.data()[1].reset();
 
         ASSERT_FALSE(rel_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
@@ -470,13 +470,13 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoalMultipleRHS)
         res_norm->at(0, 0) = r<TypeParam>::value * 0.9 * res_norm->at(0, 0);
         ASSERT_FALSE(rel_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), true);
         ASSERT_EQ(one_changed, true);
 
         res_norm->at(0, 1) = r<TypeParam>::value * 0.9 * res_norm->at(0, 1);
         ASSERT_TRUE(rel_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[1].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[1].has_converged(), true);
         ASSERT_EQ(one_changed, true);
     }
     {
@@ -485,8 +485,8 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoalMultipleRHS)
         bool one_changed{};
         constexpr gko::uint8 RelativeStoppingId{1};
         gko::array<gko::stopping_status> stop_status(this->exec_, 2);
-        stop_status.get_data()[0].reset();
-        stop_status.get_data()[1].reset();
+        stop_status.data()[0].reset();
+        stop_status.data()[1].reset();
 
         ASSERT_FALSE(abs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
@@ -494,13 +494,13 @@ TYPED_TEST(ResidualNorm, WaitsTillResidualGoalMultipleRHS)
         res_norm->at(0, 0) = r<TypeParam>::value * 0.9;
         ASSERT_FALSE(abs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[0].has_converged(), true);
         ASSERT_EQ(one_changed, true);
 
         res_norm->at(0, 1) = r<TypeParam>::value * 0.9;
         ASSERT_TRUE(abs_criterion->update().residual_norm(res_norm).check(
             RelativeStoppingId, true, &stop_status, &one_changed));
-        ASSERT_EQ(stop_status.get_data()[1].has_converged(), true);
+        ASSERT_EQ(stop_status.data()[1].has_converged(), true);
         ASSERT_EQ(one_changed, true);
     }
 }
@@ -556,7 +556,7 @@ TYPED_TEST(ResidualNormWithInitialResnorm, WaitsTillResidualGoal)
     bool one_changed{};
     constexpr gko::uint8 RelativeStoppingId{1};
     gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-    stop_status.get_data()[0].reset();
+    stop_status.data()[0].reset();
 
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
@@ -564,13 +564,13 @@ TYPED_TEST(ResidualNormWithInitialResnorm, WaitsTillResidualGoal)
     res_norm->at(0) = r<TypeParam>::value * 1.1 * init_res_val;
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), false);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), false);
     ASSERT_EQ(one_changed, false);
 
     res_norm->at(0) = r<TypeParam>::value * 0.9 * init_res_val;
     ASSERT_TRUE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 }
 
@@ -593,7 +593,7 @@ TYPED_TEST(ResidualNormWithInitialResnorm,
     bool one_changed{};
     constexpr gko::uint8 RelativeStoppingId{1};
     gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-    stop_status.get_data()[0].reset();
+    stop_status.data()[0].reset();
 
     ASSERT_FALSE(criterion->update().solution(x).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
@@ -601,13 +601,13 @@ TYPED_TEST(ResidualNormWithInitialResnorm,
     x->at(0) = rhs_val - r<T>::value * T{1.1} * initial_res;
     ASSERT_FALSE(criterion->update().solution(x).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), false);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), false);
     ASSERT_EQ(one_changed, false);
 
     x->at(0) = rhs_val - r<T>::value * T{0.5} * initial_res;
     ASSERT_TRUE(criterion->update().solution(x).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 }
 
@@ -627,8 +627,8 @@ TYPED_TEST(ResidualNormWithInitialResnorm, WaitsTillResidualGoalMultipleRHS)
     bool one_changed{};
     constexpr gko::uint8 RelativeStoppingId{1};
     gko::array<gko::stopping_status> stop_status(this->exec_, 2);
-    stop_status.get_data()[0].reset();
-    stop_status.get_data()[1].reset();
+    stop_status.data()[0].reset();
+    stop_status.data()[1].reset();
 
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
@@ -636,13 +636,13 @@ TYPED_TEST(ResidualNormWithInitialResnorm, WaitsTillResidualGoalMultipleRHS)
     res_norm->at(0, 0) = r<TypeParam>::value * 0.9 * res_norm->at(0, 0);
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 
     res_norm->at(0, 1) = r<TypeParam>::value * 0.9 * res_norm->at(0, 1);
     ASSERT_TRUE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[1].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[1].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 }
 
@@ -714,7 +714,7 @@ TYPED_TEST(ResidualNormWithRhsNorm, WaitsTillResidualGoal)
     bool one_changed{};
     constexpr gko::uint8 RelativeStoppingId{1};
     gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-    stop_status.get_data()[0].reset();
+    stop_status.data()[0].reset();
 
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
@@ -722,13 +722,13 @@ TYPED_TEST(ResidualNormWithRhsNorm, WaitsTillResidualGoal)
     res_norm->at(0) = r<TypeParam>::value * 1.1 * rhs_norm->at(0);
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), false);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), false);
     ASSERT_EQ(one_changed, false);
 
     res_norm->at(0) = r<TypeParam>::value * 0.9 * rhs_norm->at(0);
     ASSERT_TRUE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 }
 
@@ -751,8 +751,8 @@ TYPED_TEST(ResidualNormWithRhsNorm, WaitsTillResidualGoalMultipleRHS)
     bool one_changed{};
     constexpr gko::uint8 RelativeStoppingId{1};
     gko::array<gko::stopping_status> stop_status(this->exec_, 2);
-    stop_status.get_data()[0].reset();
-    stop_status.get_data()[1].reset();
+    stop_status.data()[0].reset();
+    stop_status.data()[1].reset();
 
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
@@ -760,13 +760,13 @@ TYPED_TEST(ResidualNormWithRhsNorm, WaitsTillResidualGoalMultipleRHS)
     res_norm->at(0, 0) = r<TypeParam>::value * 0.9 * rhs_norm->at(0, 0);
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 
     res_norm->at(0, 1) = r<TypeParam>::value * 0.9 * rhs_norm->at(0, 1);
     ASSERT_TRUE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[1].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[1].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 }
 
@@ -866,7 +866,7 @@ TYPED_TEST(ImplicitResidualNorm, WaitsTillResidualGoal)
     bool one_changed{};
     constexpr gko::uint8 RelativeStoppingId{1};
     gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-    stop_status.get_data()[0].reset();
+    stop_status.data()[0].reset();
 
     ASSERT_FALSE(criterion->update().implicit_sq_residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
@@ -874,13 +874,13 @@ TYPED_TEST(ImplicitResidualNorm, WaitsTillResidualGoal)
     res_norm->at(0) = std::pow(r<TypeParam>::value * 1.1 * rhs_norm->at(0), 2);
     ASSERT_FALSE(criterion->update().implicit_sq_residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), false);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), false);
     ASSERT_EQ(one_changed, false);
 
     res_norm->at(0) = std::pow(r<TypeParam>::value * 0.9 * rhs_norm->at(0), 2);
     ASSERT_TRUE(criterion->update().implicit_sq_residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 }
 
@@ -902,8 +902,8 @@ TYPED_TEST(ImplicitResidualNorm, WaitsTillResidualGoalMultipleRHS)
     bool one_changed{};
     constexpr gko::uint8 RelativeStoppingId{1};
     gko::array<gko::stopping_status> stop_status(this->exec_, 2);
-    stop_status.get_data()[0].reset();
-    stop_status.get_data()[1].reset();
+    stop_status.data()[0].reset();
+    stop_status.data()[1].reset();
 
     ASSERT_FALSE(criterion->update().implicit_sq_residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
@@ -912,14 +912,14 @@ TYPED_TEST(ImplicitResidualNorm, WaitsTillResidualGoalMultipleRHS)
         std::pow(r<TypeParam>::value * 0.9 * rhs_norm->at(0, 0), 2);
     ASSERT_FALSE(criterion->update().implicit_sq_residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 
     res_norm->at(0, 1) =
         std::pow(r<TypeParam>::value * 0.9 * rhs_norm->at(0, 1), 2);
     ASSERT_TRUE(criterion->update().implicit_sq_residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[1].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[1].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 }
 
@@ -987,7 +987,7 @@ TYPED_TEST(ResidualNormWithAbsolute, WaitsTillResidualGoal)
     bool one_changed{};
     constexpr gko::uint8 RelativeStoppingId{1};
     gko::array<gko::stopping_status> stop_status(this->exec_, 1);
-    stop_status.get_data()[0].reset();
+    stop_status.data()[0].reset();
 
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
@@ -995,13 +995,13 @@ TYPED_TEST(ResidualNormWithAbsolute, WaitsTillResidualGoal)
     res_norm->at(0) = r<TypeParam>::value * 1.1;
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), false);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), false);
     ASSERT_EQ(one_changed, false);
 
     res_norm->at(0) = r<TypeParam>::value * 0.9;
     ASSERT_TRUE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 }
 
@@ -1021,8 +1021,8 @@ TYPED_TEST(ResidualNormWithAbsolute, WaitsTillResidualGoalMultipleRHS)
     bool one_changed{};
     constexpr gko::uint8 RelativeStoppingId{1};
     gko::array<gko::stopping_status> stop_status(this->exec_, 2);
-    stop_status.get_data()[0].reset();
-    stop_status.get_data()[1].reset();
+    stop_status.data()[0].reset();
+    stop_status.data()[1].reset();
 
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
@@ -1030,13 +1030,13 @@ TYPED_TEST(ResidualNormWithAbsolute, WaitsTillResidualGoalMultipleRHS)
     res_norm->at(0, 0) = r<TypeParam>::value * 0.9;
     ASSERT_FALSE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[0].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[0].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 
     res_norm->at(0, 1) = r<TypeParam>::value * 0.9;
     ASSERT_TRUE(criterion->update().residual_norm(res_norm).check(
         RelativeStoppingId, true, &stop_status, &one_changed));
-    ASSERT_EQ(stop_status.get_data()[1].has_converged(), true);
+    ASSERT_EQ(stop_status.data()[1].has_converged(), true);
     ASSERT_EQ(one_changed, true);
 }
 

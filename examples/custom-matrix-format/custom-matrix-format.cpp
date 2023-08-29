@@ -105,7 +105,7 @@ protected:
                 auto x_values = x->get_values();
 #pragma omp parallel for
                 for (std::size_t i = 0; i < x->get_size()[0]; ++i) {
-                    auto coefs = coefficients.get_const_data();
+                    auto coefs = coefficients.const_data();
                     auto result = coefs[1] * b_values[i];
                     if (i > 0) {
                         result += coefs[0] * b_values[i - 1];
@@ -120,7 +120,7 @@ protected:
             // CUDA implementation
             void run(std::shared_ptr<const gko::CudaExecutor>) const override
             {
-                stencil_kernel(x->get_size()[0], coefficients.get_const_data(),
+                stencil_kernel(x->get_size()[0], coefficients.const_data(),
                                b->get_const_values(), x->get_values());
             }
 

@@ -71,8 +71,7 @@ void match_edge(std::shared_ptr<const DefaultExecutor> exec,
                 agg_vals[neighbor] = tidx;
             }
         },
-        agg.get_num_elems(), strongest_neighbor.get_const_data(),
-        agg.get_data());
+        agg.size(), strongest_neighbor.const_data(), agg.data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_INDEX_TYPE(GKO_DECLARE_PGM_MATCH_EDGE_KERNEL);
@@ -85,10 +84,9 @@ void count_unagg(std::shared_ptr<const DefaultExecutor> exec,
     array<IndexType> d_result(exec, 1);
     run_kernel_reduction(
         exec, [] GKO_KERNEL(auto i, auto array) { return array[i] == -1; },
-        GKO_KERNEL_REDUCE_SUM(IndexType), d_result.get_data(),
-        agg.get_num_elems(), agg);
+        GKO_KERNEL_REDUCE_SUM(IndexType), d_result.data(), agg.size(), agg);
 
-    *num_unagg = exec->copy_val_to_host(d_result.get_const_data());
+    *num_unagg = exec->copy_val_to_host(d_result.const_data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_INDEX_TYPE(GKO_DECLARE_PGM_COUNT_UNAGG_KERNEL);
@@ -98,7 +96,7 @@ template <typename IndexType>
 void renumber(std::shared_ptr<const DefaultExecutor> exec,
               array<IndexType>& agg, IndexType* num_agg)
 {
-    const auto num = agg.get_num_elems();
+    const auto num = agg.size();
     array<IndexType> agg_map(exec, num + 1);
     run_kernel(
         exec,
@@ -109,18 +107,17 @@ void renumber(std::shared_ptr<const DefaultExecutor> exec,
             // identifier.
             agg_map[tidx] = (agg[tidx] == tidx);
         },
-        num, agg.get_const_data(), agg_map.get_data());
+        num, agg.const_data(), agg_map.data());
 
-    components::prefix_sum_nonnegative(exec, agg_map.get_data(),
-                                       agg_map.get_num_elems());
+    components::prefix_sum_nonnegative(exec, agg_map.data(), agg_map.size());
 
     run_kernel(
         exec,
         [] GKO_KERNEL(auto tidx, auto map, auto agg) {
             agg[tidx] = map[agg[tidx]];
         },
-        num, agg_map.get_const_data(), agg.get_data());
-    *num_agg = exec->copy_val_to_host(agg_map.get_const_data() + num);
+        num, agg_map.const_data(), agg.data());
+    *num_agg = exec->copy_val_to_host(agg_map.const_data() + num);
 }
 
 GKO_INSTANTIATE_FOR_EACH_INDEX_TYPE(GKO_DECLARE_PGM_RENUMBER_KERNEL);
@@ -176,10 +173,10 @@ void count_unrepeated_nnz(std::shared_ptr<const DefaultExecutor> exec,
                 return row_idxs[i] != row_idxs[i + 1] ||
                        col_idxs[i] != col_idxs[i + 1];
             },
-            GKO_KERNEL_REDUCE_SUM(IndexType), d_result.get_data(), nnz - 1,
+            GKO_KERNEL_REDUCE_SUM(IndexType), d_result.data(), nnz - 1,
             row_idxs, col_idxs);
         *coarse_nnz = static_cast<size_type>(
-            exec->copy_val_to_host(d_result.get_const_data()) + 1);
+            exec->copy_val_to_host(d_result.const_data()) + 1);
     } else {
         *coarse_nnz = nnz;
     }
@@ -242,10 +239,9 @@ void find_strongest_neighbor(
                 strongest_neighbor[row] = row;
             }
         },
-        agg.get_num_elems(), weight_mtx->get_const_row_ptrs(),
+        agg.size(), weight_mtx->get_const_row_ptrs(),
         weight_mtx->get_const_col_idxs(), weight_mtx->get_const_values(),
-        diag->get_const_values(), agg.get_data(),
-        strongest_neighbor.get_data());
+        diag->get_const_values(), agg.data(), strongest_neighbor.data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_NON_COMPLEX_VALUE_AND_INDEX_TYPE(
@@ -258,8 +254,8 @@ void assign_to_exist_agg(std::shared_ptr<const DefaultExecutor> exec,
                          array<IndexType>& agg,
                          array<IndexType>& intermediate_agg)
 {
-    const auto num = agg.get_num_elems();
-    if (intermediate_agg.get_num_elems() > 0) {
+    const auto num = agg.size();
+    if (intermediate_agg.size() > 0) {
         // deterministic kernel
         run_kernel(
             exec,
@@ -294,8 +290,8 @@ void assign_to_exist_agg(std::shared_ptr<const DefaultExecutor> exec,
             },
             num, weight_mtx->get_const_row_ptrs(),
             weight_mtx->get_const_col_idxs(), weight_mtx->get_const_values(),
-            diag->get_const_values(), agg.get_const_data(),
-            intermediate_agg.get_data());
+            diag->get_const_values(), agg.const_data(),
+            intermediate_agg.data());
         // Copy the intermediate_agg to agg
         agg = intermediate_agg;
     } else {
@@ -332,7 +328,7 @@ void assign_to_exist_agg(std::shared_ptr<const DefaultExecutor> exec,
             },
             num, weight_mtx->get_const_row_ptrs(),
             weight_mtx->get_const_col_idxs(), weight_mtx->get_const_values(),
-            diag->get_const_values(), agg.get_data());
+            diag->get_const_values(), agg.data());
     }
 }
 

@@ -49,7 +49,7 @@ void build_local(
                         range_bounds + num_ranges + 1,
                         input.get_const_row_idxs(),
                         input.get_const_row_idxs() + input.get_num_elems(),
-                        range_id.get_data(), thrust::less<GlobalIndexType>());
+                        range_id.data(), thrust::less<GlobalIndexType>());
 
     // write values with local rows into the local matrix at the correct index
     // this needs the following iterators:
@@ -66,8 +66,8 @@ void build_local(
                    range_starting_indices[rid];
         };
     auto local_row_it = thrust::make_transform_iterator(
-        thrust::make_zip_iterator(thrust::make_tuple(input.get_const_row_idxs(),
-                                                     range_id.get_data())),
+        thrust::make_zip_iterator(
+            thrust::make_tuple(input.get_const_row_idxs(), range_id.data())),
         map_to_local_row);
 
     auto stride = local_mtx->get_stride();
@@ -87,8 +87,8 @@ void build_local(
         };
     thrust::scatter_if(thrust_policy(exec), input.get_const_values(),
                        input.get_const_values() + input.get_num_elems(),
-                       flat_idx_it, range_id.get_data(),
-                       local_mtx->get_values(), is_local_row);
+                       flat_idx_it, range_id.data(), local_mtx->get_values(),
+                       is_local_row);
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_LOCAL_GLOBAL_INDEX_TYPE(

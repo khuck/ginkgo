@@ -309,18 +309,18 @@ void Fbcsr<ValueType, IndexType>::write(mat_data& data) const
         std::array<acc::size_type, 3>{static_cast<acc::size_type>(nbnz),
                                       static_cast<acc::size_type>(bs_),
                                       static_cast<acc::size_type>(bs_)},
-        tmp->values_.get_const_data());
+        tmp->values_.const_data());
 
     for (size_type brow = 0; brow < tmp->get_num_block_rows(); ++brow) {
-        const auto start = tmp->row_ptrs_.get_const_data()[brow];
-        const auto end = tmp->row_ptrs_.get_const_data()[brow + 1];
+        const auto start = tmp->row_ptrs_.const_data()[brow];
+        const auto end = tmp->row_ptrs_.const_data()[brow + 1];
 
         for (int ib = 0; ib < bs_; ib++) {
             const auto row = brow * bs_ + ib;
             for (auto inz = start; inz < end; ++inz) {
                 for (int jb = 0; jb < bs_; jb++) {
                     const auto col =
-                        tmp->col_idxs_.get_const_data()[inz] * bs_ + jb;
+                        tmp->col_idxs_.const_data()[inz] * bs_ + jb;
                     const auto val = vblocks(inz, ib, jb);
                     data.nonzeros.emplace_back(row, col, val);
                 }

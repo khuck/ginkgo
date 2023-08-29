@@ -977,7 +977,7 @@ void initialize(std::shared_ptr<const DpcppExecutor> exec,
         residual->get_values(), residual->get_stride(),
         givens_sin->get_values(), givens_sin->get_stride(),
         givens_cos->get_values(), givens_cos->get_stride(),
-        stop_status->get_data());
+        stop_status->data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_CB_GMRES_INITIALIZE_KERNEL);
@@ -1047,7 +1047,7 @@ void restart(std::shared_ptr<const DpcppExecutor> exec,
         residual->get_stride(), residual_norm->get_const_values(),
         residual_norm_collection->get_values(), krylov_bases,
         next_krylov_basis->get_values(), next_krylov_basis->get_stride(),
-        final_iter_nums->get_data());
+        final_iter_nums->data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_CB_GMRES_TYPE(GKO_DECLARE_CB_GMRES_RESTART_KERNEL);
@@ -1139,14 +1139,13 @@ void finish_arnoldi_CGS(std::shared_ptr<const DpcppExecutor> exec,
         arnoldi_norm->get_values() + stride_arnoldi,
         arnoldi_norm->get_values() + 2 * stride_arnoldi, stop_status);
     // nrmN = norm(next_krylov_basis)
-    components::fill_array(exec, num_reorth->get_data(), 1, zero<size_type>());
+    components::fill_array(exec, num_reorth->data(), 1, zero<size_type>());
     check_arnoldi_norms<default_block_size>(
         ceildiv(dim_size[1], default_block_size), default_block_size, 0,
         exec->get_queue(), dim_size[1], arnoldi_norm->get_values(),
         stride_arnoldi, hessenberg_iter->get_values(), stride_hessenberg,
-        iter + 1, krylov_bases, stop_status, reorth_status,
-        num_reorth->get_data());
-    num_reorth_host = exec->copy_val_to_host(num_reorth->get_const_data());
+        iter + 1, krylov_bases, stop_status, reorth_status, num_reorth->data());
+    num_reorth_host = exec->copy_val_to_host(num_reorth->const_data());
     // num_reorth_host := number of next_krylov vector to be reorthogonalization
     for (size_type l = 1; (num_reorth_host > 0) && (l < 3); l++) {
         zero_matrix(exec, iter + 1, dim_size[1], stride_buffer,
@@ -1192,15 +1191,14 @@ void finish_arnoldi_CGS(std::shared_ptr<const DpcppExecutor> exec,
             stride_next_krylov, arnoldi_norm->get_values() + stride_arnoldi,
             arnoldi_norm->get_values() + 2 * stride_arnoldi, stop_status);
         // nrmN = norm(next_krylov_basis)
-        components::fill_array(exec, num_reorth->get_data(), 1,
-                               zero<size_type>());
+        components::fill_array(exec, num_reorth->data(), 1, zero<size_type>());
         check_arnoldi_norms<default_block_size>(
             ceildiv(dim_size[1], default_block_size), default_block_size, 0,
             exec->get_queue(), dim_size[1], arnoldi_norm->get_values(),
             stride_arnoldi, hessenberg_iter->get_values(), stride_hessenberg,
             iter + 1, krylov_bases, stop_status, reorth_status,
-            num_reorth->get_data());
-        num_reorth_host = exec->copy_val_to_host(num_reorth->get_const_data());
+            num_reorth->data());
+        num_reorth_host = exec->copy_val_to_host(num_reorth->const_data());
     }
 
     update_krylov_next_krylov_kernel<default_block_size>(
@@ -1237,7 +1235,7 @@ void givens_rotation(std::shared_ptr<const DpcppExecutor> exec,
         givens_sin->get_values(), givens_sin->get_stride(),
         givens_cos->get_values(), givens_cos->get_stride(),
         residual_norm->get_values(), residual_norm_collection->get_values(),
-        residual_norm_collection->get_stride(), stop_status->get_const_data());
+        residual_norm_collection->get_stride(), stop_status->const_data());
 }
 
 
@@ -1258,12 +1256,12 @@ void arnoldi(std::shared_ptr<const DpcppExecutor> exec,
 {
     increase_final_iteration_numbers_kernel(
         static_cast<unsigned int>(
-            ceildiv(final_iter_nums->get_num_elems(), default_block_size)),
-        default_block_size, 0, exec->get_queue(), final_iter_nums->get_data(),
-        stop_status->get_const_data(), final_iter_nums->get_num_elems());
+            ceildiv(final_iter_nums->size(), default_block_size)),
+        default_block_size, 0, exec->get_queue(), final_iter_nums->data(),
+        stop_status->const_data(), final_iter_nums->size());
     finish_arnoldi_CGS(exec, next_krylov_basis, krylov_bases, hessenberg_iter,
                        buffer_iter, arnoldi_norm, iter,
-                       stop_status->get_const_data(), reorth_status->get_data(),
+                       stop_status->const_data(), reorth_status->data(),
                        num_reorth);
     givens_rotation(exec, givens_sin, givens_cos, hessenberg_iter,
                     residual_norm, residual_norm_collection, iter, stop_status);
@@ -1291,7 +1289,7 @@ void solve_upper_triangular(
         num_rhs, residual_norm_collection->get_const_values(),
         residual_norm_collection->get_stride(), hessenberg->get_const_values(),
         hessenberg->get_stride(), y->get_values(), y->get_stride(),
-        final_iter_nums->get_const_data());
+        final_iter_nums->const_data());
 }
 
 
@@ -1319,7 +1317,7 @@ void calculate_qy(std::shared_ptr<const DpcppExecutor> exec,
         grid_dim, block_dim, 0, exec->get_queue(), num_rows, num_cols,
         krylov_bases, y->get_const_values(), y->get_stride(),
         before_preconditioner->get_values(), stride_before_preconditioner,
-        final_iter_nums->get_const_data());
+        final_iter_nums->const_data());
     // Calculate qy
     // before_preconditioner = krylov_bases * y
 }

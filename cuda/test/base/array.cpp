@@ -47,17 +47,17 @@ class Array : public CudaTestFixture {
 protected:
     Array() : x(ref, 2)
     {
-        x.get_data()[0] = 5;
-        x.get_data()[1] = 2;
+        x.data()[0] = 5;
+        x.data()[1] = 2;
     }
 
     static void assert_equal_to_original_x(gko::array<T>& a)
     {
-        ASSERT_EQ(a.get_num_elems(), 2);
-        EXPECT_EQ(a.get_data()[0], T{5});
-        EXPECT_EQ(a.get_data()[1], T{2});
-        EXPECT_EQ(a.get_const_data()[0], T{5});
-        EXPECT_EQ(a.get_const_data()[1], T{2});
+        ASSERT_EQ(a.size(), 2);
+        EXPECT_EQ(a.data()[0], T{5});
+        EXPECT_EQ(a.data()[1], T{2});
+        EXPECT_EQ(a.const_data()[0], T{5});
+        EXPECT_EQ(a.const_data()[1], T{2});
     }
 
     gko::array<T> x;
@@ -82,7 +82,7 @@ TYPED_TEST(Array, CanCopyBackTemporaryCloneOnDifferentExecutor)
         auto tmp_clone = make_temporary_clone(this->exec, &this->x);
         // change x, so it no longer matches the original x
         // the copy-back will overwrite it again with the correct value
-        this->x.get_data()[0] = 0;
+        this->x.data()[0] = 0;
     }
 
     this->assert_equal_to_original_x(this->x);
@@ -98,7 +98,7 @@ TYPED_TEST(Array, CanBeReduced)
     gko::reduce_add(arr, out);
 
     out.set_executor(this->exec->get_master());
-    ASSERT_EQ(out.get_data()[0], T{12});
+    ASSERT_EQ(out.data()[0], T{12});
 }
 
 

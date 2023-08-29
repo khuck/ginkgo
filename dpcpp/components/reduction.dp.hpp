@@ -276,16 +276,16 @@ ValueType reduce_add_array(std::shared_ptr<const DpcppExecutor> exec,
         block_results.resize_and_reset(grid_dim);
 
         reduce_add_array_call(cfg, grid_dim, wg_size, 0, exec->get_queue(),
-                              size, source, block_results.get_data());
+                              size, source, block_results.data());
 
-        block_results_val = block_results.get_const_data();
+        block_results_val = block_results.const_data();
     }
 
     auto d_result = array<ValueType>(exec, 1);
 
     reduce_add_array_call(cfg, 1, wg_size, 0, exec->get_queue(), grid_dim,
-                          block_results_val, d_result.get_data());
-    answer = exec->copy_val_to_host(d_result.get_const_data());
+                          block_results_val, d_result.data());
+    answer = exec->copy_val_to_host(d_result.const_data());
     return answer;
 }
 

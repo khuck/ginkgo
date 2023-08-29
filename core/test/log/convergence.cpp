@@ -54,8 +54,8 @@ public:
 
     Convergence()
     {
-        status.get_data()[0].reset();
-        status.get_data()[0].converge(0);
+        status.data()[0].reset();
+        status.data()[0].converge(0);
     }
 
     std::shared_ptr<gko::ReferenceExecutor> exec =

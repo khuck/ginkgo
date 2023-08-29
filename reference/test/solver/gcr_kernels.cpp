@@ -132,8 +132,7 @@ protected:
         stopped.converge(1, true);
         non_stopped.reset();
         small_stop = gko::array<gko::stopping_status>(exec, small_size[1]);
-        std::fill_n(small_stop.get_data(), small_stop.get_num_elems(),
-                    non_stopped);
+        std::fill_n(small_stop.data(), small_stop.size(), non_stopped);
         small_final_iter_nums = gko::array<gko::size_type>(exec, small_size[1]);
     }
 
@@ -168,16 +167,16 @@ TYPED_TEST(Gcr, KernelInitialize)
     using T = typename TestFixture::value_type;
     const T nan = std::numeric_limits<gko::remove_complex<T>>::quiet_NaN();
     this->small_residual->fill(nan);
-    std::fill_n(this->small_stop.get_data(), this->small_stop.get_num_elems(),
+    std::fill_n(this->small_stop.data(), this->small_stop.size(),
                 this->stopped);
 
     gko::kernels::reference::gcr::initialize(this->exec, this->small_b.get(),
                                              this->small_residual.get(),
-                                             this->small_stop.get_data());
+                                             this->small_stop.data());
 
     GKO_ASSERT_MTX_NEAR(this->small_residual, this->small_b, 0);
-    for (int i = 0; i < this->small_stop.get_num_elems(); ++i) {
-        ASSERT_EQ(this->small_stop.get_data()[i], this->non_stopped);
+    for (int i = 0; i < this->small_stop.size(); ++i) {
+        ASSERT_EQ(this->small_stop.data()[i], this->non_stopped);
     }
 }
 
@@ -192,8 +191,8 @@ TYPED_TEST(Gcr, KernelRestart)
     this->mtx->apply(this->small_residual.get(), this->small_A_residual.get());
     this->small_krylov_bases_p->fill(nan);
     this->small_mapped_krylov_bases_Ap->fill(nan);
-    std::fill_n(this->small_final_iter_nums.get_data(),
-                this->small_final_iter_nums.get_num_elems(), 999);
+    std::fill_n(this->small_final_iter_nums.data(),
+                this->small_final_iter_nums.size(), 999);
     auto expected_p_bases = gko::clone(this->exec, this->small_krylov_bases_p);
     auto expected_Ap_bases =
         gko::clone(this->exec, this->small_mapped_krylov_bases_Ap);
@@ -212,12 +211,12 @@ TYPED_TEST(Gcr, KernelRestart)
         this->exec, this->small_residual.get(), this->small_A_residual.get(),
         this->small_krylov_bases_p.get(),
         this->small_mapped_krylov_bases_Ap.get(),
-        this->small_final_iter_nums.get_data());
+        this->small_final_iter_nums.data());
 
-    ASSERT_EQ(this->small_final_iter_nums.get_num_elems(),
+    ASSERT_EQ(this->small_final_iter_nums.size(),
               this->small_residual->get_size()[1]);
-    for (int i = 0; i < this->small_final_iter_nums.get_num_elems(); ++i) {
-        ASSERT_EQ(this->small_final_iter_nums.get_const_data()[i], 0);
+    for (int i = 0; i < this->small_final_iter_nums.size(); ++i) {
+        ASSERT_EQ(this->small_final_iter_nums.const_data()[i], 0);
     }
     GKO_ASSERT_MTX_NEAR(this->small_krylov_bases_p, this->small_residual,
                         r<value_type>::value);
@@ -245,7 +244,7 @@ TYPED_TEST(Gcr, KernelStep1)
         this->exec, this->small_x.get(), this->small_residual.get(),
         this->small_krylov_bases_p.get(),
         this->small_mapped_krylov_bases_Ap.get(), this->small_Ap_norm.get(),
-        this->small_tmp_rAp.get(), this->small_stop.get_data());
+        this->small_tmp_rAp.get(), this->small_stop.data());
 }
 
 

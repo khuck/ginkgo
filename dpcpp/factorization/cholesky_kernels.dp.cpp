@@ -66,12 +66,12 @@ void symbolic_count(std::shared_ptr<const DefaultExecutor> exec,
     const auto num_rows = mtx->get_size()[0];
     const auto mtx_nnz = mtx->get_num_stored_elements();
     tmp_storage.resize_and_reset(mtx_nnz + num_rows);
-    const auto postorder_cols = tmp_storage.get_data();
+    const auto postorder_cols = tmp_storage.data();
     const auto lower_ends = postorder_cols + mtx_nnz;
     const auto row_ptrs = mtx->get_const_row_ptrs();
     const auto cols = mtx->get_const_col_idxs();
-    const auto inv_postorder = forest.inv_postorder.get_const_data();
-    const auto postorder_parent = forest.postorder_parents.get_const_data();
+    const auto inv_postorder = forest.inv_postorder.const_data();
+    const auto postorder_parent = forest.postorder_parents.const_data();
     auto queue = exec->get_queue();
     // build sorted postorder node list for each row
     queue->submit([&](sycl::handler& cgh) {
@@ -135,12 +135,12 @@ void symbolic_factorize(
 {
     const auto num_rows = mtx->get_size()[0];
     const auto mtx_nnz = mtx->get_num_stored_elements();
-    const auto postorder_cols = tmp_storage.get_const_data();
+    const auto postorder_cols = tmp_storage.const_data();
     const auto lower_ends = postorder_cols + mtx_nnz;
     const auto row_ptrs = mtx->get_const_row_ptrs();
-    const auto postorder = forest.postorder.get_const_data();
-    const auto inv_postorder = forest.inv_postorder.get_const_data();
-    const auto postorder_parent = forest.postorder_parents.get_const_data();
+    const auto postorder = forest.postorder.const_data();
+    const auto inv_postorder = forest.inv_postorder.const_data();
+    const auto postorder_parent = forest.postorder_parents.const_data();
     const auto out_row_ptrs = l_factor->get_const_row_ptrs();
     const auto out_cols = l_factor->get_col_idxs();
     exec->get_queue()->submit([&](sycl::handler& cgh) {

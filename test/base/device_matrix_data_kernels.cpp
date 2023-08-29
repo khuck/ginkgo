@@ -242,17 +242,17 @@ TYPED_TEST(DeviceMatrixData, EmptiesOut)
     ASSERT_NE(data.get_const_row_idxs(), original_ptr1);
     ASSERT_NE(data.get_const_col_idxs(), original_ptr2);
     ASSERT_NE(data.get_const_values(), original_ptr3);
-    ASSERT_EQ(arrays.row_idxs.get_const_data(), original_ptr1);
-    ASSERT_EQ(arrays.col_idxs.get_const_data(), original_ptr2);
-    ASSERT_EQ(arrays.values.get_const_data(), original_ptr3);
+    ASSERT_EQ(arrays.row_idxs.const_data(), original_ptr1);
+    ASSERT_EQ(arrays.col_idxs.const_data(), original_ptr2);
+    ASSERT_EQ(arrays.values.const_data(), original_ptr3);
     arrays.row_idxs.set_executor(this->exec->get_master());
     arrays.col_idxs.set_executor(this->exec->get_master());
     arrays.values.set_executor(this->exec->get_master());
-    for (gko::size_type i = 0; i < arrays.values.get_num_elems(); i++) {
+    for (gko::size_type i = 0; i < arrays.values.size(); i++) {
         const auto entry = this->host_data.nonzeros[i];
-        ASSERT_EQ(arrays.row_idxs.get_const_data()[i], entry.row);
-        ASSERT_EQ(arrays.col_idxs.get_const_data()[i], entry.column);
-        ASSERT_EQ(arrays.values.get_const_data()[i], entry.value);
+        ASSERT_EQ(arrays.row_idxs.const_data()[i], entry.row);
+        ASSERT_EQ(arrays.col_idxs.const_data()[i], entry.column);
+        ASSERT_EQ(arrays.values.const_data()[i], entry.value);
     }
 }
 
@@ -346,10 +346,10 @@ TYPED_TEST(DeviceMatrixData, SumsDuplicates)
     GKO_ASSERT_ARRAY_EQ(arrays.col_idxs, ref_arrays.col_idxs);
     double max_error{};
     arrays.values.set_executor(this->exec->get_master());
-    for (int i = 0; i < arrays.values.get_num_elems(); i++) {
+    for (int i = 0; i < arrays.values.size(); i++) {
         max_error = std::max<double>(
-            max_error, std::abs(arrays.values.get_const_data()[i] -
-                                ref_arrays.values.get_const_data()[i]));
+            max_error, std::abs(arrays.values.const_data()[i] -
+                                ref_arrays.values.const_data()[i]));
     }
     // when Hip with GNU < 7, it will give a little difference.
     ASSERT_LT(max_error, 2 * r<value_type>::value);

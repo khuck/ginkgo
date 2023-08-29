@@ -119,12 +119,12 @@ protected:
         givens_sin = gen_mtx(gko::solver::gmres_default_krylov_dim, nrhs);
         givens_cos = gen_mtx(gko::solver::gmres_default_krylov_dim, nrhs);
         stop_status = gko::array<gko::stopping_status>(ref, nrhs);
-        for (size_t i = 0; i < stop_status.get_num_elems(); ++i) {
-            stop_status.get_data()[i].reset();
+        for (size_t i = 0; i < stop_status.size(); ++i) {
+            stop_status.data()[i].reset();
         }
         final_iter_nums = gko::array<gko::size_type>(ref, nrhs);
-        for (size_t i = 0; i < final_iter_nums.get_num_elems(); ++i) {
-            final_iter_nums.get_data()[i] = 5;
+        for (size_t i = 0; i < final_iter_nums.size(); ++i) {
+            final_iter_nums.data()[i] = 5;
         }
 
         d_x = gko::clone(exec, x);
@@ -188,10 +188,10 @@ TEST_F(Gmres, GmresKernelInitializeIsEquivalentToRef)
 
     gko::kernels::reference::common_gmres::initialize(
         ref, b.get(), residual.get(), givens_sin.get(), givens_cos.get(),
-        stop_status.get_data());
+        stop_status.data());
     gko::kernels::EXEC_NAMESPACE::common_gmres::initialize(
         exec, d_b.get(), d_residual.get(), d_givens_sin.get(),
-        d_givens_cos.get(), d_stop_status.get_data());
+        d_givens_cos.get(), d_stop_status.data());
 
     GKO_ASSERT_MTX_NEAR(d_residual, residual, r<value_type>::value);
     GKO_ASSERT_MTX_NEAR(d_givens_sin, givens_sin, r<value_type>::value);
@@ -209,11 +209,11 @@ TEST_F(Gmres, GmresKernelRestartIsEquivalentToRef)
     gko::kernels::reference::gmres::restart(
         ref, residual.get(), residual_norm.get(),
         residual_norm_collection.get(), krylov_bases.get(),
-        final_iter_nums.get_data());
+        final_iter_nums.data());
     gko::kernels::EXEC_NAMESPACE::gmres::restart(
         exec, d_residual.get(), d_residual_norm.get(),
         d_residual_norm_collection.get(), d_krylov_bases.get(),
-        d_final_iter_nums.get_data());
+        d_final_iter_nums.data());
 
     GKO_ASSERT_MTX_NEAR(d_residual_norm, residual_norm, r<value_type>::value);
     GKO_ASSERT_MTX_NEAR(d_residual_norm_collection, residual_norm_collection,
@@ -231,11 +231,11 @@ TEST_F(Gmres, GmresKernelHessenbergQRIsEquivalentToRef)
     gko::kernels::reference::common_gmres::hessenberg_qr(
         ref, givens_sin.get(), givens_cos.get(), residual_norm.get(),
         residual_norm_collection.get(), hessenberg_iter.get(), iter,
-        final_iter_nums.get_data(), stop_status.get_const_data());
+        final_iter_nums.data(), stop_status.const_data());
     gko::kernels::EXEC_NAMESPACE::common_gmres::hessenberg_qr(
         exec, d_givens_sin.get(), d_givens_cos.get(), d_residual_norm.get(),
         d_residual_norm_collection.get(), d_hessenberg_iter.get(), iter,
-        d_final_iter_nums.get_data(), d_stop_status.get_const_data());
+        d_final_iter_nums.data(), d_stop_status.const_data());
 
     GKO_ASSERT_MTX_NEAR(d_givens_sin, givens_sin, r<value_type>::value);
     GKO_ASSERT_MTX_NEAR(d_givens_cos, givens_cos, r<value_type>::value);
@@ -257,11 +257,11 @@ TEST_F(Gmres, GmresKernelHessenbergQROnSingleRHSIsEquivalentToRef)
     gko::kernels::reference::common_gmres::hessenberg_qr(
         ref, givens_sin.get(), givens_cos.get(), residual_norm.get(),
         residual_norm_collection.get(), hessenberg_iter.get(), iter,
-        final_iter_nums.get_data(), stop_status.get_const_data());
+        final_iter_nums.data(), stop_status.const_data());
     gko::kernels::EXEC_NAMESPACE::common_gmres::hessenberg_qr(
         exec, d_givens_sin.get(), d_givens_cos.get(), d_residual_norm.get(),
         d_residual_norm_collection.get(), d_hessenberg_iter.get(), iter,
-        d_final_iter_nums.get_data(), d_stop_status.get_const_data());
+        d_final_iter_nums.data(), d_stop_status.const_data());
 
     GKO_ASSERT_MTX_NEAR(d_givens_sin, givens_sin, r<value_type>::value);
     GKO_ASSERT_MTX_NEAR(d_givens_cos, givens_cos, r<value_type>::value);
@@ -281,10 +281,10 @@ TEST_F(Gmres, GmresKernelSolveKrylovIsEquivalentToRef)
 
     gko::kernels::reference::common_gmres::solve_krylov(
         ref, residual_norm_collection.get(), hessenberg.get(), y.get(),
-        final_iter_nums.get_const_data(), stop_status.get_const_data());
+        final_iter_nums.const_data(), stop_status.const_data());
     gko::kernels::EXEC_NAMESPACE::common_gmres::solve_krylov(
         exec, d_residual_norm_collection.get(), d_hessenberg.get(), d_y.get(),
-        d_final_iter_nums.get_const_data(), d_stop_status.get_const_data());
+        d_final_iter_nums.const_data(), d_stop_status.const_data());
 
     GKO_ASSERT_MTX_NEAR(d_y, y, r<value_type>::value);
 }
@@ -296,10 +296,10 @@ TEST_F(Gmres, GmresKernelMultiAxpyIsEquivalentToRef)
 
     gko::kernels::reference::gmres::multi_axpy(
         ref, krylov_bases.get(), y.get(), before_preconditioner.get(),
-        final_iter_nums.get_const_data(), stop_status.get_data());
+        final_iter_nums.const_data(), stop_status.data());
     gko::kernels::EXEC_NAMESPACE::gmres::multi_axpy(
         exec, d_krylov_bases.get(), d_y.get(), d_before_preconditioner.get(),
-        d_final_iter_nums.get_const_data(), d_stop_status.get_data());
+        d_final_iter_nums.const_data(), d_stop_status.data());
 
     GKO_ASSERT_MTX_NEAR(d_before_preconditioner, before_preconditioner,
                         r<value_type>::value);

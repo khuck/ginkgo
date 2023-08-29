@@ -68,11 +68,11 @@ void symbolic_count(std::shared_ptr<const DefaultExecutor> exec,
     const auto num_rows = mtx->get_size()[0];
     const auto row_ptrs = mtx->get_const_row_ptrs();
     const auto cols = mtx->get_const_col_idxs();
-    const auto inv_postorder = forest.inv_postorder.get_const_data();
-    const auto postorder = forest.postorder.get_const_data();
-    const auto postorder_parent = forest.postorder_parents.get_const_data();
+    const auto inv_postorder = forest.inv_postorder.const_data();
+    const auto postorder = forest.postorder.const_data();
+    const auto postorder_parent = forest.postorder_parents.const_data();
     tmp_storage.resize_and_reset(mtx->get_num_stored_elements() + num_rows);
-    const auto postorder_cols = tmp_storage.get_data();
+    const auto postorder_cols = tmp_storage.data();
     const auto lower_ends = postorder_cols + mtx->get_num_stored_elements();
 #pragma omp parallel for
     for (IndexType row = 0; row < num_rows; row++) {
@@ -124,13 +124,13 @@ void symbolic_factorize(
     const auto num_rows = mtx->get_size()[0];
     const auto row_ptrs = mtx->get_const_row_ptrs();
     const auto cols = mtx->get_const_col_idxs();
-    const auto postorder_parent = forest.postorder_parents.get_const_data();
+    const auto postorder_parent = forest.postorder_parents.const_data();
     const auto out_row_ptrs = l_factor->get_const_row_ptrs();
     const auto out_cols = l_factor->get_col_idxs();
-    const auto postorder_cols = tmp_storage.get_const_data();
+    const auto postorder_cols = tmp_storage.const_data();
     const auto lower_ends = postorder_cols + mtx->get_num_stored_elements();
-    const auto inv_postorder = forest.inv_postorder.get_const_data();
-    const auto postorder = forest.postorder.get_const_data();
+    const auto inv_postorder = forest.inv_postorder.const_data();
+    const auto postorder = forest.postorder.const_data();
 #pragma omp parallel for
     for (IndexType row = 0; row < num_rows; row++) {
         const auto row_begin = row_ptrs[row];
@@ -169,9 +169,9 @@ void forest_from_factor(
 {
     const auto row_ptrs = factors->get_const_row_ptrs();
     const auto col_idxs = factors->get_const_col_idxs();
-    const auto parents = forest.parents.get_data();
-    const auto children = forest.children.get_data();
-    const auto child_ptrs = forest.child_ptrs.get_data();
+    const auto parents = forest.parents.data();
+    const auto children = forest.children.data();
+    const auto child_ptrs = forest.child_ptrs.data();
     const auto num_rows = static_cast<IndexType>(factors->get_size()[0]);
     components::fill_array(exec, parents, num_rows, num_rows);
 #pragma omp parallel for
@@ -191,13 +191,12 @@ void forest_from_factor(
     }
     // group by parent
     array<IndexType> parents_copy{exec, static_cast<size_type>(num_rows)};
-    exec->copy(num_rows, parents, parents_copy.get_data());
+    exec->copy(num_rows, parents, parents_copy.data());
     components::fill_seq_array(exec, children, num_rows);
-    const auto it =
-        detail::make_zip_iterator(parents_copy.get_data(), children);
+    const auto it = detail::make_zip_iterator(parents_copy.data(), children);
     std::stable_sort(it, it + num_rows);
-    components::convert_idxs_to_ptrs(exec, parents_copy.get_const_data(),
-                                     num_rows, num_rows + 1, child_ptrs);
+    components::convert_idxs_to_ptrs(exec, parents_copy.const_data(), num_rows,
+                                     num_rows + 1, child_ptrs);
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
@@ -219,7 +218,7 @@ void initialize(std::shared_ptr<const DefaultExecutor> exec,
     // convert to COO
     const auto nnz = factors->get_num_stored_elements();
     array<IndexType> row_idx_array{exec, nnz};
-    const auto row_idxs = row_idx_array.get_data();
+    const auto row_idxs = row_idx_array.data();
     const auto col_idxs = factors->get_const_col_idxs();
     components::convert_ptrs_to_idxs(exec, factors->get_const_row_ptrs(),
                                      factors->get_size()[0], row_idxs);

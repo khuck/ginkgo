@@ -141,12 +141,12 @@ void Isai<IsaiType, ValueType, IndexType>::generate_inverse(
     } else {
         // Extract lower triangular part: compute non-zeros
         array<IndexType> inverted_row_ptrs{exec, num_rows + 1};
-        exec->run(isai::make_initialize_row_ptrs_l(
-            to_invert.get(), inverted_row_ptrs.get_data()));
+        exec->run(isai::make_initialize_row_ptrs_l(to_invert.get(),
+                                                   inverted_row_ptrs.data()));
 
         // Get nnz from device memory
         auto inverted_nnz = static_cast<size_type>(
-            exec->copy_val_to_host(inverted_row_ptrs.get_data() + num_rows));
+            exec->copy_val_to_host(inverted_row_ptrs.data() + num_rows));
 
         // Init arrays
         array<IndexType> inverted_col_idxs{exec, inverted_nnz};
@@ -173,21 +173,21 @@ void Isai<IsaiType, ValueType, IndexType>::generate_inverse(
 
     if (is_general || is_spd) {
         exec->run(isai::make_generate_general_inverse(
-            to_invert.get(), inverted.get(), excess_block_ptrs.get_data(),
-            excess_row_ptrs_full.get_data(), is_spd));
+            to_invert.get(), inverted.get(), excess_block_ptrs.data(),
+            excess_row_ptrs_full.data(), is_spd));
     } else {
         exec->run(isai::make_generate_tri_inverse(
-            to_invert.get(), inverted.get(), excess_block_ptrs.get_data(),
-            excess_row_ptrs_full.get_data(), is_lower));
+            to_invert.get(), inverted.get(), excess_block_ptrs.data(),
+            excess_row_ptrs_full.data(), is_lower));
     }
 
     auto host_excess_block_ptrs_array =
         array<IndexType>(exec->get_master(), excess_block_ptrs);
-    auto host_excess_block_ptrs = host_excess_block_ptrs_array.get_const_data();
+    auto host_excess_block_ptrs = host_excess_block_ptrs_array.const_data();
     auto host_excess_row_ptrs_full_array =
         array<IndexType>(exec->get_master(), excess_row_ptrs_full);
     auto host_excess_row_ptrs_full =
-        host_excess_row_ptrs_full_array.get_const_data();
+        host_excess_row_ptrs_full_array.const_data();
     auto total_excess_dim = host_excess_block_ptrs[num_rows];
     auto excess_lim = excess_limit == 0 ? total_excess_dim : excess_limit;
     // if we had long rows:
@@ -215,9 +215,8 @@ void Isai<IsaiType, ValueType, IndexType>::generate_inverse(
             auto excess_rhs = Dense::create(exec, dim<2>(excess_dim, 1));
             auto excess_solution = Dense::create(exec, dim<2>(excess_dim, 1));
             exec->run(isai::make_generate_excess_system(
-                to_invert.get(), inverted.get(),
-                excess_block_ptrs.get_const_data(),
-                excess_row_ptrs_full.get_const_data(), excess_system.get(),
+                to_invert.get(), inverted.get(), excess_block_ptrs.const_data(),
+                excess_row_ptrs_full.const_data(), excess_system.get(),
                 excess_rhs.get(), excess_start, block));
             // solve it after transposing
             auto system_copy = gko::clone(exec->get_master(), excess_system);
@@ -252,12 +251,12 @@ void Isai<IsaiType, ValueType, IndexType>::generate_inverse(
                 ->apply(excess_rhs, excess_solution);
             if (is_spd) {
                 exec->run(isai::make_scale_excess_solution(
-                    excess_block_ptrs.get_const_data(), excess_solution.get(),
+                    excess_block_ptrs.const_data(), excess_solution.get(),
                     excess_start, block));
             }
             // and copy the results back to the original ISAI
             exec->run(isai::make_scatter_excess_solution(
-                excess_block_ptrs.get_const_data(), excess_solution.get(),
+                excess_block_ptrs.const_data(), excess_solution.get(),
                 inverted.get(), excess_start, block));
         }
     }

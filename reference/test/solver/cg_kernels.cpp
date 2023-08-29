@@ -121,8 +121,7 @@ protected:
         small_stop = gko::array<gko::stopping_status>(exec, small_size[1]);
         stopped.stop(1);
         non_stopped.reset();
-        std::fill_n(small_stop.get_data(), small_stop.get_num_elems(),
-                    non_stopped);
+        std::fill_n(small_stop.data(), small_stop.size(), non_stopped);
     }
 
     std::shared_ptr<const gko::ReferenceExecutor> exec;
@@ -159,7 +158,7 @@ TYPED_TEST(Cg, KernelInitialize)
     this->small_q->fill(1);
     this->small_prev_rho->fill(0);
     this->small_rho->fill(1);
-    std::fill_n(this->small_stop.get_data(), this->small_stop.get_num_elems(),
+    std::fill_n(this->small_stop.data(), this->small_stop.size(),
                 this->stopped);
 
     gko::kernels::reference::cg::initialize(
@@ -173,8 +172,8 @@ TYPED_TEST(Cg, KernelInitialize)
     GKO_ASSERT_MTX_NEAR(this->small_q, this->small_zero, 0);
     GKO_ASSERT_MTX_NEAR(this->small_rho, l({{0.0, 0.0}}), 0);
     GKO_ASSERT_MTX_NEAR(this->small_prev_rho, l({{1.0, 1.0}}), 0);
-    ASSERT_EQ(this->small_stop.get_data()[0], this->non_stopped);
-    ASSERT_EQ(this->small_stop.get_data()[1], this->non_stopped);
+    ASSERT_EQ(this->small_stop.data()[0], this->non_stopped);
+    ASSERT_EQ(this->small_stop.data()[1], this->non_stopped);
 }
 
 
@@ -186,7 +185,7 @@ TYPED_TEST(Cg, KernelStep1)
     this->small_rho->at(1) = 3;
     this->small_prev_rho->at(0) = 8;
     this->small_prev_rho->at(1) = 3;
-    this->small_stop.get_data()[1] = this->stopped;
+    this->small_stop.data()[1] = this->stopped;
 
     gko::kernels::reference::cg::step_1(
         this->exec, this->small_p.get(), this->small_z.get(),
@@ -221,7 +220,7 @@ TYPED_TEST(Cg, KernelStep2)
     this->small_rho->at(1) = 3;
     this->small_beta->at(0) = 8;
     this->small_beta->at(1) = 3;
-    this->small_stop.get_data()[1] = this->stopped;
+    this->small_stop.data()[1] = this->stopped;
 
     gko::kernels::reference::cg::step_2(
         this->exec, this->small_x.get(), this->small_r.get(),

@@ -154,7 +154,7 @@ public:
      *
      * @return the column indices of the matrix.
      */
-    index_type* get_col_idxs() noexcept { return col_idxs_.get_data(); }
+    index_type* get_col_idxs() noexcept { return col_idxs_.data(); }
 
     /**
      * @copydoc SparsityCsr::get_col_idxs()
@@ -165,7 +165,7 @@ public:
      */
     const index_type* get_const_col_idxs() const noexcept
     {
-        return col_idxs_.get_const_data();
+        return col_idxs_.const_data();
     }
 
     /**
@@ -173,7 +173,7 @@ public:
      *
      * @return the row pointers of the matrix.
      */
-    index_type* get_row_ptrs() noexcept { return row_ptrs_.get_data(); }
+    index_type* get_row_ptrs() noexcept { return row_ptrs_.data(); }
 
     /**
      * @copydoc SparsityCsr::get_row_ptrs()
@@ -184,7 +184,7 @@ public:
      */
     const index_type* get_const_row_ptrs() const noexcept
     {
-        return row_ptrs_.get_const_data();
+        return row_ptrs_.const_data();
     }
 
     /**
@@ -192,7 +192,7 @@ public:
      *
      * @return the value of the matrix.
      */
-    value_type* get_value() noexcept { return value_.get_data(); }
+    value_type* get_value() noexcept { return value_.data(); }
 
     /**
      * @copydoc SparsityCsr::get_value()
@@ -203,7 +203,7 @@ public:
      */
     const value_type* get_const_value() const noexcept
     {
-        return value_.get_const_data();
+        return value_.const_data();
     }
 
 
@@ -212,10 +212,7 @@ public:
      *
      * @return the number of elements explicitly stored in the matrix
      */
-    size_type get_num_nonzeros() const noexcept
-    {
-        return col_idxs_.get_num_elems();
-    }
+    size_type get_num_nonzeros() const noexcept { return col_idxs_.size(); }
 
     /**
      * Creates a constant (immutable) SparsityCsr matrix from constant arrays.
@@ -315,7 +312,7 @@ protected:
           row_ptrs_{exec, std::forward<RowPtrsArray>(row_ptrs)},
           value_{exec, {value}}
     {
-        GKO_ASSERT_EQ(this->get_size()[0] + 1, row_ptrs_.get_num_elems());
+        GKO_ASSERT_EQ(this->get_size()[0] + 1, row_ptrs_.size());
     }
 
     /**

@@ -269,8 +269,7 @@ void write_precond_info(const gko::LinOp* precond, json& precond_info)
     if (const auto jacobi =
             dynamic_cast<const gko::preconditioner::Jacobi<etype>*>(precond)) {
         // extract block sizes
-        const auto bdata =
-            jacobi->get_parameters().block_pointers.get_const_data();
+        const auto bdata = jacobi->get_parameters().block_pointers.const_data();
         precond_info["block_sizes"] = json::array();
         const auto nblocks = jacobi->get_num_blocks();
         for (auto i = decltype(nblocks){0}; i < nblocks; ++i) {
@@ -278,9 +277,8 @@ void write_precond_info(const gko::LinOp* precond, json& precond_info)
         }
 
         // extract block precisions
-        const auto pdata =
-            jacobi->get_parameters()
-                .storage_optimization.block_wise.get_const_data();
+        const auto pdata = jacobi->get_parameters()
+                               .storage_optimization.block_wise.const_data();
         if (pdata) {
             precond_info["block_precisions"] = json::array();
             for (auto i = decltype(nblocks){0}; i < nblocks; ++i) {

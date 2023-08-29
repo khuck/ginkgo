@@ -128,10 +128,10 @@ protected:
         stop_status =
             std::make_unique<gko::array<gko::stopping_status>>(ref, n);
         for (size_t i = 0; i < n; ++i) {
-            stop_status->get_data()[i].reset();
+            stop_status->data()[i].reset();
         }
         // check correct handling for stopped columns
-        stop_status->get_data()[1].stop(1);
+        stop_status->data()[1].stop(1);
 
         d_x = gko::clone(exec, x);
         d_b = gko::clone(exec, b);

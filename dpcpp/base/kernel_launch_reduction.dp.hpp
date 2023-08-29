@@ -175,21 +175,20 @@ void run_kernel_reduction_impl(std::shared_ptr<const DpcppExecutor> exec,
     auto queue = exec->get_queue();
     if (num_workgroups > 1) {
         const auto required_storage = sizeof(ValueType) * num_workgroups;
-        if (tmp.get_num_elems() < required_storage) {
+        if (tmp.size() < required_storage) {
             tmp.resize_and_reset(required_storage);
         }
         queue->submit([&](sycl::handler& cgh) {
             generic_kernel_reduction_1d<DeviceConfig>(
                 cgh, static_cast<int64>(size), num_workgroups, fn, op,
                 [](auto v) { return v; }, identity,
-                reinterpret_cast<ValueType*>(tmp.get_data()), args...);
+                reinterpret_cast<ValueType*>(tmp.data()), args...);
         });
         queue->submit([&](sycl::handler& cgh) {
             generic_kernel_reduction_1d<DeviceConfig>(
                 cgh, static_cast<int64>(num_workgroups), 1,
                 [](auto i, auto v) { return v[i]; }, op, finalize, identity,
-                result,
-                reinterpret_cast<const ValueType*>(tmp.get_const_data()));
+                result, reinterpret_cast<const ValueType*>(tmp.const_data()));
         });
     } else {
         queue->submit([&](sycl::handler& cgh) {
@@ -222,21 +221,20 @@ void run_kernel_reduction_impl(std::shared_ptr<const DpcppExecutor> exec,
     auto queue = exec->get_queue();
     if (num_workgroups > 1) {
         const auto required_storage = sizeof(ValueType) * num_workgroups;
-        if (tmp.get_num_elems() < required_storage) {
+        if (tmp.size() < required_storage) {
             tmp.resize_and_reset(required_storage);
         }
         queue->submit([&](sycl::handler& cgh) {
             generic_kernel_reduction_2d<DeviceConfig>(
                 cgh, rows, cols, num_workgroups, fn, op,
                 [](auto v) { return v; }, identity,
-                reinterpret_cast<ValueType*>(tmp.get_data()), args...);
+                reinterpret_cast<ValueType*>(tmp.data()), args...);
         });
         queue->submit([&](sycl::handler& cgh) {
             generic_kernel_reduction_1d<DeviceConfig>(
                 cgh, static_cast<int64>(num_workgroups), 1,
                 [](auto i, auto v) { return v[i]; }, op, finalize, identity,
-                result,
-                reinterpret_cast<const ValueType*>(tmp.get_const_data()));
+                result, reinterpret_cast<const ValueType*>(tmp.const_data()));
         });
     } else {
         queue->submit([&](sycl::handler& cgh) {
@@ -526,19 +524,18 @@ void run_generic_col_reduction_small(syn::value_list<int, ssg_size>,
         });
     } else {
         const auto required_storage = sizeof(ValueType) * row_blocks * cols;
-        if (tmp.get_num_elems() < required_storage) {
+        if (tmp.size() < required_storage) {
             tmp.resize_and_reset(required_storage);
         }
         queue->submit([&](sycl::handler& cgh) {
             generic_kernel_col_reduction_2d_small<cfg, ssg_size>(
                 cgh, rows, cols, row_blocks, fn, op, [](auto v) { return v; },
-                identity, reinterpret_cast<ValueType*>(tmp.get_data()),
-                args...);
+                identity, reinterpret_cast<ValueType*>(tmp.data()), args...);
         });
         queue->submit([&](sycl::handler& cgh) {
             generic_kernel_reduction_finalize_2d(
                 cgh, cols, row_blocks, op, finalize, identity,
-                reinterpret_cast<const ValueType*>(tmp.get_const_data()), 1,
+                reinterpret_cast<const ValueType*>(tmp.const_data()), 1,
                 result);
         });
     }
@@ -572,17 +569,17 @@ void run_kernel_row_reduction_stage1(std::shared_ptr<const DpcppExecutor> exec,
     if (rows * cols > resources && rows < cols) {
         const auto col_blocks = ceildiv(rows * cols, resources);
         const auto required_storage = sizeof(ValueType) * col_blocks * rows;
-        if (tmp.get_num_elems() < required_storage) {
+        if (tmp.size() < required_storage) {
             tmp.resize_and_reset(required_storage);
         }
         generic_kernel_row_reduction_2d<cfg, sg_size>(
             syn::value_list<int, sg_size>{}, exec, rows, cols, col_blocks, fn,
             op, [](auto v) { return v; }, identity,
-            reinterpret_cast<ValueType*>(tmp.get_data()), 1, args...);
+            reinterpret_cast<ValueType*>(tmp.data()), 1, args...);
         queue->submit([&](sycl::handler& cgh) {
             generic_kernel_reduction_finalize_2d(
                 cgh, rows, col_blocks, op, finalize, identity,
-                reinterpret_cast<const ValueType*>(tmp.get_const_data()),
+                reinterpret_cast<const ValueType*>(tmp.const_data()),
                 static_cast<int64>(result_stride), result);
         });
     } else {
@@ -645,19 +642,19 @@ void run_kernel_col_reduction_stage1(std::shared_ptr<const DpcppExecutor> exec,
             });
         } else {
             const auto required_storage = sizeof(ValueType) * row_blocks * cols;
-            if (tmp.get_num_elems() < required_storage) {
+            if (tmp.size() < required_storage) {
                 tmp.resize_and_reset(required_storage);
             }
             queue->submit([&](sycl::handler& cgh) {
                 generic_kernel_col_reduction_2d_blocked<cfg>(
                     cgh, rows, cols, row_blocks, col_blocks, fn, op,
                     [](auto v) { return v; }, identity,
-                    reinterpret_cast<ValueType*>(tmp.get_data()), args...);
+                    reinterpret_cast<ValueType*>(tmp.data()), args...);
             });
             queue->submit([&](sycl::handler& cgh) {
                 generic_kernel_reduction_finalize_2d(
                     cgh, cols, row_blocks, op, finalize, identity,
-                    reinterpret_cast<const ValueType*>(tmp.get_const_data()), 1,
+                    reinterpret_cast<const ValueType*>(tmp.const_data()), 1,
                     result);
             });
         }

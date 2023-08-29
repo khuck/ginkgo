@@ -215,8 +215,8 @@ void SparsityCsr<ValueType, IndexType>::read(device_mat_data&& data)
     const auto row_idxs = std::move(arrays.row_idxs);
     auto local_row_idxs = make_temporary_clone(exec, &row_idxs);
     exec->run(sparsity_csr::make_convert_idxs_to_ptrs(
-        local_row_idxs->get_const_data(), local_row_idxs->get_num_elems(),
-        size[0], this->get_row_ptrs()));
+        local_row_idxs->const_data(), local_row_idxs->size(), size[0],
+        this->get_row_ptrs()));
 }
 
 
@@ -234,12 +234,12 @@ void SparsityCsr<ValueType, IndexType>::write(mat_data& data) const
 
     data = {tmp->get_size(), {}};
 
-    const auto val = tmp->value_.get_const_data()[0];
+    const auto val = tmp->value_.const_data()[0];
     for (size_type row = 0; row < tmp->get_size()[0]; ++row) {
-        const auto start = tmp->row_ptrs_.get_const_data()[row];
-        const auto end = tmp->row_ptrs_.get_const_data()[row + 1];
+        const auto start = tmp->row_ptrs_.const_data()[row];
+        const auto end = tmp->row_ptrs_.const_data()[row + 1];
         for (auto i = start; i < end; ++i) {
-            const auto col = tmp->col_idxs_.get_const_data()[i];
+            const auto col = tmp->col_idxs_.const_data()[i];
             data.nonzeros.emplace_back(row, col, val);
         }
     }
@@ -273,16 +273,16 @@ SparsityCsr<ValueType, IndexType>::to_adjacency_matrix() const
     const auto num_rows = this->get_size()[0];
     array<IndexType> diag_prefix_sum{exec, num_rows + 1};
     exec->run(sparsity_csr::make_diagonal_element_prefix_sum(
-        this, diag_prefix_sum.get_data()));
+        this, diag_prefix_sum.data()));
     const auto num_diagonal_elements = static_cast<size_type>(
-        exec->copy_val_to_host(diag_prefix_sum.get_const_data() + num_rows));
+        exec->copy_val_to_host(diag_prefix_sum.const_data() + num_rows));
     auto adj_mat =
         SparsityCsr::create(exec, this->get_size(),
                             this->get_num_nonzeros() - num_diagonal_elements);
 
     exec->run(sparsity_csr::make_remove_diagonal_elements(
         this->get_const_row_ptrs(), this->get_const_col_idxs(),
-        diag_prefix_sum.get_const_data(), adj_mat.get()));
+        diag_prefix_sum.const_data(), adj_mat.get()));
     return std::move(adj_mat);
 }
 

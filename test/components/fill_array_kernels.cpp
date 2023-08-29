@@ -58,8 +58,8 @@ protected:
           dvals{exec, total_size},
           seqs{ref, total_size}
     {
-        std::fill_n(vals.get_data(), total_size, T(1523));
-        std::iota(seqs.get_data(), seqs.get_data() + total_size, 0);
+        std::fill_n(vals.data(), total_size, T(1523));
+        std::iota(seqs.data(), seqs.data() + total_size, 0);
     }
 
     gko::size_type total_size;
@@ -76,7 +76,7 @@ TYPED_TEST(FillArray, EqualsReference)
 {
     using T = typename TestFixture::value_type;
     gko::kernels::EXEC_NAMESPACE::components::fill_array(
-        this->exec, this->dvals.get_data(), this->total_size, T(1523));
+        this->exec, this->dvals.data(), this->total_size, T(1523));
 
     GKO_ASSERT_ARRAY_EQ(this->vals, this->dvals);
 }
@@ -86,7 +86,7 @@ TYPED_TEST(FillArray, FillSeqEqualsReference)
 {
     using T = typename TestFixture::value_type;
     gko::kernels::EXEC_NAMESPACE::components::fill_seq_array(
-        this->exec, this->dvals.get_data(), this->total_size);
+        this->exec, this->dvals.data(), this->total_size);
 
     GKO_ASSERT_ARRAY_EQ(this->seqs, this->dvals);
 }

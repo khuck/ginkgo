@@ -179,10 +179,10 @@ public:
         gko::array<IndexType> rowptrs(exec, nbrows + 1);
         const std::unique_ptr<const Fbcsr> fbmat = generate_fbcsr();
         for (index_type i = 0; i < nbrows + 1; i++) {
-            rowptrs.get_data()[i] = fbmat->get_const_row_ptrs()[i];
+            rowptrs.data()[i] = fbmat->get_const_row_ptrs()[i];
         }
         for (index_type i = 0; i < nbnz; i++) {
-            colids.get_data()[i] = fbmat->get_const_col_idxs()[i];
+            colids.data()[i] = fbmat->get_const_col_idxs()[i];
         }
         return SparCsr::create(exec, gko::dim<2>{nbrows, nbcols}, colids,
                                rowptrs);
@@ -306,7 +306,7 @@ public:
         gko::array<index_type> r(exec, {0, 1, 3, 4});
         gko::array<index_type> c(exec, {0, 0, 3, 2});
         gko::array<value_type> vals(exec, nnz);
-        value_type* const v = vals.get_data();
+        value_type* const v = vals.data();
         for (IndexType i = 0; i < nnz; i++) {
             v[i] = 0.15 + fbcsr_test_offset;
         }
@@ -334,7 +334,7 @@ public:
         gko::array<index_type> c(
             exec, {0, 1, 0, 1, 0, 1, 6, 7, 0, 1, 6, 7, 4, 5, 4, 5});
         gko::array<value_type> vals(exec, nnz);
-        value_type* const v = vals.get_data();
+        value_type* const v = vals.data();
         for (IndexType i = 0; i < nnz; i++) {
             v[i] = 0.15 + fbcsr_test_offset;
         }
@@ -409,7 +409,7 @@ public:
         gko::array<index_type> c(exec, {1, 1});
         gko::array<index_type> r(exec, {0, 1, 2});
         gko::array<value_type> vals(exec, nnz);
-        value_type* const v = vals.get_data();
+        value_type* const v = vals.data();
         for (IndexType i = 0; i < nnz; i++) {
             v[i] = i;
         }
@@ -457,7 +457,7 @@ public:
         gko::array<index_type> r(exec, {0, 1, 3, 4});
         gko::array<index_type> c(exec, {0, 0, 3, 2});
         gko::array<value_type> vals(exec, nnz);
-        value_type* const v = vals.get_data();
+        value_type* const v = vals.data();
         for (IndexType i = 0; i < nnz; i++) {
             v[i] = 0.15 + fbcsr_test_offset;
         }
@@ -485,7 +485,7 @@ public:
         gko::array<index_type> c(
             exec, {0, 1, 0, 1, 0, 1, 6, 7, 0, 1, 6, 7, 4, 5, 4, 5});
         gko::array<value_type> vals(exec, nnz);
-        value_type* const v = vals.get_data();
+        value_type* const v = vals.data();
         for (IndexType i = 0; i < nnz; i++) {
             v[i] = 0.15 + fbcsr_test_offset;
         }
@@ -542,7 +542,7 @@ public:
             exec, {0,  1,  20, 15, 12, 18, 5, 28, 3,  10, 29, 5,  9,  2,  16,
                    12, 21, 2,  0,  1,  5,  9, 12, 15, 17, 20, 22, 24, 27, 28});
         gko::array<value_type> vals(exec, nnz);
-        value_type* const v = vals.get_data();
+        value_type* const v = vals.data();
         for (IndexType i = 0; i < nnz; i++) {
             v[i] = static_cast<value_type>(i + 0.15 + fbcsr_test_offset);
         }

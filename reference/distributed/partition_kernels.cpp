@@ -44,8 +44,8 @@ void count_ranges(std::shared_ptr<const DefaultExecutor> exec,
 {
     num_ranges = 0;
     comm_index_type prev_part{-1};
-    for (size_type i = 0; i < mapping.get_num_elems(); i++) {
-        auto cur_part = mapping.get_const_data()[i];
+    for (size_type i = 0; i < mapping.size(); i++) {
+        auto cur_part = mapping.const_data()[i];
         num_ranges += cur_part != prev_part;
         prev_part = cur_part;
     }
@@ -59,12 +59,12 @@ void build_from_contiguous(std::shared_ptr<const DefaultExecutor> exec,
                            GlobalIndexType* range_bounds,
                            comm_index_type* part_ids)
 {
-    bool uses_mapping = part_id_mapping.get_num_elems() > 0;
+    bool uses_mapping = part_id_mapping.size() > 0;
     range_bounds[0] = 0;
-    for (comm_index_type i = 0; i < ranges.get_num_elems() - 1; i++) {
-        auto end = ranges.get_const_data()[i + 1];
+    for (comm_index_type i = 0; i < ranges.size() - 1; i++) {
+        auto end = ranges.const_data()[i + 1];
         range_bounds[i + 1] = end;
-        part_ids[i] = uses_mapping ? part_id_mapping.get_const_data()[i] : i;
+        part_ids[i] = uses_mapping ? part_id_mapping.const_data()[i] : i;
     }
 }
 
@@ -79,8 +79,8 @@ void build_from_mapping(std::shared_ptr<const DefaultExecutor> exec,
 {
     size_type range_idx{};
     comm_index_type range_part{-1};
-    for (size_type i = 0; i < mapping.get_num_elems(); i++) {
-        auto cur_part = mapping.get_const_data()[i];
+    for (size_type i = 0; i < mapping.size(); i++) {
+        auto cur_part = mapping.const_data()[i];
         if (cur_part != range_part) {
             range_bounds[range_idx] = i;
             part_ids[range_idx] = cur_part;
@@ -88,8 +88,7 @@ void build_from_mapping(std::shared_ptr<const DefaultExecutor> exec,
             range_part = cur_part;
         }
     }
-    range_bounds[range_idx] =
-        static_cast<GlobalIndexType>(mapping.get_num_elems());
+    range_bounds[range_idx] = static_cast<GlobalIndexType>(mapping.size());
 }
 
 GKO_INSTANTIATE_FOR_EACH_INDEX_TYPE(GKO_PARTITION_BUILD_FROM_MAPPING);
@@ -104,7 +103,7 @@ void build_ranges_from_global_size(std::shared_ptr<const DefaultExecutor> exec,
     const auto size_per_part = global_size / num_parts;
     const auto rest = global_size - (num_parts * size_per_part);
 
-    auto* ranges_ptr = ranges.get_data();
+    auto* ranges_ptr = ranges.data();
 
     ranges_ptr[0] = 0;
     for (int i = 1; i < num_parts + 1; ++i) {

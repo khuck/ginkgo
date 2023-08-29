@@ -307,9 +307,9 @@ void CbGmres<ValueType>::apply_dense_impl(
         array<bool> fully_converged_rhs(exec->get_master(), num_rhs);
         array<stopping_status> host_stop_status(
             this->get_executor()->get_master(), stop_status);
-        for (size_type i = 0; i < stop_encountered_rhs.get_num_elems(); ++i) {
-            stop_encountered_rhs.get_data()[i] = false;
-            fully_converged_rhs.get_data()[i] = false;
+        for (size_type i = 0; i < stop_encountered_rhs.size(); ++i) {
+            stop_encountered_rhs.data()[i] = false;
+            fully_converged_rhs.data()[i] = false;
         }
         // Start only after this value with performing forced iterations after
         // convergence detection
@@ -346,21 +346,20 @@ void CbGmres<ValueType>::apply_dense_impl(
                 if (one_changed || all_changed) {
                     host_stop_status = stop_status;
                     bool host_array_changed{false};
-                    for (size_type i = 0; i < host_stop_status.get_num_elems();
-                         ++i) {
-                        auto local_status = host_stop_status.get_data() + i;
+                    for (size_type i = 0; i < host_stop_status.size(); ++i) {
+                        auto local_status = host_stop_status.data() + i;
                         // Ignore all actually converged ones!
-                        if (fully_converged_rhs.get_data()[i]) {
+                        if (fully_converged_rhs.data()[i]) {
                             continue;
                         }
                         if (local_status->has_converged()) {
                             // If convergence was detected earlier, or
                             // at the very beginning:
-                            if (stop_encountered_rhs.get_data()[i] ||
+                            if (stop_encountered_rhs.data()[i] ||
                                 total_iter < start_force_reset) {
-                                fully_converged_rhs.get_data()[i] = true;
+                                fully_converged_rhs.data()[i] = true;
                             } else {
-                                stop_encountered_rhs.get_data()[i] = true;
+                                stop_encountered_rhs.data()[i] = true;
                                 local_status->reset();
                                 host_array_changed = true;
                             }
@@ -378,9 +377,9 @@ void CbGmres<ValueType>::apply_dense_impl(
                     forced_iterations = 0;
 
                 } else {
-                    for (size_type i = 0;
-                         i < stop_encountered_rhs.get_num_elems(); ++i) {
-                        stop_encountered_rhs.get_data()[i] = false;
+                    for (size_type i = 0; i < stop_encountered_rhs.size();
+                         ++i) {
+                        stop_encountered_rhs.data()[i] = false;
                     }
                 }
             }

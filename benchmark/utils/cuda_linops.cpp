@@ -169,10 +169,10 @@ protected:
         gko::kernels::cuda::cusparse::spmv_mp(
             this->get_gpu_exec()->get_cusparse_handle(), trans_,
             this->get_size()[0], this->get_size()[1],
-            csr_->get_num_stored_elements(), &scalars.get_const_data()[0],
+            csr_->get_num_stored_elements(), &scalars.const_data()[0],
             this->get_descr(), csr_->get_const_values(),
             csr_->get_const_row_ptrs(), csr_->get_const_col_idxs(), db,
-            &scalars.get_const_data()[1], dx);
+            &scalars.const_data()[1], dx);
     }
 
     void apply_impl(const gko::LinOp* alpha, const gko::LinOp* b,
@@ -243,10 +243,10 @@ protected:
         gko::kernels::cuda::cusparse::spmv(
             this->get_gpu_exec()->get_cusparse_handle(), trans_,
             this->get_size()[0], this->get_size()[1],
-            csr_->get_num_stored_elements(), &scalars.get_const_data()[0],
+            csr_->get_num_stored_elements(), &scalars.const_data()[0],
             this->get_descr(), csr_->get_const_values(),
             csr_->get_const_row_ptrs(), csr_->get_const_col_idxs(), db,
-            &scalars.get_const_data()[1], dx);
+            &scalars.const_data()[1], dx);
     }
 
     void apply_impl(const gko::LinOp* alpha, const gko::LinOp* b,
@@ -318,10 +318,10 @@ protected:
         gko::kernels::cuda::cusparse::spmm(
             this->get_gpu_exec()->get_cusparse_handle(), trans_,
             this->get_size()[0], dense_b->get_size()[1], this->get_size()[1],
-            csr_->get_num_stored_elements(), &scalars.get_const_data()[0],
+            csr_->get_num_stored_elements(), &scalars.const_data()[0],
             this->get_descr(), csr_->get_const_values(),
             csr_->get_const_row_ptrs(), csr_->get_const_col_idxs(), db,
-            dense_b->get_size()[0], &scalars.get_const_data()[1], dx,
+            dense_b->get_size()[0], &scalars.const_data()[1], dx,
             dense_x->get_size()[0]);
     }
 
@@ -420,7 +420,7 @@ protected:
             handle, algmode_, trans_, this->get_size()[0], this->get_size()[1],
             csr_->get_num_stored_elements(), &alpha, this->get_descr(),
             csr_->get_const_values(), csr_->get_const_row_ptrs(),
-            csr_->get_const_col_idxs(), db, &beta, dx, buffer_.get_data());
+            csr_->get_const_col_idxs(), db, &beta, dx, buffer_.data());
 
         // Exiting the scope sets the pointer mode back to the default
         // DEVICE for Ginkgo
@@ -525,8 +525,8 @@ protected:
         auto guard = this->get_gpu_exec()->get_scoped_device_id_guard();
         gko::kernels::cuda::cusparse::spmv(
             this->get_gpu_exec()->get_cusparse_handle(), trans_,
-            &scalars.get_const_data()[0], this->get_descr(), hyb_, db,
-            &scalars.get_const_data()[1], dx);
+            &scalars.const_data()[0], this->get_descr(), hyb_, db,
+            &scalars.const_data()[1], dx);
     }
 
     void apply_impl(const gko::LinOp* alpha, const gko::LinOp* b,
@@ -583,14 +583,13 @@ void cusparse_generic_spmv(std::shared_ptr<const gko::CudaExecutor> gpu_exec,
 
     gko::size_type buffer_size = 0;
     GKO_ASSERT_NO_CUSPARSE_ERRORS(cusparseSpMV_bufferSize(
-        gpu_exec->get_cusparse_handle(), trans, &scalars.get_const_data()[0],
-        mat, vecb, &scalars.get_const_data()[1], vecx, cu_value, alg,
-        &buffer_size));
+        gpu_exec->get_cusparse_handle(), trans, &scalars.const_data()[0], mat,
+        vecb, &scalars.const_data()[1], vecx, cu_value, alg, &buffer_size));
     gko::array<char> buffer_array(gpu_exec, buffer_size);
-    auto dbuffer = buffer_array.get_data();
+    auto dbuffer = buffer_array.data();
     GKO_ASSERT_NO_CUSPARSE_ERRORS(cusparseSpMV(
-        gpu_exec->get_cusparse_handle(), trans, &scalars.get_const_data()[0],
-        mat, vecb, &scalars.get_const_data()[1], vecx, cu_value, alg, dbuffer));
+        gpu_exec->get_cusparse_handle(), trans, &scalars.const_data()[0], mat,
+        vecb, &scalars.const_data()[1], vecx, cu_value, alg, dbuffer));
     GKO_ASSERT_NO_CUSPARSE_ERRORS(cusparseDestroyDnVec(vecx));
     GKO_ASSERT_NO_CUSPARSE_ERRORS(cusparseDestroyDnVec(vecb));
 }

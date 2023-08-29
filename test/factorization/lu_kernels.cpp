@@ -98,12 +98,12 @@ protected:
                              gko::matrix::csr::sparsity_type::hash;
         gko::kernels::reference::csr::build_lookup_offsets(
             ref, mtx_lu->get_const_row_ptrs(), mtx_lu->get_const_col_idxs(),
-            num_rows, allowed, storage_offsets.get_data());
-        storage.resize_and_reset(storage_offsets.get_const_data()[num_rows]);
+            num_rows, allowed, storage_offsets.data());
+        storage.resize_and_reset(storage_offsets.const_data()[num_rows]);
         gko::kernels::reference::csr::build_lookup(
             ref, mtx_lu->get_const_row_ptrs(), mtx_lu->get_const_col_idxs(),
-            num_rows, allowed, storage_offsets.get_const_data(),
-            row_descs.get_data(), storage.get_data());
+            num_rows, allowed, storage_offsets.const_data(), row_descs.data(),
+            storage.data());
         dstorage_offsets = storage_offsets;
         dstorage = storage;
         drow_descs = row_descs;
@@ -190,14 +190,13 @@ TYPED_TEST(Lu, KernelInitializeIsEquivalentToRef)
         gko::array<index_type> ddiag_idxs{this->exec, this->num_rows};
 
         gko::kernels::reference::lu_factorization::initialize(
-            this->ref, this->mtx.get(), this->storage_offsets.get_const_data(),
-            this->row_descs.get_const_data(), this->storage.get_const_data(),
-            diag_idxs.get_data(), this->mtx_lu.get());
+            this->ref, this->mtx.get(), this->storage_offsets.const_data(),
+            this->row_descs.const_data(), this->storage.const_data(),
+            diag_idxs.data(), this->mtx_lu.get());
         gko::kernels::EXEC_NAMESPACE::lu_factorization::initialize(
-            this->exec, this->dmtx.get(),
-            this->dstorage_offsets.get_const_data(),
-            this->drow_descs.get_const_data(), this->dstorage.get_const_data(),
-            ddiag_idxs.get_data(), this->dmtx_lu.get());
+            this->exec, this->dmtx.get(), this->dstorage_offsets.const_data(),
+            this->drow_descs.const_data(), this->dstorage.const_data(),
+            ddiag_idxs.data(), this->dmtx_lu.get());
 
         GKO_ASSERT_MTX_NEAR(this->dmtx_lu, this->dmtx_lu, 0.0);
         GKO_ASSERT_ARRAY_EQ(diag_idxs, ddiag_idxs);
@@ -215,23 +214,22 @@ TYPED_TEST(Lu, KernelFactorizeIsEquivalentToRef)
         gko::array<int> tmp{this->ref};
         gko::array<int> dtmp{this->exec};
         gko::kernels::reference::lu_factorization::initialize(
-            this->ref, this->mtx.get(), this->storage_offsets.get_const_data(),
-            this->row_descs.get_const_data(), this->storage.get_const_data(),
-            diag_idxs.get_data(), this->mtx_lu.get());
+            this->ref, this->mtx.get(), this->storage_offsets.const_data(),
+            this->row_descs.const_data(), this->storage.const_data(),
+            diag_idxs.data(), this->mtx_lu.get());
         gko::kernels::EXEC_NAMESPACE::lu_factorization::initialize(
-            this->exec, this->dmtx.get(),
-            this->dstorage_offsets.get_const_data(),
-            this->drow_descs.get_const_data(), this->dstorage.get_const_data(),
-            ddiag_idxs.get_data(), this->dmtx_lu.get());
+            this->exec, this->dmtx.get(), this->dstorage_offsets.const_data(),
+            this->drow_descs.const_data(), this->dstorage.const_data(),
+            ddiag_idxs.data(), this->dmtx_lu.get());
 
         gko::kernels::reference::lu_factorization::factorize(
-            this->ref, this->storage_offsets.get_const_data(),
-            this->row_descs.get_const_data(), this->storage.get_const_data(),
-            diag_idxs.get_const_data(), this->mtx_lu.get(), tmp);
+            this->ref, this->storage_offsets.const_data(),
+            this->row_descs.const_data(), this->storage.const_data(),
+            diag_idxs.const_data(), this->mtx_lu.get(), tmp);
         gko::kernels::EXEC_NAMESPACE::lu_factorization::factorize(
-            this->exec, this->dstorage_offsets.get_const_data(),
-            this->drow_descs.get_const_data(), this->dstorage.get_const_data(),
-            ddiag_idxs.get_const_data(), this->dmtx_lu.get(), dtmp);
+            this->exec, this->dstorage_offsets.const_data(),
+            this->drow_descs.const_data(), this->dstorage.const_data(),
+            ddiag_idxs.const_data(), this->dmtx_lu.get(), dtmp);
 
         GKO_ASSERT_MTX_NEAR(this->mtx_lu, this->dmtx_lu, r<value_type>::value);
     });

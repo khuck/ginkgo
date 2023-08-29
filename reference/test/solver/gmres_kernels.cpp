@@ -146,8 +146,7 @@ protected:
         stopped.converge(1, true);
         non_stopped.reset();
         small_stop = gko::array<gko::stopping_status>(exec, small_size[1]);
-        std::fill_n(small_stop.get_data(), small_stop.get_num_elems(),
-                    non_stopped);
+        std::fill_n(small_stop.data(), small_stop.size(), non_stopped);
         small_final_iter_nums = gko::array<gko::size_type>(exec, small_size[1]);
     }
 
@@ -186,7 +185,7 @@ TYPED_TEST(Gmres, KernelInitialize)
     this->small_residual->fill(nan);
     this->small_givens_sin->fill(nan);
     this->small_givens_cos->fill(nan);
-    std::fill_n(this->small_stop.get_data(), this->small_stop.get_num_elems(),
+    std::fill_n(this->small_stop.data(), this->small_stop.size(),
                 this->stopped);
     auto expected_sin_cos =
         Mtx::create(this->exec, this->small_givens_sin->get_size());
@@ -195,13 +194,13 @@ TYPED_TEST(Gmres, KernelInitialize)
     gko::kernels::reference::common_gmres::initialize(
         this->exec, this->small_b.get(), this->small_residual.get(),
         this->small_givens_sin.get(), this->small_givens_cos.get(),
-        this->small_stop.get_data());
+        this->small_stop.data());
 
     GKO_ASSERT_MTX_NEAR(this->small_residual, this->small_b, 0);
     GKO_ASSERT_MTX_NEAR(this->small_givens_sin, expected_sin_cos, 0);
     GKO_ASSERT_MTX_NEAR(this->small_givens_cos, expected_sin_cos, 0);
-    for (int i = 0; i < this->small_stop.get_num_elems(); ++i) {
-        ASSERT_EQ(this->small_stop.get_data()[i], this->non_stopped);
+    for (int i = 0; i < this->small_stop.size(); ++i) {
+        ASSERT_EQ(this->small_stop.data()[i], this->non_stopped);
     }
 }
 
@@ -216,8 +215,8 @@ TYPED_TEST(Gmres, KernelRestart)
     this->small_residual->compute_norm2(this->small_residual_norm);
     this->small_residual_norm_collection->fill(nan);
     this->small_krylov_bases->fill(9999);
-    std::fill_n(this->small_final_iter_nums.get_data(),
-                this->small_final_iter_nums.get_num_elems(), 999);
+    std::fill_n(this->small_final_iter_nums.data(),
+                this->small_final_iter_nums.size(), 999);
     auto expected_krylov = gko::clone(this->exec, this->small_krylov_bases);
     const auto small_size = this->small_residual->get_size();
     for (int i = 0; i < small_size[0]; ++i) {
@@ -233,12 +232,12 @@ TYPED_TEST(Gmres, KernelRestart)
     gko::kernels::reference::gmres::restart(
         this->exec, this->small_residual.get(), this->small_residual_norm.get(),
         this->small_residual_norm_collection.get(),
-        this->small_krylov_bases.get(), this->small_final_iter_nums.get_data());
+        this->small_krylov_bases.get(), this->small_final_iter_nums.data());
 
-    ASSERT_EQ(this->small_final_iter_nums.get_num_elems(),
+    ASSERT_EQ(this->small_final_iter_nums.size(),
               this->small_residual_norm_collection->get_size()[1]);
-    for (int i = 0; i < this->small_final_iter_nums.get_num_elems(); ++i) {
-        ASSERT_EQ(this->small_final_iter_nums.get_const_data()[i], 0);
+    for (int i = 0; i < this->small_final_iter_nums.size(); ++i) {
+        ASSERT_EQ(this->small_final_iter_nums.const_data()[i], 0);
         ASSERT_EQ(this->small_residual_norm_collection->get_const_values()[i],
                   this->small_residual_norm->get_const_values()[i]);
     }
@@ -263,19 +262,18 @@ TYPED_TEST(Gmres, KernelHessenbergQrIter0)
         {I<T>{1.25, 1.5}, I<T>{nan, nan}, I<T>{95., 94.}}, this->exec);
     this->small_hessenberg = gko::initialize<Mtx>(
         {I<T>{0.5, -0.75}, I<T>{-0.5, 1}, I<T>{97., 96.}}, this->exec);
-    this->small_final_iter_nums.get_data()[0] = 0;
-    this->small_final_iter_nums.get_data()[1] = 0;
+    this->small_final_iter_nums.data()[0] = 0;
+    this->small_final_iter_nums.data()[1] = 0;
 
     gko::kernels::reference::common_gmres::hessenberg_qr(
         this->exec, this->small_givens_sin.get(), this->small_givens_cos.get(),
         this->small_residual_norm.get(),
         this->small_residual_norm_collection.get(),
         this->small_hessenberg.get(), iteration,
-        this->small_final_iter_nums.get_data(),
-        this->small_stop.get_const_data());
+        this->small_final_iter_nums.data(), this->small_stop.const_data());
 
-    ASSERT_EQ(this->small_final_iter_nums.get_data()[0], 1);
-    ASSERT_EQ(this->small_final_iter_nums.get_data()[1], 1);
+    ASSERT_EQ(this->small_final_iter_nums.data()[0], 1);
+    ASSERT_EQ(this->small_final_iter_nums.data()[1], 1);
     GKO_EXPECT_MTX_NEAR(this->small_givens_cos,
                         l({{0.5 * sqrt(2.), -0.6}, {70., -71.}}), r<T>::value);
     GKO_EXPECT_MTX_NEAR(this->small_givens_sin,
@@ -308,19 +306,18 @@ TYPED_TEST(Gmres, KernelHessenbergQrIter1)
         {I<T>{95., 94.}, I<T>{1.25, 1.5}, I<T>{nan, nan}}, this->exec);
     this->small_hessenberg = gko::initialize<Mtx>(
         {I<T>{-0.5, 4}, I<T>{0.25, 0.5}, I<T>{-0.5, 1}}, this->exec);
-    this->small_final_iter_nums.get_data()[0] = 1;
-    this->small_final_iter_nums.get_data()[1] = 1;
+    this->small_final_iter_nums.data()[0] = 1;
+    this->small_final_iter_nums.data()[1] = 1;
 
     gko::kernels::reference::common_gmres::hessenberg_qr(
         this->exec, this->small_givens_sin.get(), this->small_givens_cos.get(),
         this->small_residual_norm.get(),
         this->small_residual_norm_collection.get(),
         this->small_hessenberg.get(), iteration,
-        this->small_final_iter_nums.get_data(),
-        this->small_stop.get_const_data());
+        this->small_final_iter_nums.data(), this->small_stop.const_data());
 
-    ASSERT_EQ(this->small_final_iter_nums.get_data()[0], 2);
-    ASSERT_EQ(this->small_final_iter_nums.get_data()[1], 2);
+    ASSERT_EQ(this->small_final_iter_nums.data()[0], 2);
+    ASSERT_EQ(this->small_final_iter_nums.data()[1], 2);
     GKO_EXPECT_MTX_NEAR(this->small_givens_cos,
                         l({{1., 0.5}, {0.5 * sqrt(2.), -0.6}}), r<T>::value);
     GKO_EXPECT_MTX_NEAR(this->small_givens_sin,
@@ -344,8 +341,8 @@ TYPED_TEST(Gmres, KernelSolveKrylov)
     const T nan = std::numeric_limits<gko::remove_complex<T>>::quiet_NaN();
     const auto restart = this->small_givens_sin->get_size()[0];
     this->small_y->fill(nan);
-    this->small_final_iter_nums.get_data()[0] = restart;
-    this->small_final_iter_nums.get_data()[1] = restart;
+    this->small_final_iter_nums.data()[0] = restart;
+    this->small_final_iter_nums.data()[1] = restart;
     this->small_hessenberg = gko::initialize<Mtx>(
         // clang-format off
         {{-1, 3, 2, -4},
@@ -359,8 +356,8 @@ TYPED_TEST(Gmres, KernelSolveKrylov)
     gko::kernels::reference::common_gmres::solve_krylov(
         this->exec, this->small_residual_norm_collection.get(),
         this->small_hessenberg.get(), this->small_y.get(),
-        this->small_final_iter_nums.get_const_data(),
-        this->small_stop.get_const_data());
+        this->small_final_iter_nums.const_data(),
+        this->small_stop.const_data());
 
     GKO_ASSERT_MTX_NEAR(this->small_y, l({{-18., 5.}, {-3., 3.}}), r<T>::value);
 }
@@ -375,8 +372,8 @@ TYPED_TEST(Gmres, KernelMultiAxpy)
     this->small_x->fill(nan);
     this->small_y =
         gko::initialize<Mtx>({I<T>{1., 2.}, I<T>{3., -1.}}, this->exec);
-    this->small_final_iter_nums.get_data()[0] = restart;
-    this->small_final_iter_nums.get_data()[1] = restart;
+    this->small_final_iter_nums.data()[0] = restart;
+    this->small_final_iter_nums.data()[1] = restart;
     this->small_krylov_bases = gko::initialize<Mtx>(  // restart+1 x rows x #rhs
         {
             I<T>{1, 10},     // 0, 0, x
@@ -390,17 +387,17 @@ TYPED_TEST(Gmres, KernelMultiAxpy)
             I<T>{nan, nan},  // 2, 2, x
         },
         this->exec);
-    this->small_stop.get_data()[0].stop(7, false);
+    this->small_stop.data()[0].stop(7, false);
     gko::stopping_status expected_stop{};
     expected_stop.stop(7, true);
 
     gko::kernels::reference::gmres::multi_axpy(
         this->exec, this->small_krylov_bases.get(), this->small_y.get(),
-        this->small_x.get(), this->small_final_iter_nums.get_const_data(),
-        this->small_stop.get_data());
+        this->small_x.get(), this->small_final_iter_nums.const_data(),
+        this->small_stop.data());
 
-    ASSERT_EQ(this->small_stop.get_const_data()[0], expected_stop);
-    ASSERT_EQ(this->small_stop.get_const_data()[1], this->non_stopped);
+    ASSERT_EQ(this->small_stop.const_data()[0], expected_stop);
+    ASSERT_EQ(this->small_stop.const_data()[1], this->non_stopped);
     GKO_ASSERT_MTX_NEAR(this->small_x, l({{13., 7.}, {17., 8.}, {21., 9.}}),
                         r<T>::value);
 }

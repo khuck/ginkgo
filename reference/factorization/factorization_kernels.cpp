@@ -102,8 +102,8 @@ void add_diagonal_elements(std::shared_ptr<const ReferenceExecutor> exec,
     const size_type new_nnz = old_nnz + missing_elements;
     array<ValueType> new_values_array{exec, new_nnz};
     array<IndexType> new_col_idxs_array{exec, new_nnz};
-    auto new_values = new_values_array.get_data();
-    auto new_col_idxs = new_col_idxs_array.get_data();
+    auto new_values = new_values_array.data();
+    auto new_col_idxs = new_col_idxs_array.data();
     IndexType added_elements{};
     // row_ptrs will be updated in-place
 

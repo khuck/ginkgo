@@ -89,17 +89,17 @@ protected:
     void init_data(int rng_run)
     {
         std::uniform_int_distribution<gko::int32> dist(0, max_size);
-        std::fill_n(data1.get_data(), max_size, 0);
-        std::fill_n(data2.get_data(), max_size, 0);
+        std::fill_n(data1.data(), max_size, 0);
+        std::fill_n(data2.data(), max_size, 0);
         for (int i = 0; i < max_size; ++i) {
             // here we also want to test some corner cases
             // first two runs: zero data1
-            if (rng_run > 1) data1.get_data()[i] = dist(rng);
+            if (rng_run > 1) data1.data()[i] = dist(rng);
             // first and third run: zero data2
-            if (rng_run > 2 || rng_run == 1) data2.get_data()[i] = dist(rng);
+            if (rng_run > 2 || rng_run == 1) data2.data()[i] = dist(rng);
         }
-        std::sort(data1.get_data(), data1.get_data() + max_size);
-        std::sort(data2.get_data(), data2.get_data() + max_size);
+        std::sort(data1.data(), data1.data() + max_size);
+        std::sort(data2.data(), data2.data() + max_size);
 
         ddata1 = data1;
         ddata2 = data2;
@@ -108,11 +108,11 @@ protected:
     void assert_eq_ref(int size, int eq_size)
     {
         outdata = doutdata;
-        auto out_ptr = outdata.get_const_data();
+        auto out_ptr = outdata.const_data();
         auto out_end = out_ptr + eq_size;
-        auto ref_ptr = refdata.get_data();
-        std::copy_n(data1.get_const_data(), size, ref_ptr);
-        std::copy_n(data2.get_const_data(), size, ref_ptr + size);
+        auto ref_ptr = refdata.data();
+        std::copy_n(data1.const_data(), size, ref_ptr);
+        std::copy_n(data2.const_data(), size, ref_ptr + size);
         std::sort(ref_ptr, ref_ptr + 2 * size);
 
         ASSERT_TRUE(std::equal(out_ptr, out_end, ref_ptr));
@@ -159,8 +159,7 @@ TEST_F(Merging, MergeStep)
     for (int i = 0; i < rng_runs; ++i) {
         init_data(i);
         test_merge_step<<<1, config::warp_size, 0, exec->get_stream()>>>(
-            ddata1.get_const_data(), ddata2.get_const_data(),
-            doutdata.get_data());
+            ddata1.const_data(), ddata2.const_data(), doutdata.data());
 
         assert_eq_ref(config::warp_size, config::warp_size);
     }
@@ -187,8 +186,8 @@ TEST_F(Merging, FullMerge)
         init_data(i);
         for (auto size : sizes) {
             test_merge<<<1, config::warp_size, 0, exec->get_stream()>>>(
-                ddata1.get_const_data(), ddata2.get_const_data(), size,
-                doutdata.get_data());
+                ddata1.const_data(), ddata2.const_data(), size,
+                doutdata.data());
 
             assert_eq_ref(size, 2 * size);
         }
@@ -213,8 +212,8 @@ TEST_F(Merging, SequentialFullMerge)
         init_data(i);
         for (auto size : sizes) {
             test_sequential_merge<<<1, 1, 0, exec->get_stream()>>>(
-                ddata1.get_const_data(), ddata2.get_const_data(), size,
-                doutdata.get_data());
+                ddata1.const_data(), ddata2.const_data(), size,
+                doutdata.data());
 
             assert_eq_ref(size, 2 * size);
         }
@@ -258,10 +257,9 @@ TEST_F(Merging, FullMergeIdxs)
         init_data(i);
         for (auto size : sizes) {
             test_merge_idxs<<<1, config::warp_size, 0, exec->get_stream()>>>(
-                ddata1.get_const_data(), ddata2.get_const_data(), size,
-                doutdata.get_data(), didxs1.get_data(), didxs2.get_data(),
-                didxs3.get_data(), drefidxs1.get_data(), drefidxs2.get_data(),
-                drefidxs3.get_data());
+                ddata1.const_data(), ddata2.const_data(), size, doutdata.data(),
+                didxs1.data(), didxs2.data(), didxs3.data(), drefidxs1.data(),
+                drefidxs2.data(), drefidxs3.data());
 
             assert_eq_ref(size, 2 * size);
             idxs1 = didxs1;
@@ -270,12 +268,12 @@ TEST_F(Merging, FullMergeIdxs)
             refidxs1 = drefidxs1;
             refidxs2 = drefidxs2;
             refidxs3 = drefidxs3;
-            auto idxs1_ptr = idxs1.get_const_data();
-            auto idxs2_ptr = idxs2.get_const_data();
-            auto idxs3_ptr = idxs3.get_const_data();
-            auto refidxs1_ptr = refidxs1.get_const_data();
-            auto refidxs2_ptr = refidxs2.get_const_data();
-            auto refidxs3_ptr = refidxs3.get_const_data();
+            auto idxs1_ptr = idxs1.const_data();
+            auto idxs2_ptr = idxs2.const_data();
+            auto idxs3_ptr = idxs3.const_data();
+            auto refidxs1_ptr = refidxs1.const_data();
+            auto refidxs2_ptr = refidxs2.const_data();
+            auto refidxs3_ptr = refidxs3.const_data();
 
             ASSERT_TRUE(
                 std::equal(idxs1_ptr, idxs1_ptr + 2 * size, refidxs1_ptr));

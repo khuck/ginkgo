@@ -284,14 +284,13 @@ void compute_max_nnz_per_row(std::shared_ptr<const DefaultExecutor> exec,
                              size_type& result)
 {
     array<size_type> partial{exec, source->get_size()[0] + 1};
-    count_nonzeros_per_row(exec, source, partial.get_data());
+    count_nonzeros_per_row(exec, source, partial.data());
     run_kernel_reduction(
         exec, [] GKO_KERNEL(auto i, auto partial) { return partial[i]; },
         GKO_KERNEL_REDUCE_MAX(size_type),
-        partial.get_data() + source->get_size()[0], source->get_size()[0],
-        partial);
-    result = exec->copy_val_to_host(partial.get_const_data() +
-                                    source->get_size()[0]);
+        partial.data() + source->get_size()[0], source->get_size()[0], partial);
+    result =
+        exec->copy_val_to_host(partial.const_data() + source->get_size()[0]);
 }
 
 
@@ -303,7 +302,7 @@ void compute_slice_sets(std::shared_ptr<const DefaultExecutor> exec,
 {
     const auto num_rows = source->get_size()[0];
     array<size_type> row_nnz{exec, num_rows};
-    count_nonzeros_per_row(exec, source, row_nnz.get_data());
+    count_nonzeros_per_row(exec, source, row_nnz.data());
     const auto num_slices =
         static_cast<size_type>(ceildiv(num_rows, slice_size));
     run_kernel_row_reduction(
@@ -406,7 +405,7 @@ void row_gather(std::shared_ptr<const DefaultExecutor> exec,
         [] GKO_KERNEL(auto row, auto col, auto orig, auto rows, auto gathered) {
             gathered(row, col) = orig(rows[row], col);
         },
-        dim<2>{row_idxs->get_num_elems(), orig->get_size()[1]}, orig, *row_idxs,
+        dim<2>{row_idxs->size(), orig->get_size()[1]}, orig, *row_idxs,
         row_collection);
 }
 
@@ -429,7 +428,7 @@ void advanced_row_gather(std::shared_ptr<const DefaultExecutor> exec,
                 static_cast<type>(beta[0]) *
                     static_cast<type>(gathered(row, col));
         },
-        dim<2>{row_idxs->get_num_elems(), orig->get_size()[1]},
+        dim<2>{row_idxs->size(), orig->get_size()[1]},
         alpha->get_const_values(), orig, *row_idxs, beta->get_const_values(),
         row_collection);
 }

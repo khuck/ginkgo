@@ -144,7 +144,7 @@ public:
             static_cast<int64>(batch_count), &work_size));
         work_area.resize_and_reset(work_size);
         GKO_ASSERT_NO_HIPFFT_ERRORS(
-            hipfftSetWorkArea(*handle_, work_area.get_data()));
+            hipfftSetWorkArea(*handle_, work_area.data()));
     }
 
 

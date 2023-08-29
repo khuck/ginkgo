@@ -94,11 +94,11 @@ std::unique_ptr<Composition<ValueType>> Ic<ValueType, IndexType>::generate(
     const auto num_rows = matrix_size[0];
     array<IndexType> l_row_ptrs{exec, num_rows + 1};
     exec->run(ic_factorization::make_initialize_row_ptrs_l(
-        local_system_matrix.get(), l_row_ptrs.get_data()));
+        local_system_matrix.get(), l_row_ptrs.data()));
 
     // Get nnz from device memory
     auto l_nnz = static_cast<size_type>(
-        exec->copy_val_to_host(l_row_ptrs.get_data() + num_rows));
+        exec->copy_val_to_host(l_row_ptrs.data() + num_rows));
 
     // Init arrays
     array<IndexType> l_col_idxs{exec, l_nnz};

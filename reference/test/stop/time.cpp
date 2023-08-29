@@ -95,7 +95,7 @@ TEST_F(Time, WaitsTillTime)
     auto criterion = factory_->generate(nullptr, nullptr, nullptr);
     bool one_changed{};
     gko::array<gko::stopping_status> stop_status(exec_, 1);
-    stop_status.get_data()[0].reset();
+    stop_status.data()[0].reset();
     constexpr gko::uint8 RelativeStoppingId{1};
 
     sleep_millisecond(test_ms);

@@ -100,7 +100,7 @@ public:
      *
      * @return the aggregate group.
      */
-    IndexType* get_agg() noexcept { return agg_.get_data(); }
+    IndexType* get_agg() noexcept { return agg_.data(); }
 
     /**
      * @copydoc Pgm::get_agg()
@@ -111,7 +111,7 @@ public:
      */
     const IndexType* get_const_agg() const noexcept
     {
-        return agg_.get_const_data();
+        return agg_.const_data();
     }
 
     GKO_CREATE_FACTORY_PARAMETERS(parameters, Factory)

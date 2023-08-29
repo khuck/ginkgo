@@ -616,7 +616,7 @@ void initialize_m(std::shared_ptr<const DpcppExecutor> exec,
     const auto grid_dim = ceildiv(m_stride * subspace_dim, default_block_size);
     initialize_m_kernel(grid_dim, default_block_size, 0, exec->get_queue(),
                         subspace_dim, nrhs, m->get_values(), m_stride,
-                        stop_status->get_data());
+                        stop_status->data());
 }
 
 
@@ -673,7 +673,7 @@ void solve_lower_triangular(std::shared_ptr<const DpcppExecutor> exec,
         grid_dim, default_block_size, 0, exec->get_queue(), subspace_dim, nrhs,
         m->get_const_values(), m->get_stride(), f->get_const_values(),
         f->get_stride(), c->get_values(), c->get_stride(),
-        stop_status->get_const_data());
+        stop_status->const_data());
 }
 
 
@@ -701,7 +701,7 @@ void update_g_and_u(std::shared_ptr<const DpcppExecutor> exec,
                                    zero<ValueType>());
             multidot_kernel(grid_dim, block_dim, 0, exec->get_queue(), size,
                             nrhs, p_i, g_k->get_values(), g_k->get_stride(),
-                            alpha->get_values(), stop_status->get_const_data());
+                            alpha->get_values(), stop_status->const_data());
         } else {
             onemkl::dot(*exec->get_queue(), size, p_i, 1, g_k->get_values(),
                         g_k->get_stride(), alpha->get_values());
@@ -712,13 +712,13 @@ void update_g_and_u(std::shared_ptr<const DpcppExecutor> exec,
             alpha->get_const_values(), m->get_const_values(), m->get_stride(),
             g->get_const_values(), g->get_stride(), g_k->get_values(),
             g_k->get_stride(), u->get_values(), u->get_stride(),
-            stop_status->get_const_data());
+            stop_status->const_data());
     }
     update_g_kernel<default_block_size>(
         ceildiv(size * g_k->get_stride(), default_block_size),
         default_block_size, 0, exec->get_queue(), k, size, nrhs,
         g_k->get_const_values(), g_k->get_stride(), g->get_values(),
-        g->get_stride(), stop_status->get_const_data());
+        g->get_stride(), stop_status->const_data());
 }
 
 
@@ -744,8 +744,7 @@ void update_m(std::shared_ptr<const DpcppExecutor> exec, const size_type nrhs,
             components::fill_array(exec, m_i, nrhs, zero<ValueType>());
             multidot_kernel(grid_dim, block_dim, 0, exec->get_queue(), size,
                             nrhs, p_i, g_k->get_const_values(),
-                            g_k->get_stride(), m_i,
-                            stop_status->get_const_data());
+                            g_k->get_stride(), m_i, stop_status->const_data());
         } else {
             onemkl::dot(*exec->get_queue(), size, p_i, 1,
                         g_k->get_const_values(), g_k->get_stride(), m_i);
@@ -774,7 +773,7 @@ void update_x_r_and_f(std::shared_ptr<const DpcppExecutor> exec,
                             g->get_stride(), u->get_const_values(),
                             u->get_stride(), f->get_values(), f->get_stride(),
                             r->get_values(), r->get_stride(), x->get_values(),
-                            x->get_stride(), stop_status->get_const_data());
+                            x->get_stride(), stop_status->const_data());
     components::fill_array(exec, f->get_values() + k * f->get_stride(), nrhs,
                            zero<ValueType>());
 }
@@ -816,8 +815,7 @@ void step_1(std::shared_ptr<const DpcppExecutor> exec, const size_type nrhs,
                   num_rows, subspace_dim, nrhs, residual->get_const_values(),
                   residual->get_stride(), c->get_const_values(),
                   c->get_stride(), g->get_const_values(), g->get_stride(),
-                  v->get_values(), v->get_stride(),
-                  stop_status->get_const_data());
+                  v->get_values(), v->get_stride(), stop_status->const_data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_STEP_1_KERNEL);
@@ -842,7 +840,7 @@ void step_2(std::shared_ptr<const DpcppExecutor> exec, const size_type nrhs,
                   preconditioned_vector->get_const_values(),
                   preconditioned_vector->get_stride(), c->get_const_values(),
                   c->get_stride(), u->get_values(), u->get_stride(),
-                  stop_status->get_const_data());
+                  stop_status->const_data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_STEP_2_KERNEL);
@@ -876,7 +874,7 @@ void compute_omega(
     compute_omega_kernel(grid_dim, config::warp_size, 0, exec->get_queue(),
                          nrhs, kappa, tht->get_const_values(),
                          residual_norm->get_const_values(), omega->get_values(),
-                         stop_status->get_const_data());
+                         stop_status->const_data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_TYPE(GKO_DECLARE_IDR_COMPUTE_OMEGA_KERNEL);

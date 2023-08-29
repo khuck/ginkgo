@@ -100,9 +100,9 @@ protected:
     {
         auto ref_iota_dense = gko::matrix::Dense<>::create(ref, dim<2>{4, 4});
         for (int i = 0; i < 16; i++) {
-            zero_array.get_data()[i] = 0;
-            iota_array.get_data()[i] = i;
-            iota_transp_array.get_data()[i] = (i % 4 * 4) + i / 4;
+            zero_array.data()[i] = 0;
+            iota_array.data()[i] = i;
+            iota_transp_array.data()[i] = (i % 4 * 4) + i / 4;
             ref_iota_dense->at(i / 4, i % 4) = i;
         }
         zero_dense->fill(0.0);
@@ -139,7 +139,7 @@ void run1d(std::shared_ptr<gko::CudaExecutor> exec, size_type dim, int* data)
 
 TEST_F(KernelLaunch, Runs1D)
 {
-    run1d(exec, zero_array.get_num_elems(), zero_array.get_data());
+    run1d(exec, zero_array.size(), zero_array.data());
 
     GKO_ASSERT_ARRAY_EQ(zero_array, iota_array);
 }
@@ -160,7 +160,7 @@ void run1d(std::shared_ptr<gko::CudaExecutor> exec, gko::array<int>& data)
                 d[i] = 0;
             }
         },
-        data.get_num_elems(), data, data.get_const_data(), move_only_val);
+        data.size(), data, data.const_data(), move_only_val);
 }
 
 TEST_F(KernelLaunch, Runs1DArray)
@@ -224,7 +224,7 @@ void run2d(std::shared_ptr<gko::CudaExecutor> exec, int* data)
 
 TEST_F(KernelLaunch, Runs2D)
 {
-    run2d(exec, zero_array.get_data());
+    run2d(exec, zero_array.data());
 
     GKO_ASSERT_ARRAY_EQ(zero_array, iota_transp_array);
 }
@@ -246,7 +246,7 @@ void run2d(std::shared_ptr<gko::CudaExecutor> exec, gko::array<int>& data)
                 d[i + 4 * j] = 0;
             }
         },
-        dim<2>{4, 4}, data, data.get_const_data(), move_only_val);
+        dim<2>{4, 4}, data, data.const_data(), move_only_val);
 }
 
 TEST_F(KernelLaunch, Runs2DArray)
@@ -320,11 +320,11 @@ void run1d_reduction(std::shared_ptr<gko::CudaExecutor> exec)
             return i + 1;
         },
         [] GKO_KERNEL(auto i, auto j) { return i + j; },
-        [] GKO_KERNEL(auto j) { return j * 2; }, int64{}, output.get_data(),
+        [] GKO_KERNEL(auto j) { return j * 2; }, int64{}, output.data(),
         size_type{100000}, output, move_only_val);
 
     // 2 * sum i=0...99999 (i+1)
-    ASSERT_EQ(exec->copy_val_to_host(output.get_const_data()), 10000100000LL);
+    ASSERT_EQ(exec->copy_val_to_host(output.const_data()), 10000100000LL);
 
     gko::kernels::cuda::run_kernel_reduction(
         exec,
@@ -343,10 +343,10 @@ void run1d_reduction(std::shared_ptr<gko::CudaExecutor> exec)
             static_assert(is_same<decltype(j), int64>::value, "value");
             return j * 2;
         },
-        int64{}, output.get_data(), size_type{100}, output, move_only_val);
+        int64{}, output.data(), size_type{100}, output, move_only_val);
 
     // 2 * sum i=0...99 (i+1)
-    ASSERT_EQ(exec->copy_val_to_host(output.get_const_data()), 10100LL);
+    ASSERT_EQ(exec->copy_val_to_host(output.const_data()), 10100LL);
 }
 
 TEST_F(KernelLaunch, Reduction1D) { run1d_reduction(exec); }
@@ -374,11 +374,10 @@ void run2d_reduction(std::shared_ptr<gko::CudaExecutor> exec)
             static_assert(is_same<decltype(j), int64>::value, "value");
             return j * 4;
         },
-        int64{}, output.get_data(), gko::dim<2>{1000, 100}, output,
-        move_only_val);
+        int64{}, output.data(), gko::dim<2>{1000, 100}, output, move_only_val);
 
     // 4 * sum i=0...999 sum j=0...99 of (i+1)*(j+1)
-    ASSERT_EQ(exec->copy_val_to_host(output.get_const_data()), 10110100000LL);
+    ASSERT_EQ(exec->copy_val_to_host(output.const_data()), 10110100000LL);
 
     gko::kernels::cuda::run_kernel_reduction(
         exec,
@@ -398,10 +397,10 @@ void run2d_reduction(std::shared_ptr<gko::CudaExecutor> exec)
             static_assert(is_same<decltype(j), int64>::value, "value");
             return j * 4;
         },
-        int64{}, output.get_data(), gko::dim<2>{10, 10}, output, move_only_val);
+        int64{}, output.data(), gko::dim<2>{10, 10}, output, move_only_val);
 
     // 4 * sum i=0...9 sum j=0...9 of (i+1)*(j+1)
-    ASSERT_EQ(exec->copy_val_to_host(output.get_const_data()), 12100LL);
+    ASSERT_EQ(exec->copy_val_to_host(output.const_data()), 12100LL);
 }
 
 TEST_F(KernelLaunch, Reduction2D) { run2d_reduction(exec); }
@@ -415,12 +414,12 @@ void run2d_row_reduction(std::shared_ptr<gko::CudaExecutor> exec)
                          std::to_string(num_cols) + " cols");
             gko::array<int64> host_ref{exec->get_master(),
                                        static_cast<size_type>(2 * num_rows)};
-            std::fill_n(host_ref.get_data(), 2 * num_rows, 1234);
+            std::fill_n(host_ref.data(), 2 * num_rows, 1234);
             gko::array<int64> output{exec, host_ref};
             for (int64 i = 0; i < num_rows; i++) {
                 // we are computing 2 * sum {j=0, j<cols} (i+1)*(j+1) for each
                 // row i and storing it with stride 2
-                host_ref.get_data()[2 * i] =
+                host_ref.data()[2 * i] =
                     static_cast<int64>(num_cols) * (num_cols + 1) * (i + 1);
             }
 
@@ -443,7 +442,7 @@ void run2d_row_reduction(std::shared_ptr<gko::CudaExecutor> exec)
                     static_assert(is_same<decltype(j), int64>::value, "value");
                     return j * 2;
                 },
-                int64{}, output.get_data(), 2,
+                int64{}, output.data(), 2,
                 gko::dim<2>{static_cast<size_type>(num_rows),
                             static_cast<size_type>(num_cols)},
                 output, move_only_val);
@@ -471,7 +470,7 @@ void run2d_col_reduction(std::shared_ptr<gko::CudaExecutor> exec)
             for (int64 i = 0; i < num_cols; i++) {
                 // we are computing 2 * sum {j=0, j<row} (i+1)*(j+1) for each
                 // column i
-                host_ref.get_data()[i] =
+                host_ref.data()[i] =
                     static_cast<int64>(num_rows) * (num_rows + 1) * (i + 1);
             }
 
@@ -494,7 +493,7 @@ void run2d_col_reduction(std::shared_ptr<gko::CudaExecutor> exec)
                     static_assert(is_same<decltype(j), int64>::value, "value");
                     return j * 2;
                 },
-                int64{}, output.get_data(),
+                int64{}, output.data(),
                 gko::dim<2>{static_cast<size_type>(num_rows),
                             static_cast<size_type>(num_cols)},
                 output, move_only_val);

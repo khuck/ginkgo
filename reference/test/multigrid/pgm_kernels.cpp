@@ -119,7 +119,7 @@ protected:
     void create_mtx(Mtx* fine, WeightMtx* weight, gko::array<index_type>* agg,
                     Mtx* coarse)
     {
-        auto agg_val = agg->get_data();
+        auto agg_val = agg->data();
         agg_val[0] = 0;
         agg_val[1] = 1;
         agg_val[2] = 0;
@@ -234,8 +234,7 @@ TYPED_TEST(Pgm, CanBeCopied)
     auto copy_coarse = copy->get_coarse_op();
 
     GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(copy_mtx), this->mtx, 0.0);
-    this->assert_same_agg(copy_agg, this->agg.get_data(),
-                          this->agg.get_num_elems());
+    this->assert_same_agg(copy_agg, this->agg.data(), this->agg.size());
     GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(copy_coarse), this->coarse, 0.0);
 }
 
@@ -252,8 +251,7 @@ TYPED_TEST(Pgm, CanBeMoved)
     auto copy_coarse = copy->get_coarse_op();
 
     GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(copy_mtx), this->mtx, 0.0);
-    this->assert_same_agg(copy_agg, this->agg.get_data(),
-                          this->agg.get_num_elems());
+    this->assert_same_agg(copy_agg, this->agg.data(), this->agg.size());
     GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(copy_coarse), this->coarse, 0.0);
 }
 
@@ -268,8 +266,7 @@ TYPED_TEST(Pgm, CanBeCloned)
     auto clone_coarse = clone->get_coarse_op();
 
     GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(clone_mtx), this->mtx, 0.0);
-    this->assert_same_agg(clone_agg, this->agg.get_data(),
-                          this->agg.get_num_elems());
+    this->assert_same_agg(clone_agg, this->agg.data(), this->agg.size());
     GKO_ASSERT_MTX_NEAR(gko::as<Mtx>(clone_coarse), this->coarse, 0.0);
 }
 
@@ -294,8 +291,8 @@ TYPED_TEST(Pgm, MatchEdge)
     using index_type = typename TestFixture::index_type;
     gko::array<index_type> agg(this->exec, 5);
     gko::array<index_type> snb(this->exec, 5);
-    auto agg_val = agg.get_data();
-    auto snb_val = snb.get_data();
+    auto agg_val = agg.data();
+    auto snb_val = snb.data();
     for (int i = 0; i < 5; i++) {
         agg_val[i] = -1;
     }
@@ -321,7 +318,7 @@ TYPED_TEST(Pgm, CountUnagg)
 {
     using index_type = typename TestFixture::index_type;
     gko::array<index_type> agg(this->exec, 5);
-    auto agg_val = agg.get_data();
+    auto agg_val = agg.data();
     index_type num_unagg = 0;
     agg_val[0] = 0;
     agg_val[1] = -1;
@@ -339,7 +336,7 @@ TYPED_TEST(Pgm, Renumber)
 {
     using index_type = typename TestFixture::index_type;
     gko::array<index_type> agg(this->exec, 5);
-    auto agg_val = agg.get_data();
+    auto agg_val = agg.data();
     index_type num_agg = 0;
     agg_val[0] = 0;
     agg_val[1] = 1;
@@ -456,8 +453,8 @@ TYPED_TEST(Pgm, FindStrongestNeighbor)
     using index_type = typename TestFixture::index_type;
     gko::array<index_type> strongest_neighbor(this->exec, 5);
     gko::array<index_type> agg(this->exec, 5);
-    auto snb_vals = strongest_neighbor.get_data();
-    auto agg_vals = agg.get_data();
+    auto snb_vals = strongest_neighbor.data();
+    auto agg_vals = agg.data();
     for (int i = 0; i < 5; i++) {
         snb_vals[i] = -1;
         agg_vals[i] = -1;
@@ -480,7 +477,7 @@ TYPED_TEST(Pgm, AssignToExistAgg)
     using index_type = typename TestFixture::index_type;
     gko::array<index_type> agg(this->exec, 5);
     gko::array<index_type> intermediate_agg(this->exec, 0);
-    auto agg_vals = agg.get_data();
+    auto agg_vals = agg.data();
     // 0 - 2, 1 - 3
     agg_vals[0] = 0;
     agg_vals[1] = 1;

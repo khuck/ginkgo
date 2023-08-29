@@ -72,12 +72,12 @@ protected:
     template <typename Kernel>
     void run_test(Kernel kernel, int offset, int size, unsigned num_blocks = 1)
     {
-        *result.get_data() = true;
+        *result.data() = true;
         dresult = result;
         kernel<<<num_blocks, config::warp_size, 0, exec->get_stream()>>>(
-            dresult.get_data(), offset, size);
+            dresult.data(), offset, size);
         result = dresult;
-        auto success = *result.get_const_data();
+        auto success = *result.const_data();
 
         ASSERT_TRUE(success);
     }

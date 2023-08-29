@@ -66,7 +66,7 @@ void residual_norm(std::shared_ptr<const OmpExecutor> exec,
 #pragma omp parallel for reduction(|| : local_one_changed)
     for (size_type i = 0; i < tau->get_size()[1]; ++i) {
         if (tau->at(i) < rel_residual_goal * orig_tau->at(i)) {
-            stop_status->get_data()[i].converge(stoppingId, setFinalized);
+            stop_status->data()[i].converge(stoppingId, setFinalized);
             local_one_changed = true;
         }
     }
@@ -75,8 +75,8 @@ void residual_norm(std::shared_ptr<const OmpExecutor> exec,
     // But it's parallel so does it matter?
     bool local_all_converged = true;
 #pragma omp parallel for reduction(&& : local_all_converged)
-    for (size_type i = 0; i < stop_status->get_num_elems(); ++i) {
-        if (!stop_status->get_const_data()[i].has_stopped()) {
+    for (size_type i = 0; i < stop_status->size(); ++i) {
+        if (!stop_status->const_data()[i].has_stopped()) {
             local_all_converged = false;
         }
     }
@@ -111,7 +111,7 @@ void implicit_residual_norm(
 #pragma omp parallel for reduction(|| : local_one_changed)
     for (size_type i = 0; i < tau->get_size()[1]; ++i) {
         if (sqrt(abs(tau->at(i))) < rel_residual_goal * orig_tau->at(i)) {
-            stop_status->get_data()[i].converge(stoppingId, setFinalized);
+            stop_status->data()[i].converge(stoppingId, setFinalized);
             local_one_changed = true;
         }
     }
@@ -120,8 +120,8 @@ void implicit_residual_norm(
     // But it's parallel so does it matter?
     bool local_all_converged = true;
 #pragma omp parallel for reduction(&& : local_all_converged)
-    for (size_type i = 0; i < stop_status->get_num_elems(); ++i) {
-        if (!stop_status->get_const_data()[i].has_stopped()) {
+    for (size_type i = 0; i < stop_status->size(); ++i) {
+        if (!stop_status->const_data()[i].has_stopped()) {
             local_all_converged = false;
         }
     }

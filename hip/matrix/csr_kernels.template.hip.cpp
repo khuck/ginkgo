@@ -164,14 +164,13 @@ void merge_path_spmv(syn::value_list<int, items_per_thread>,
                         as_device_type(a->get_const_row_ptrs()),
                         as_device_type(a->get_const_srow()),
                         acc::as_hip_range(b_vals), acc::as_hip_range(c_vals),
-                        as_device_type(row_out.get_data()),
-                        as_device_type(val_out.get_data()));
+                        as_device_type(row_out.data()),
+                        as_device_type(val_out.data()));
             }
             kernel::
                 abstract_reduce<<<1, spmv_block_size, 0, exec->get_stream()>>>(
-                    grid_num, as_device_type(val_out.get_data()),
-                    as_device_type(row_out.get_data()),
-                    acc::as_hip_range(c_vals));
+                    grid_num, as_device_type(val_out.data()),
+                    as_device_type(row_out.data()), acc::as_hip_range(c_vals));
 
         } else if (alpha != nullptr && beta != nullptr) {
             if (grid_num > 0) {
@@ -185,13 +184,13 @@ void merge_path_spmv(syn::value_list<int, items_per_thread>,
                         acc::as_hip_range(b_vals),
                         as_device_type(beta->get_const_values()),
                         acc::as_hip_range(c_vals),
-                        as_device_type(row_out.get_data()),
-                        as_device_type(val_out.get_data()));
+                        as_device_type(row_out.data()),
+                        as_device_type(val_out.data()));
             }
             kernel::
                 abstract_reduce<<<1, spmv_block_size, 0, exec->get_stream()>>>(
-                    grid_num, as_device_type(val_out.get_data()),
-                    as_device_type(row_out.get_data()),
+                    grid_num, as_device_type(val_out.data()),
+                    as_device_type(row_out.data()),
                     as_device_type(alpha->get_const_values()),
                     acc::as_hip_range(c_vals));
         } else {
@@ -598,7 +597,7 @@ void spgemm(std::shared_ptr<const HipExecutor> exec,
             b_descr, b_nnz, b_row_ptrs, b_col_idxs, null_value, d_descr,
             zero_nnz, null_index, null_index, info, buffer_size);
         array<char> buffer_array(exec, buffer_size);
-        auto buffer = buffer_array.get_data();
+        auto buffer = buffer_array.data();
 
         // count nnz
         IndexType c_nnz{};
@@ -610,8 +609,8 @@ void spgemm(std::shared_ptr<const HipExecutor> exec,
         // accumulate non-zeros
         c_col_idxs_array.resize_and_reset(c_nnz);
         c_vals_array.resize_and_reset(c_nnz);
-        auto c_col_idxs = c_col_idxs_array.get_data();
-        auto c_vals = c_vals_array.get_data();
+        auto c_col_idxs = c_col_idxs_array.data();
+        auto c_vals = c_vals_array.data();
         hipsparse::spgemm(handle, m, n, k, &alpha, a_descr, a_nnz, a_vals,
                           a_row_ptrs, a_col_idxs, b_descr, b_nnz, b_vals,
                           b_row_ptrs, b_col_idxs, null_value, d_descr, zero_nnz,
@@ -720,11 +719,11 @@ void advanced_spgemm(std::shared_ptr<const HipExecutor> exec,
             b_descr, b_nnz, b_row_ptrs, b_col_idxs, null_value, d_descr,
             IndexType{}, null_index, null_index, info, buffer_size);
         array<char> buffer_array(exec, buffer_size);
-        auto buffer = buffer_array.get_data();
+        auto buffer = buffer_array.data();
 
         // count nnz
         array<IndexType> c_tmp_row_ptrs_array(exec, m + 1);
-        auto c_tmp_row_ptrs = c_tmp_row_ptrs_array.get_data();
+        auto c_tmp_row_ptrs = c_tmp_row_ptrs_array.data();
         IndexType c_nnz{};
         hipsparse::spgemm_nnz(
             handle, m, n, k, a_descr, a_nnz, a_row_ptrs, a_col_idxs, b_descr,
@@ -734,8 +733,8 @@ void advanced_spgemm(std::shared_ptr<const HipExecutor> exec,
         // accumulate non-zeros for A * B
         array<IndexType> c_tmp_col_idxs_array(exec, c_nnz);
         array<ValueType> c_tmp_vals_array(exec, c_nnz);
-        auto c_tmp_col_idxs = c_tmp_col_idxs_array.get_data();
-        auto c_tmp_vals = c_tmp_vals_array.get_data();
+        auto c_tmp_col_idxs = c_tmp_col_idxs_array.data();
+        auto c_tmp_vals = c_tmp_vals_array.data();
         hipsparse::spgemm(handle, m, n, k, &one_value, a_descr, a_nnz, a_vals,
                           a_row_ptrs, a_col_idxs, b_descr, b_nnz, b_vals,
                           b_row_ptrs, b_col_idxs, null_value, d_descr,
@@ -975,7 +974,7 @@ void calculate_nonzeros_per_row_in_span(
         kernel::calculate_nnz_per_row_in_span<<<grid_dim, default_block_size, 0,
                                                 exec->get_stream()>>>(
             row_span, col_span, as_device_type(row_ptrs),
-            as_device_type(col_idxs), as_device_type(row_nnz->get_data()));
+            as_device_type(col_idxs), as_device_type(row_nnz->data()));
     }
 }
 
@@ -1040,12 +1039,12 @@ void sort_by_column_index(std::shared_ptr<const HipExecutor> exec,
 
         // copy values
         array<ValueType> tmp_vals_array(exec, nnz);
-        exec->copy(nnz, vals, tmp_vals_array.get_data());
-        auto tmp_vals = tmp_vals_array.get_const_data();
+        exec->copy(nnz, vals, tmp_vals_array.data());
+        auto tmp_vals = tmp_vals_array.const_data();
 
         // init identity permutation
         array<IndexType> permutation_array(exec, nnz);
-        auto permutation = permutation_array.get_data();
+        auto permutation = permutation_array.data();
         hipsparse::create_identity_permutation(handle, nnz, permutation);
 
         // allocate buffer
@@ -1053,7 +1052,7 @@ void sort_by_column_index(std::shared_ptr<const HipExecutor> exec,
         hipsparse::csrsort_buffer_size(handle, m, n, nnz, row_ptrs, col_idxs,
                                        buffer_size);
         array<char> buffer_array{exec, buffer_size};
-        auto buffer = buffer_array.get_data();
+        auto buffer = buffer_array.data();
 
         // sort column indices
         hipsparse::csrsort(handle, m, n, nnz, descr, row_ptrs, col_idxs,
@@ -1084,7 +1083,7 @@ void is_sorted_by_column_index(
         kernel::
             check_unsorted<<<num_blocks, block_size, 0, exec->get_stream()>>>(
                 to_check->get_const_row_ptrs(), to_check->get_const_col_idxs(),
-                num_rows, gpu_array.get_data());
+                num_rows, gpu_array.data());
     }
     cpu_array = gpu_array;
 }
@@ -1129,8 +1128,8 @@ void check_diagonal_entries_exist(
             static_cast<IndexType>(
                 std::min(mtx->get_size()[0], mtx->get_size()[1])),
             mtx->get_const_row_ptrs(), mtx->get_const_col_idxs(),
-            has_diags.get_data());
-        has_all_diags = exec->copy_val_to_host(has_diags.get_const_data());
+            has_diags.data());
+        has_all_diags = exec->copy_val_to_host(has_diags.const_data());
     } else {
         has_all_diags = true;
     }

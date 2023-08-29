@@ -64,7 +64,7 @@ TEST_F(Criterion, SetsOneStopStatus)
     constexpr gko::uint8 RelativeStoppingId{1};
     auto criterion = factory->generate(nullptr, nullptr, nullptr);
     gko::array<gko::stopping_status> stop_status(ref, 1);
-    stop_status.get_data()[0].reset();
+    stop_status.data()[0].reset();
 
     stop_status.set_executor(exec);
     criterion->update()
@@ -72,7 +72,7 @@ TEST_F(Criterion, SetsOneStopStatus)
         .check(RelativeStoppingId, true, &stop_status, &one_changed);
     stop_status.set_executor(ref);
 
-    ASSERT_EQ(stop_status.get_data()[0].has_stopped(), true);
+    ASSERT_EQ(stop_status.data()[0].has_stopped(), true);
 }
 
 
@@ -82,9 +82,9 @@ TEST_F(Criterion, SetsMultipleStopStatuses)
     constexpr gko::uint8 RelativeStoppingId{1};
     auto criterion = factory->generate(nullptr, nullptr, nullptr);
     gko::array<gko::stopping_status> stop_status(ref, 3);
-    stop_status.get_data()[0].reset();
-    stop_status.get_data()[1].reset();
-    stop_status.get_data()[2].reset();
+    stop_status.data()[0].reset();
+    stop_status.data()[1].reset();
+    stop_status.data()[2].reset();
 
     stop_status.set_executor(exec);
     criterion->update()
@@ -92,7 +92,7 @@ TEST_F(Criterion, SetsMultipleStopStatuses)
         .check(RelativeStoppingId, true, &stop_status, &one_changed);
     stop_status.set_executor(ref);
 
-    ASSERT_EQ(stop_status.get_data()[0].has_stopped(), true);
-    ASSERT_EQ(stop_status.get_data()[1].has_stopped(), true);
-    ASSERT_EQ(stop_status.get_data()[2].has_stopped(), true);
+    ASSERT_EQ(stop_status.data()[0].has_stopped(), true);
+    ASSERT_EQ(stop_status.data()[1].has_stopped(), true);
+    ASSERT_EQ(stop_status.data()[2].has_stopped(), true);
 }

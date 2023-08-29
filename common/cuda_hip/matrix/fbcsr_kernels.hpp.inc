@@ -161,8 +161,8 @@ void fill_in_matrix_data(std::shared_ptr<const DefaultExecutor> exec,
     using tuple_type = thrust::tuple<IndexType, IndexType>;
     const auto nnz = data.get_num_elems();
     const auto bs = block_size;
-    auto block_row_ptrs = block_row_ptr_array.get_data();
-    auto num_block_rows = block_row_ptr_array.get_num_elems() - 1;
+    auto block_row_ptrs = block_row_ptr_array.data();
+    auto num_block_rows = block_row_ptr_array.size() - 1;
     if (nnz == 0) {
         components::fill_array(exec, block_row_ptrs, num_block_rows + 1,
                                IndexType{});
@@ -199,10 +199,10 @@ void fill_in_matrix_data(std::shared_ptr<const DefaultExecutor> exec,
     array<size_type> block_ptr_array{exec, num_blocks};
     block_col_idx_array.resize_and_reset(num_blocks);
     block_value_array.resize_and_reset(num_blocks * bs * bs);
-    auto block_row_idxs = block_row_idx_array.get_data();
-    auto block_col_idxs = block_col_idx_array.get_data();
-    auto block_values = as_device_type(block_value_array.get_data());
-    auto block_ptrs = block_ptr_array.get_data();
+    auto block_row_idxs = block_row_idx_array.data();
+    auto block_col_idxs = block_col_idx_array.data();
+    auto block_values = as_device_type(block_value_array.data());
+    auto block_ptrs = block_ptr_array.data();
     // write (block_row, block_col, block_start_idx) tuples for each block
     thrust::copy_if(thrust_policy(exec), iota, iota + nnz, block_ptrs,
                     adj_predicate);
@@ -214,12 +214,12 @@ void fill_in_matrix_data(std::shared_ptr<const DefaultExecutor> exec,
             return thrust::make_tuple(in_rows[i] / bs, in_cols[i] / bs);
         });
     // build row pointers from row indices
-    components::convert_idxs_to_ptrs(exec, block_row_idx_array.get_const_data(),
-                                     block_row_idx_array.get_num_elems(),
-                                     num_block_rows, block_row_ptrs);
+    components::convert_idxs_to_ptrs(exec, block_row_idx_array.const_data(),
+                                     block_row_idx_array.size(), num_block_rows,
+                                     block_row_ptrs);
     // fill in values
-    components::fill_array(exec, block_value_array.get_data(),
-                           num_blocks * bs * bs, zero<ValueType>());
+    components::fill_array(exec, block_value_array.data(), num_blocks * bs * bs,
+                           zero<ValueType>());
     thrust::for_each_n(
         thrust_policy(exec), iota, num_blocks,
         [block_ptrs, nnz, num_blocks, bs, in_rows, in_cols, in_vals,
@@ -274,25 +274,25 @@ void fallback_transpose(const std::shared_ptr<const DefaultExecutor> exec,
     const auto out_vals = as_device_type(output->get_values());
     array<IndexType> out_row_idxs{exec, nnzb};
     array<IndexType> permutation{exec, nnzb};
-    components::fill_seq_array(exec, permutation.get_data(), nnzb);
+    components::fill_seq_array(exec, permutation.data(), nnzb);
     components::convert_ptrs_to_idxs(exec, in_row_ptrs, in_num_row_blocks,
                                      out_col_idxs);
-    exec->copy(nnzb, in_col_idxs, out_row_idxs.get_data());
+    exec->copy(nnzb, in_col_idxs, out_row_idxs.data());
     auto zip_it = thrust::make_zip_iterator(thrust::make_tuple(
-        out_row_idxs.get_data(), out_col_idxs, permutation.get_data()));
+        out_row_idxs.data(), out_col_idxs, permutation.data()));
     using tuple_type = thrust::tuple<IndexType, IndexType, IndexType>;
     thrust::sort(thrust_policy(exec), zip_it, zip_it + nnzb,
                  [] __device__(const tuple_type& a, const tuple_type& b) {
                      return thrust::tie(thrust::get<0>(a), thrust::get<1>(a)) <
                             thrust::tie(thrust::get<0>(b), thrust::get<1>(b));
                  });
-    components::convert_idxs_to_ptrs(exec, out_row_idxs.get_data(), nnzb,
+    components::convert_idxs_to_ptrs(exec, out_row_idxs.data(), nnzb,
                                      out_num_row_blocks, out_row_ptrs);
     const auto grid_size = ceildiv(nnzb * bs * bs, default_block_size);
     if (grid_size > 0) {
         kernel::permute_transpose<<<grid_size, default_block_size, 0,
                                     exec->get_stream()>>>(
-            in_vals, out_vals, bs, nnzb, permutation.get_const_data());
+            in_vals, out_vals, bs, nnzb, permutation.const_data());
     }
 }
 
@@ -344,7 +344,7 @@ void is_sorted_by_column_index(
     *is_sorted = true;
     auto gpu_array = array<bool>(exec, 1);
     // need to initialize the GPU value to true
-    exec->copy_from(exec->get_master(), 1, is_sorted, gpu_array.get_data());
+    exec->copy_from(exec->get_master(), 1, is_sorted, gpu_array.data());
     auto block_size = default_block_size;
     const auto num_brows =
         static_cast<IndexType>(to_check->get_num_block_rows());
@@ -353,9 +353,9 @@ void is_sorted_by_column_index(
         kernel::
             check_unsorted<<<num_blocks, block_size, 0, exec->get_stream()>>>(
                 to_check->get_const_row_ptrs(), to_check->get_const_col_idxs(),
-                num_brows, gpu_array.get_data());
+                num_brows, gpu_array.data());
     }
-    *is_sorted = exec->copy_val_to_host(gpu_array.get_data());
+    *is_sorted = exec->copy_val_to_host(gpu_array.data());
 }
 
 

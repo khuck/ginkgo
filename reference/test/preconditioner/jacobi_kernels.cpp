@@ -70,11 +70,11 @@ protected:
           mtx(gko::matrix::Csr<value_type, index_type>::create(
               exec, gko::dim<2>{5}, 13))
     {
-        block_pointers.get_data()[0] = 0;
-        block_pointers.get_data()[1] = 2;
-        block_pointers.get_data()[2] = 5;
-        block_precisions.get_data()[0] = gko::precision_reduction(0, 1);
-        block_precisions.get_data()[1] = gko::precision_reduction(0, 0);
+        block_pointers.data()[0] = 0;
+        block_pointers.data()[1] = 2;
+        block_pointers.data()[2] = 5;
+        block_precisions.data()[0] = gko::precision_reduction(0, 1);
+        block_precisions.data()[1] = gko::precision_reduction(0, 0);
         scalar_j_factory = Bj::build().with_max_block_size(1u).on(exec);
         bj_factory = Bj::build()
                          .with_max_block_size(3u)
@@ -131,7 +131,7 @@ TYPED_TEST(Jacobi, CanBeGenerated)
     EXPECT_EQ(bj->get_parameters().max_block_size, 3);
     ASSERT_EQ(bj->get_size(), gko::dim<2>(5, 5));
     ASSERT_EQ(bj->get_num_blocks(), 2);
-    auto ptrs = bj->get_parameters().block_pointers.get_const_data();
+    auto ptrs = bj->get_parameters().block_pointers.const_data();
     EXPECT_EQ(ptrs[0], 0);
     EXPECT_EQ(ptrs[1], 2);
     ASSERT_EQ(ptrs[2], 5);
@@ -146,12 +146,12 @@ TYPED_TEST(Jacobi, CanBeGeneratedWithAdaptivePrecision)
     EXPECT_EQ(bj->get_parameters().max_block_size, 17);
     ASSERT_EQ(bj->get_size(), gko::dim<2>(5, 5));
     ASSERT_EQ(bj->get_num_blocks(), 2);
-    auto ptrs = bj->get_parameters().block_pointers.get_const_data();
+    auto ptrs = bj->get_parameters().block_pointers.const_data();
     EXPECT_EQ(ptrs[0], 0);
     EXPECT_EQ(ptrs[1], 2);
     ASSERT_EQ(ptrs[2], 5);
     auto prec =
-        bj->get_parameters().storage_optimization.block_wise.get_const_data();
+        bj->get_parameters().storage_optimization.block_wise.const_data();
     EXPECT_EQ(prec[0], gko::precision_reduction(0, 1));
     ASSERT_EQ(prec[1], gko::precision_reduction(0, 0));
 }
@@ -180,7 +180,7 @@ TYPED_TEST(Jacobi, FindsNaturalBlocks)
 
     EXPECT_EQ(bj->get_parameters().max_block_size, 3);
     ASSERT_EQ(bj->get_num_blocks(), 2);
-    auto ptrs = bj->get_parameters().block_pointers.get_const_data();
+    auto ptrs = bj->get_parameters().block_pointers.const_data();
     EXPECT_EQ(ptrs[0], 0);
     EXPECT_EQ(ptrs[1], 2);
     EXPECT_EQ(ptrs[2], 4);
@@ -212,7 +212,7 @@ TYPED_TEST(Jacobi, ExecutesSupervariableAgglomeration)
 
     EXPECT_EQ(bj->get_parameters().max_block_size, 3);
     ASSERT_EQ(bj->get_num_blocks(), 2);
-    auto ptrs = bj->get_parameters().block_pointers.get_const_data();
+    auto ptrs = bj->get_parameters().block_pointers.const_data();
     EXPECT_EQ(ptrs[0], 0);
     EXPECT_EQ(ptrs[1], 2);
     EXPECT_EQ(ptrs[2], 5);
@@ -246,7 +246,7 @@ TYPED_TEST(Jacobi, AdheresToBlockSizeBound)
 
     EXPECT_EQ(bj->get_parameters().max_block_size, 3);
     ASSERT_EQ(bj->get_num_blocks(), 3);
-    auto ptrs = bj->get_parameters().block_pointers.get_const_data();
+    auto ptrs = bj->get_parameters().block_pointers.const_data();
     EXPECT_EQ(ptrs[0], 0);
     EXPECT_EQ(ptrs[1], 3);
     EXPECT_EQ(ptrs[2], 6);
@@ -265,7 +265,7 @@ TYPED_TEST(Jacobi, CanBeGeneratedWithUnknownBlockSizes)
     EXPECT_EQ(bj->get_parameters().max_block_size, 3);
     ASSERT_EQ(bj->get_size(), gko::dim<2>(5, 5));
     ASSERT_EQ(bj->get_num_blocks(), 2);
-    auto ptrs = bj->get_parameters().block_pointers.get_const_data();
+    auto ptrs = bj->get_parameters().block_pointers.const_data();
     EXPECT_EQ(ptrs[0], 0);
     EXPECT_EQ(ptrs[1], 3);
     ASSERT_EQ(ptrs[2], 5);
@@ -307,7 +307,7 @@ TYPED_TEST(Jacobi, InvertsDiagonalBlocksWithAdaptivePrecision)
     auto scheme = bj->get_storage_scheme();
     auto p = scheme.get_stride();
     const auto b_prec_bj =
-        bj->get_parameters().storage_optimization.block_wise.get_const_data();
+        bj->get_parameters().storage_optimization.block_wise.const_data();
     using reduced = ::gko::reduce_precision<T>;
     auto b1 = reinterpret_cast<const reduced*>(
         bj->get_blocks() + scheme.get_global_block_offset(0));
@@ -487,7 +487,7 @@ TYPED_TEST(Jacobi, PivotsWhenInvertingBlocks)
     using T = typename TestFixture::value_type;
     using index_type = typename TestFixture::index_type;
     gko::array<index_type> bp(this->exec, 2);
-    this->template init_array<index_type>(bp.get_data(), {0, 3});
+    this->template init_array<index_type>(bp.data(), {0, 3});
     auto mtx = Mtx::create(this->exec, gko::dim<2>{3}, 9);
     /* test matrix:
        0 2 0
@@ -529,7 +529,7 @@ TYPED_TEST(Jacobi, PivotsWhenInvertingBlocksWithiAdaptivePrecision)
     using T = typename TestFixture::value_type;
     auto half_tol = std::sqrt(r<T>::value);
     gko::array<index_type> bp(this->exec, 2);
-    this->template init_array<index_type>(bp.get_data(), {0, 3});
+    this->template init_array<index_type>(bp.data(), {0, 3});
     auto mtx = Mtx::create(this->exec, gko::dim<2>{3}, 9);
     /* test matrix:
        0 2 0
@@ -593,7 +593,7 @@ TYPED_TEST(Jacobi, SelectsCorrectBlockPrecisions)
             ->generate(give(this->mtx));
 
     auto prec =
-        bj->get_parameters().storage_optimization.block_wise.get_const_data();
+        bj->get_parameters().storage_optimization.block_wise.const_data();
     auto precision2 = std::is_same<gko::remove_complex<T>, float>::value
                           ? gko::precision_reduction(0, 0)   // float
                           : gko::precision_reduction(0, 1);  // double
@@ -635,7 +635,7 @@ TYPED_TEST(Jacobi, AvoidsPrecisionsThatOverflow)
 
     // both blocks are in the same group, both need (7, 8)
     auto prec =
-        bj->get_parameters().storage_optimization.block_wise.get_const_data();
+        bj->get_parameters().storage_optimization.block_wise.const_data();
     auto precision = std::is_same<gko::remove_complex<T>, float>::value
                          ? gko::precision_reduction(0, 2)   // float
                          : gko::precision_reduction(1, 1);  // double

@@ -191,7 +191,7 @@ ParIct<ValueType, IndexType>::generate_l_lt(
     // initialize the L matrix data structures
     const auto num_rows = csr_system_matrix->get_size()[0];
     array<IndexType> l_row_ptrs_array{exec, num_rows + 1};
-    auto l_row_ptrs = l_row_ptrs_array.get_data();
+    auto l_row_ptrs = l_row_ptrs_array.data();
     exec->run(make_initialize_row_ptrs_l(csr_system_matrix.get(), l_row_ptrs));
 
     auto l_nnz =

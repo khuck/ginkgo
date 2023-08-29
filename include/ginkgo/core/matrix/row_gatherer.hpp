@@ -82,7 +82,7 @@ public:
      *
      * @return the pointer to the row index array for gathering.
      */
-    index_type* get_row_idxs() noexcept { return row_idxs_.get_data(); }
+    index_type* get_row_idxs() noexcept { return row_idxs_.data(); }
 
     /**
      * @copydoc get_row_idxs()
@@ -93,7 +93,7 @@ public:
      */
     const index_type* get_const_row_idxs() const noexcept
     {
-        return row_idxs_.get_const_data();
+        return row_idxs_.const_data();
     }
 
     /**
@@ -156,7 +156,7 @@ protected:
         : EnableLinOp<RowGatherer>(exec, size),
           row_idxs_{exec, std::forward<IndicesArray>(row_idxs)}
     {
-        GKO_ASSERT_EQ(size[0], row_idxs_.get_num_elems());
+        GKO_ASSERT_EQ(size[0], row_idxs_.size());
     }
 
     void apply_impl(const LinOp* in, LinOp* out) const override;

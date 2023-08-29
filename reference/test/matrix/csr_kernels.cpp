@@ -2159,7 +2159,7 @@ TYPED_TEST(CsrLookup, GeneratesLookupDataOffsets)
     using gko::matrix::csr::sparsity_type;
     const auto num_rows = this->mtx->get_size()[0];
     gko::array<IndexType> storage_offset_array(this->exec, num_rows + 1);
-    const auto storage_offsets = storage_offset_array.get_data();
+    const auto storage_offsets = storage_offset_array.data();
     const auto row_ptrs = this->mtx->get_const_row_ptrs();
     const auto col_idxs = this->mtx->get_const_col_idxs();
 
@@ -2195,8 +2195,8 @@ TYPED_TEST(CsrLookup, GeneratesLookupData)
     const auto num_cols = this->mtx->get_size()[1];
     gko::array<gko::int64> row_desc_array(this->exec, num_rows);
     gko::array<IndexType> storage_offset_array(this->exec, num_rows + 1);
-    const auto row_descs = row_desc_array.get_data();
-    const auto storage_offsets = storage_offset_array.get_data();
+    const auto row_descs = row_desc_array.data();
+    const auto storage_offsets = storage_offset_array.data();
     const auto row_ptrs = this->mtx->get_const_row_ptrs();
     const auto col_idxs = this->mtx->get_const_col_idxs();
     for (auto allowed :
@@ -2207,7 +2207,7 @@ TYPED_TEST(CsrLookup, GeneratesLookupData)
             this->exec, row_ptrs, col_idxs, num_rows, allowed, storage_offsets);
         gko::array<gko::int32> storage_array(this->exec,
                                              storage_offsets[num_rows]);
-        const auto storage = storage_array.get_data();
+        const auto storage = storage_array.data();
         const auto bitmap_equivalent =
             csr_lookup_allowed(allowed, sparsity_type::bitmap)
                 ? sparsity_type::bitmap

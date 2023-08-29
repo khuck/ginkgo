@@ -76,10 +76,10 @@ void symbolic_cholesky(
     const auto num_rows = mtx->get_size()[0];
     array<IndexType> row_ptrs{exec, num_rows + 1};
     array<IndexType> tmp{exec};
-    exec->run(make_symbolic_count(mtx, *forest, row_ptrs.get_data(), tmp));
-    exec->run(make_prefix_sum_nonnegative(row_ptrs.get_data(), num_rows + 1));
+    exec->run(make_symbolic_count(mtx, *forest, row_ptrs.data(), tmp));
+    exec->run(make_prefix_sum_nonnegative(row_ptrs.data(), num_rows + 1));
     const auto factor_nnz = static_cast<size_type>(
-        exec->copy_val_to_host(row_ptrs.get_const_data() + num_rows));
+        exec->copy_val_to_host(row_ptrs.const_data() + num_rows));
     factors = matrix_type::create(
         exec, mtx->get_size(), array<ValueType>{exec, factor_nnz},
         array<IndexType>{exec, factor_nnz}, std::move(row_ptrs));
@@ -116,7 +116,7 @@ void symbolic_lu(const matrix::Csr<ValueType, IndexType>* mtx,
     const auto in_row_ptrs = host_mtx->get_const_row_ptrs();
     const auto in_col_idxs = host_mtx->get_const_col_idxs();
     array<IndexType> host_out_row_ptr_array(host_exec, num_rows + 1);
-    const auto out_row_ptrs = host_out_row_ptr_array.get_data();
+    const auto out_row_ptrs = host_out_row_ptr_array.data();
     vector<IndexType> fill(num_rows, host_exec);
     vector<IndexType> out_col_idxs(host_exec);
     vector<IndexType> diags(num_rows, host_exec);
@@ -175,7 +175,7 @@ void symbolic_lu(const matrix::Csr<ValueType, IndexType>* mtx,
     array<IndexType> out_col_idx_array{exec, out_nnz};
     array<ValueType> out_val_array{exec, out_nnz};
     exec->copy_from(host_exec, out_nnz, out_col_idxs.data(),
-                    out_col_idx_array.get_data());
+                    out_col_idx_array.data());
     factors = matrix_type::create(
         exec, mtx->get_size(), std::move(out_val_array),
         std::move(out_col_idx_array), std::move(out_row_ptr_array));

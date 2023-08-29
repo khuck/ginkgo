@@ -75,7 +75,7 @@ protected:
           dresult(dpcpp)
     {
         for (int i = 0; i < max_num; i++) {
-            result.get_data()[i] = false;
+            result.data()[i] = false;
         }
         dresult = result;
     }
@@ -89,11 +89,11 @@ protected:
                                           subgroup_size)) {
             const auto cfg = DCFG_1D::encode(subgroup_size, subgroup_size);
             for (int i = 0; i < test_case * subgroup_size; i++) {
-                result.get_data()[i] = true;
+                result.data()[i] = true;
             }
 
             kernel(cfg, 1, subgroup_size, 0, dpcpp->get_queue(),
-                   dresult.get_data());
+                   dresult.data());
 
             // each subgreoup size segment for one test
             GKO_ASSERT_ARRAY_EQ(result, dresult);

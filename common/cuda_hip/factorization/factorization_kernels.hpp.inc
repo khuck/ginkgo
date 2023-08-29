@@ -381,14 +381,14 @@ void add_diagonal_elements(std::shared_ptr<const DefaultExecutor> exec,
 
     array<IndexType> row_ptrs_addition(exec, row_ptrs_size);
     array<bool> needs_change_host{exec->get_master(), 1};
-    needs_change_host.get_data()[0] = false;
+    needs_change_host.data()[0] = false;
     array<bool> needs_change_device{exec, 1};
     needs_change_device = needs_change_host;
 
     auto old_values = as_device_type(mtx->get_const_values());
     auto old_col_idxs = mtx->get_const_col_idxs();
     auto old_row_ptrs = mtx->get_row_ptrs();
-    auto row_ptrs_add = row_ptrs_addition.get_data();
+    auto row_ptrs_add = row_ptrs_addition.data();
 
     const auto block_dim = default_block_size;
     const auto grid_dim =
@@ -397,15 +397,15 @@ void add_diagonal_elements(std::shared_ptr<const DefaultExecutor> exec,
         kernel::find_missing_diagonal_elements<true, subwarp_size>
             <<<grid_dim, block_dim, 0, exec->get_stream()>>>(
                 num_rows, num_cols, old_col_idxs, old_row_ptrs, row_ptrs_add,
-                needs_change_device.get_data());
+                needs_change_device.data());
     } else {
         kernel::find_missing_diagonal_elements<false, subwarp_size>
             <<<grid_dim, block_dim, 0, exec->get_stream()>>>(
                 num_rows, num_cols, old_col_idxs, old_row_ptrs, row_ptrs_add,
-                needs_change_device.get_data());
+                needs_change_device.data());
     }
     needs_change_host = needs_change_device;
-    if (!needs_change_host.get_const_data()[0]) {
+    if (!needs_change_host.const_data()[0]) {
         return;
     }
 
@@ -420,8 +420,8 @@ void add_diagonal_elements(std::shared_ptr<const DefaultExecutor> exec,
 
     array<ValueType> new_value_array{exec, new_num_elems};
     array<IndexType> new_col_idx_array{exec, new_num_elems};
-    auto new_values = as_device_type(new_value_array.get_data());
-    auto new_col_idxs = new_col_idx_array.get_data();
+    auto new_values = as_device_type(new_value_array.data());
+    auto new_col_idxs = new_col_idx_array.data();
 
     kernel::add_missing_diagonal_elements<subwarp_size>
         <<<grid_dim, block_dim, 0, exec->get_stream()>>>(

@@ -59,7 +59,7 @@ protected:
           vals{ref, total_size},
           dvals{exec}
     {
-        std::fill_n(vals.get_data(), total_size, 3);
+        std::fill_n(vals.data(), total_size, 3);
         dvals = vals;
     }
 

@@ -235,13 +235,13 @@ size_type find_natural_blocks(std::shared_ptr<const DefaultExecutor> exec,
     if (grid_size > 0) {
         compare_adjacent_rows<<<grid_size, block_size, 0, exec->get_stream()>>>(
             mtx->get_size()[0], max_block_size, mtx->get_const_row_ptrs(),
-            mtx->get_const_col_idxs(), matching_next_row.get_data());
+            mtx->get_const_col_idxs(), matching_next_row.data());
     }
     generate_natural_block_pointer<<<1, 1, 0, exec->get_stream()>>>(
-        mtx->get_size()[0], max_block_size, matching_next_row.get_const_data(),
-        block_ptrs, nums.get_data());
+        mtx->get_size()[0], max_block_size, matching_next_row.const_data(),
+        block_ptrs, nums.data());
     nums.set_executor(exec->get_master());
-    return nums.get_const_data()[0];
+    return nums.const_data()[0];
 }
 
 
@@ -253,10 +253,10 @@ inline size_type agglomerate_supervariables(
     array<size_type> nums(exec, 1);
 
     agglomerate_supervariables_kernel<<<1, 1, 0, exec->get_stream()>>>(
-        max_block_size, num_natural_blocks, block_ptrs, nums.get_data());
+        max_block_size, num_natural_blocks, block_ptrs, nums.data());
 
     nums.set_executor(exec->get_master());
-    return nums.get_const_data()[0];
+    return nums.const_data()[0];
 }
 
 
@@ -268,13 +268,13 @@ void initialize_precisions(std::shared_ptr<const DefaultExecutor> exec,
                            array<precision_reduction>& precisions)
 {
     const auto block_size = default_num_warps * config::warp_size;
-    const auto grid_size = min(
-        default_grid_size,
-        static_cast<int32>(ceildiv(precisions.get_num_elems(), block_size)));
+    const auto grid_size =
+        min(default_grid_size,
+            static_cast<int32>(ceildiv(precisions.size(), block_size)));
     if (grid_size > 0) {
         duplicate_array<<<grid_size, block_size, 0, exec->get_stream()>>>(
-            source.get_const_data(), source.get_num_elems(),
-            precisions.get_data(), precisions.get_num_elems());
+            source.const_data(), source.size(), precisions.data(),
+            precisions.size());
     }
 }
 
@@ -286,9 +286,9 @@ void find_blocks(std::shared_ptr<const DefaultExecutor> exec,
                  array<IndexType>& block_pointers)
 {
     auto num_natural_blocks = find_natural_blocks(
-        exec, system_matrix, max_block_size, block_pointers.get_data());
+        exec, system_matrix, max_block_size, block_pointers.data());
     num_blocks = agglomerate_supervariables(
-        exec, max_block_size, num_natural_blocks, block_pointers.get_data());
+        exec, max_block_size, num_natural_blocks, block_pointers.data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
@@ -353,9 +353,9 @@ void transpose_jacobi(
             return max_block_size <= compiled_block_size;
         },
         syn::value_list<int, false, config::min_warps_per_block>(),
-        syn::type_list<>(), exec, num_blocks, block_precisions.get_const_data(),
-        block_pointers.get_const_data(), blocks.get_const_data(),
-        storage_scheme, out_blocks.get_data());
+        syn::type_list<>(), exec, num_blocks, block_precisions.const_data(),
+        block_pointers.const_data(), blocks.const_data(), storage_scheme,
+        out_blocks.data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
@@ -377,9 +377,9 @@ void conj_transpose_jacobi(
             return max_block_size <= compiled_block_size;
         },
         syn::value_list<int, true, config::min_warps_per_block>(),
-        syn::type_list<>(), exec, num_blocks, block_precisions.get_const_data(),
-        block_pointers.get_const_data(), blocks.get_const_data(),
-        storage_scheme, out_blocks.get_data());
+        syn::type_list<>(), exec, num_blocks, block_precisions.const_data(),
+        block_pointers.const_data(), blocks.const_data(), storage_scheme,
+        out_blocks.data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(

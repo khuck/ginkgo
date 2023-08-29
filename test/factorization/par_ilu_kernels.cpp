@@ -138,22 +138,22 @@ protected:
         gko::array<index_type> dl_row_ptrs{exec, num_row_ptrs};
         gko::array<index_type> du_row_ptrs{exec, num_row_ptrs};
 
-        initialize_row_ptrs(l_row_ptrs.get_data(), u_row_ptrs.get_data(),
-                            dl_row_ptrs.get_data(), du_row_ptrs.get_data());
+        initialize_row_ptrs(l_row_ptrs.data(), u_row_ptrs.data(),
+                            dl_row_ptrs.data(), du_row_ptrs.data());
         // Since `initialize_row_ptrs` was already tested, it is expected that
         // `*` and `d*` contain identical values
-        auto l_nnz = l_row_ptrs.get_const_data()[num_row_ptrs - 1];
-        auto u_nnz = u_row_ptrs.get_const_data()[num_row_ptrs - 1];
+        auto l_nnz = l_row_ptrs.const_data()[num_row_ptrs - 1];
+        auto u_nnz = u_row_ptrs.const_data()[num_row_ptrs - 1];
 
         l = Csr::create(ref, mtx->get_size(), l_nnz);
         u = Csr::create(ref, mtx->get_size(), u_nnz);
         dl = Csr::create(exec, dmtx->get_size(), l_nnz);
         du = Csr::create(exec, dmtx->get_size(), u_nnz);
         // Copy the already initialized `row_ptrs` to the new matrices
-        ref->copy(num_row_ptrs, l_row_ptrs.get_data(), l->get_row_ptrs());
-        ref->copy(num_row_ptrs, u_row_ptrs.get_data(), u->get_row_ptrs());
-        exec->copy(num_row_ptrs, dl_row_ptrs.get_data(), dl->get_row_ptrs());
-        exec->copy(num_row_ptrs, du_row_ptrs.get_data(), du->get_row_ptrs());
+        ref->copy(num_row_ptrs, l_row_ptrs.data(), l->get_row_ptrs());
+        ref->copy(num_row_ptrs, u_row_ptrs.data(), u->get_row_ptrs());
+        exec->copy(num_row_ptrs, dl_row_ptrs.data(), dl->get_row_ptrs());
+        exec->copy(num_row_ptrs, du_row_ptrs.data(), du->get_row_ptrs());
 
         gko::kernels::reference::factorization::initialize_l_u(
             ref, mtx.get(), l.get(), u.get());
@@ -247,9 +247,9 @@ TYPED_TEST(ParIlu, KernelInitializeRowPtrsLUEquivalentToRef)
     gko::array<index_type> dl_row_ptrs_array(this->exec, num_row_ptrs);
     gko::array<index_type> du_row_ptrs_array(this->exec, num_row_ptrs);
 
-    this->initialize_row_ptrs(
-        l_row_ptrs_array.get_data(), u_row_ptrs_array.get_data(),
-        dl_row_ptrs_array.get_data(), du_row_ptrs_array.get_data());
+    this->initialize_row_ptrs(l_row_ptrs_array.data(), u_row_ptrs_array.data(),
+                              dl_row_ptrs_array.data(),
+                              du_row_ptrs_array.data());
 
     GKO_ASSERT_ARRAY_EQ(l_row_ptrs_array, dl_row_ptrs_array);
     GKO_ASSERT_ARRAY_EQ(u_row_ptrs_array, du_row_ptrs_array);

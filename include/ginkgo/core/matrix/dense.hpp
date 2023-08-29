@@ -480,7 +480,7 @@ public:
      * @param gather_indices  pointer to an array containing row indices
      *                        from this matrix. It may contain duplicates.
      * @return  Dense matrix on the same executor with the same number of
-     *          columns and `gather_indices->get_num_elems()` rows containing
+     *          columns and `gather_indices->size()` rows containing
      *          the gathered rows from this matrix:
      *          `output(i,j) = input(gather_indices(i), j)`
      */
@@ -501,7 +501,7 @@ public:
      *                        `row_collection(i,j)
      *                         = input(gather_indices(i), j)`
      *                        It must have the same number of columns as this
-     *                        matrix and `gather_indices->get_num_elems()` rows.
+     *                        matrix and `gather_indices->size()` rows.
      */
     void row_gather(const array<int32>* gather_indices,
                     ptr_param<LinOp> row_collection) const;
@@ -523,7 +523,7 @@ public:
      *             gathered rows:
      *             `row_collection(i,j) = input(gather_indices(i), j)`
      *             It must have the same number of columns as this
-     *             matrix and `gather_indices->get_num_elems()` rows.
+     *             matrix and `gather_indices->size()` rows.
      */
     void row_gather(ptr_param<const LinOp> alpha,
                     const array<int32>* gather_indices,
@@ -676,7 +676,7 @@ public:
      *
      * @return the pointer to the array of values
      */
-    value_type* get_values() noexcept { return values_.get_data(); }
+    value_type* get_values() noexcept { return values_.data(); }
 
     /**
      * @copydoc get_values()
@@ -687,7 +687,7 @@ public:
      */
     const value_type* get_const_values() const noexcept
     {
-        return values_.get_const_data();
+        return values_.const_data();
     }
 
     /**
@@ -704,7 +704,7 @@ public:
      */
     size_type get_num_stored_elements() const noexcept
     {
-        return values_.get_num_elems();
+        return values_.size();
     }
 
     /**
@@ -719,7 +719,7 @@ public:
      */
     value_type& at(size_type row, size_type col) noexcept
     {
-        return values_.get_data()[linearize_index(row, col)];
+        return values_.data()[linearize_index(row, col)];
     }
 
     /**
@@ -727,7 +727,7 @@ public:
      */
     value_type at(size_type row, size_type col) const noexcept
     {
-        return values_.get_const_data()[linearize_index(row, col)];
+        return values_.const_data()[linearize_index(row, col)];
     }
 
     /**
@@ -746,7 +746,7 @@ public:
      */
     ValueType& at(size_type idx) noexcept
     {
-        return values_.get_data()[linearize_index(idx)];
+        return values_.data()[linearize_index(idx)];
     }
 
     /**
@@ -754,7 +754,7 @@ public:
      */
     ValueType at(size_type idx) const noexcept
     {
-        return values_.get_const_data()[linearize_index(idx)];
+        return values_.const_data()[linearize_index(idx)];
     }
 
     /**
@@ -1060,7 +1060,7 @@ protected:
     {
         if (size[0] > 0 && size[1] > 0) {
             GKO_ENSURE_IN_BOUNDS((size[0] - 1) * stride + size[1] - 1,
-                                 values_.get_num_elems());
+                                 values_.size());
         }
     }
 

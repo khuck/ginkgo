@@ -53,8 +53,8 @@ class Array : public ::testing::Test {
 protected:
     Array() : exec(gko::ReferenceExecutor::create()), x(exec, 2)
     {
-        x.get_data()[0] = 5;
-        x.get_data()[1] = 2;
+        x.data()[0] = 5;
+        x.data()[1] = 2;
     }
 
     std::shared_ptr<const gko::Executor> exec;
@@ -68,11 +68,11 @@ TYPED_TEST(Array, CanBeFilledWithValue)
 {
     this->x.fill(TypeParam{42});
 
-    ASSERT_EQ(this->x.get_num_elems(), 2);
-    ASSERT_EQ(this->x.get_data()[0], TypeParam{42});
-    ASSERT_EQ(this->x.get_data()[1], TypeParam{42});
-    ASSERT_EQ(this->x.get_const_data()[0], TypeParam{42});
-    ASSERT_EQ(this->x.get_const_data()[1], TypeParam{42});
+    ASSERT_EQ(this->x.size(), 2);
+    ASSERT_EQ(this->x.data()[0], TypeParam{42});
+    ASSERT_EQ(this->x.data()[1], TypeParam{42});
+    ASSERT_EQ(this->x.const_data()[0], TypeParam{42});
+    ASSERT_EQ(this->x.const_data()[1], TypeParam{42});
 }
 
 
@@ -82,7 +82,7 @@ TYPED_TEST(Array, CanBeReduced)
 
     gko::reduce_add(this->x, out);
 
-    ASSERT_EQ(out.get_data()[0], TypeParam{8});
+    ASSERT_EQ(out.data()[0], TypeParam{8});
 }
 
 

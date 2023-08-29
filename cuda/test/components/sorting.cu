@@ -95,13 +95,13 @@ protected:
         // we want some duplicate elements
         std::uniform_int_distribution<gko::int32> dist(0, num_elements / 2);
         for (int i = 0; i < num_elements; ++i) {
-            ref_shared.get_data()[i] = dist(rng);
+            ref_shared.data()[i] = dist(rng);
         }
         ddata = gko::array<gko::int32>{exec, ref_shared};
         ref_warp = ref_shared;
-        std::sort(ref_shared.get_data(), ref_shared.get_data() + num_elements);
-        std::sort(ref_warp.get_data(),
-                  ref_warp.get_data() + (config::warp_size * num_local));
+        std::sort(ref_shared.data(), ref_shared.data() + num_elements);
+        std::sort(ref_warp.data(),
+                  ref_warp.data() + (config::warp_size * num_local));
     }
 
     std::default_random_engine rng;
@@ -114,10 +114,10 @@ protected:
 TEST_F(Sorting, CudaBitonicSortWarp)
 {
     test_sort_warp<<<1, config::warp_size, 0, exec->get_stream()>>>(
-        ddata.get_data());
+        ddata.data());
     ddata.set_executor(ref);
-    auto data_ptr = ddata.get_const_data();
-    auto ref_ptr = ref_warp.get_const_data();
+    auto data_ptr = ddata.const_data();
+    auto ref_ptr = ref_warp.const_data();
 
     GKO_ASSERT_ARRAY_EQ(ddata, ref_warp);
 }
@@ -125,11 +125,10 @@ TEST_F(Sorting, CudaBitonicSortWarp)
 
 TEST_F(Sorting, CudaBitonicSortShared)
 {
-    test_sort_shared<<<1, num_threads, 0, exec->get_stream()>>>(
-        ddata.get_data());
+    test_sort_shared<<<1, num_threads, 0, exec->get_stream()>>>(ddata.data());
     ddata.set_executor(ref);
-    auto data_ptr = ddata.get_const_data();
-    auto ref_ptr = ref_shared.get_const_data();
+    auto data_ptr = ddata.const_data();
+    auto ref_ptr = ref_shared.const_data();
 
     GKO_ASSERT_ARRAY_EQ(ddata, ref_shared);
 }

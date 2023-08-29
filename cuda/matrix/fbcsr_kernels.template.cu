@@ -170,8 +170,8 @@ void spmv(std::shared_ptr<const CudaExecutor> exec,
                             CUSPARSE_OPERATION_TRANSPOSE, mb, nrhs, nb, nnzb,
                             &alpha, descr, values, row_ptrs, col_idxs, bs,
                             b->get_const_values(), in_stride, &beta,
-                            trans_c.get_data(), trans_stride);
-            dense_transpose(exec, nrhs, nrows, trans_stride, trans_c.get_data(),
+                            trans_c.data(), trans_stride);
+            dense_transpose(exec, nrhs, nrows, trans_stride, trans_c.data(),
                             out_stride, c->get_values());
         }
         cusparse::destroy(descr);
@@ -223,13 +223,13 @@ void advanced_spmv(std::shared_ptr<const CudaExecutor> exec,
             const auto trans_stride = nrows;
             auto trans_c = array<ValueType>(exec, nrows * nrhs);
             dense_transpose(exec, nrows, nrhs, out_stride, c->get_values(),
-                            trans_stride, trans_c.get_data());
+                            trans_stride, trans_c.data());
             cusparse::bsrmm(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                             CUSPARSE_OPERATION_TRANSPOSE, mb, nrhs, nb, nnzb,
                             alphp, descr, values, row_ptrs, col_idxs, bs,
                             b->get_const_values(), in_stride, betap,
-                            trans_c.get_data(), trans_stride);
-            dense_transpose(exec, nrhs, nrows, trans_stride, trans_c.get_data(),
+                            trans_c.data(), trans_stride);
+            dense_transpose(exec, nrhs, nrows, trans_stride, trans_c.data(),
                             out_stride, c->get_values());
         }
         cusparse::destroy(descr);
@@ -282,7 +282,7 @@ void transpose(const std::shared_ptr<const CudaExecutor> exec,
             orig->get_num_block_cols(), nnzb, orig->get_const_values(),
             orig->get_const_row_ptrs(), orig->get_const_col_idxs(), bs, bs);
         array<char> buffer_array(exec, buffer_size);
-        auto buffer = buffer_array.get_data();
+        auto buffer = buffer_array.data();
         cusparse::bsr_transpose(
             exec->get_cusparse_handle(), orig->get_num_block_rows(),
             orig->get_num_block_cols(), nnzb, orig->get_const_values(),

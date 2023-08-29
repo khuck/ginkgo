@@ -125,27 +125,26 @@ std::unique_ptr<LinOp> Lu<ValueType, IndexType>::generate_impl(
                                   gko::matrix::csr::sparsity_type::hash;
     exec->run(make_build_lookup_offsets(
         factors->get_const_row_ptrs(), factors->get_const_col_idxs(), num_rows,
-        allowed_sparsity, storage_offsets.get_data()));
+        allowed_sparsity, storage_offsets.data()));
     const auto storage_size = static_cast<size_type>(
-        exec->copy_val_to_host(storage_offsets.get_const_data() + num_rows));
+        exec->copy_val_to_host(storage_offsets.const_data() + num_rows));
     array<int32> storage{exec, storage_size};
-    exec->run(make_build_lookup(
-        factors->get_const_row_ptrs(), factors->get_const_col_idxs(), num_rows,
-        allowed_sparsity, storage_offsets.get_const_data(),
-        row_descs.get_data(), storage.get_data()));
+    exec->run(make_build_lookup(factors->get_const_row_ptrs(),
+                                factors->get_const_col_idxs(), num_rows,
+                                allowed_sparsity, storage_offsets.const_data(),
+                                row_descs.data(), storage.data()));
     // initialize factors
     exec->run(make_fill_array(factors->get_values(),
                               factors->get_num_stored_elements(),
                               zero<ValueType>()));
-    exec->run(make_initialize(
-        mtx.get(), storage_offsets.get_const_data(), row_descs.get_const_data(),
-        storage.get_const_data(), diag_idxs.get_data(), factors.get()));
+    exec->run(make_initialize(mtx.get(), storage_offsets.const_data(),
+                              row_descs.const_data(), storage.const_data(),
+                              diag_idxs.data(), factors.get()));
     // run numerical factorization
     array<int> tmp{exec};
-    exec->run(make_factorize(storage_offsets.get_const_data(),
-                             row_descs.get_const_data(),
-                             storage.get_const_data(),
-                             diag_idxs.get_const_data(), factors.get(), tmp));
+    exec->run(make_factorize(storage_offsets.const_data(),
+                             row_descs.const_data(), storage.const_data(),
+                             diag_idxs.const_data(), factors.get(), tmp));
     return factorization_type::create_from_combined_lu(std::move(factors));
 }
 

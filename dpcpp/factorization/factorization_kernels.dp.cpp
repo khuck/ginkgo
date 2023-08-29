@@ -522,14 +522,14 @@ void add_diagonal_elements(std::shared_ptr<const DpcppExecutor> exec,
 
     array<IndexType> row_ptrs_addition(exec, row_ptrs_size);
     array<bool> needs_change_host{exec->get_master(), 1};
-    needs_change_host.get_data()[0] = false;
+    needs_change_host.data()[0] = false;
     array<bool> needs_change_device{exec, 1};
     needs_change_device = needs_change_host;
 
     auto dpcpp_old_values = mtx->get_const_values();
     auto dpcpp_old_col_idxs = mtx->get_const_col_idxs();
     auto dpcpp_old_row_ptrs = mtx->get_row_ptrs();
-    auto dpcpp_row_ptrs_add = row_ptrs_addition.get_data();
+    auto dpcpp_row_ptrs_add = row_ptrs_addition.data();
 
     const dim3 block_dim{default_block_size, 1, 1};
     const dim3 grid_dim{
@@ -539,15 +539,15 @@ void add_diagonal_elements(std::shared_ptr<const DpcppExecutor> exec,
         kernel::find_missing_diagonal_elements<true, subwarp_size>(
             grid_dim, block_dim, 0, exec->get_queue(), num_rows, num_cols,
             dpcpp_old_col_idxs, dpcpp_old_row_ptrs, dpcpp_row_ptrs_add,
-            needs_change_device.get_data());
+            needs_change_device.data());
     } else {
         kernel::find_missing_diagonal_elements<false, subwarp_size>(
             grid_dim, block_dim, 0, exec->get_queue(), num_rows, num_cols,
             dpcpp_old_col_idxs, dpcpp_old_row_ptrs, dpcpp_row_ptrs_add,
-            needs_change_device.get_data());
+            needs_change_device.data());
     }
     needs_change_host = needs_change_device;
-    if (!needs_change_host.get_const_data()[0]) {
+    if (!needs_change_host.const_data()[0]) {
         return;
     }
 
@@ -562,8 +562,8 @@ void add_diagonal_elements(std::shared_ptr<const DpcppExecutor> exec,
 
     array<ValueType> new_values{exec, new_num_elems};
     array<IndexType> new_col_idxs{exec, new_num_elems};
-    auto dpcpp_new_values = new_values.get_data();
-    auto dpcpp_new_col_idxs = new_col_idxs.get_data();
+    auto dpcpp_new_values = new_values.data();
+    auto dpcpp_new_col_idxs = new_col_idxs.data();
 
     kernel::add_missing_diagonal_elements<subwarp_size>(
         grid_dim, block_dim, 0, exec->get_queue(), num_rows, dpcpp_old_values,

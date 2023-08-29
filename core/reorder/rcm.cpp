@@ -76,10 +76,10 @@ void Rcm<ValueType, IndexType>::generate(
     // RCM is only valid for symmetric matrices. Need to add an expensive check
     // for symmetricity here ?
     exec->run(rcm::make_get_degree_of_nodes(num_rows, mtx->get_const_row_ptrs(),
-                                            degrees.get_data()));
+                                            degrees.data()));
     exec->run(rcm::make_get_permutation(
         num_rows, mtx->get_const_row_ptrs(), mtx->get_const_col_idxs(),
-        degrees.get_const_data(), permutation_->get_permutation(),
+        degrees.const_data(), permutation_->get_permutation(),
         inv_permutation_.get() ? inv_permutation_->get_permutation() : nullptr,
         parameters_.strategy));
 }

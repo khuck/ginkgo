@@ -73,9 +73,9 @@ TYPED_TEST(CooBuilder, ReturnsCorrectArrays)
     using index_type = typename TestFixture::index_type;
     gko::matrix::CooBuilder<value_type, index_type> builder{this->mtx};
 
-    auto builder_row_idxs = builder.get_row_idx_array().get_data();
-    auto builder_col_idxs = builder.get_col_idx_array().get_data();
-    auto builder_values = builder.get_value_array().get_data();
+    auto builder_row_idxs = builder.get_row_idx_array().data();
+    auto builder_col_idxs = builder.get_col_idx_array().data();
+    auto builder_values = builder.get_value_array().data();
     auto ref_row_idxs = this->mtx->get_row_idxs();
     auto ref_col_idxs = this->mtx->get_col_idxs();
     auto ref_values = this->mtx->get_values();

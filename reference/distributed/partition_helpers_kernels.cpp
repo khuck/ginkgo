@@ -48,12 +48,12 @@ void sort_by_range_start(
     array<GlobalIndexType>& range_start_ends,
     array<experimental::distributed::comm_index_type>& part_ids)
 {
-    auto part_ids_d = part_ids.get_data();
-    auto num_parts = part_ids.get_num_elems();
+    auto part_ids_d = part_ids.data();
+    auto num_parts = part_ids.size();
     auto start_it = detail::make_permute_iterator(
-        range_start_ends.get_data(), [](const auto i) { return 2 * i; });
+        range_start_ends.data(), [](const auto i) { return 2 * i; });
     auto end_it = detail::make_permute_iterator(
-        range_start_ends.get_data() + 1, [](const auto i) { return 2 * i; });
+        range_start_ends.data() + 1, [](const auto i) { return 2 * i; });
     auto sort_it = detail::make_zip_iterator(start_it, end_it, part_ids_d);
     std::stable_sort(sort_it, sort_it + num_parts,
                      [](const auto& a, const auto& b) {
@@ -70,13 +70,11 @@ void check_consecutive_ranges(std::shared_ptr<const DefaultExecutor> exec,
                               const array<GlobalIndexType>& range_start_ends,
                               bool& result)
 {
-    auto num_parts = range_start_ends.get_num_elems() / 2;
-    auto start_it =
-        detail::make_permute_iterator(range_start_ends.get_const_data() + 2,
-                                      [](const auto i) { return 2 * i; });
-    auto end_it =
-        detail::make_permute_iterator(range_start_ends.get_const_data() + 1,
-                                      [](const auto i) { return 2 * i; });
+    auto num_parts = range_start_ends.size() / 2;
+    auto start_it = detail::make_permute_iterator(
+        range_start_ends.const_data() + 2, [](const auto i) { return 2 * i; });
+    auto end_it = detail::make_permute_iterator(
+        range_start_ends.const_data() + 1, [](const auto i) { return 2 * i; });
     auto range_it = detail::make_zip_iterator(start_it, end_it);
 
     if (num_parts) {
@@ -97,10 +95,9 @@ void compress_ranges(std::shared_ptr<const DefaultExecutor> exec,
                      const array<GlobalIndexType>& range_start_ends,
                      array<GlobalIndexType>& range_offsets)
 {
-    range_offsets.get_data()[0] = range_start_ends.get_const_data()[0];
-    for (int i = 0; i < range_offsets.get_num_elems() - 1; ++i) {
-        range_offsets.get_data()[i + 1] =
-            range_start_ends.get_const_data()[2 * i + 1];
+    range_offsets.data()[0] = range_start_ends.const_data()[0];
+    for (int i = 0; i < range_offsets.size() - 1; ++i) {
+        range_offsets.data()[i + 1] = range_start_ends.const_data()[2 * i + 1];
     }
 }
 

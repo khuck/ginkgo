@@ -91,9 +91,9 @@ TEST_F(SparsityCsr, KernelDiagonalElementPrefixSumIsEquivalentToRef)
                                        this->mtx->get_size()[0] + 1};
 
     gko::kernels::reference::sparsity_csr::diagonal_element_prefix_sum(
-        ref, mtx.get(), prefix_sum.get_data());
+        ref, mtx.get(), prefix_sum.data());
     gko::kernels::EXEC_NAMESPACE::sparsity_csr::diagonal_element_prefix_sum(
-        exec, dmtx.get(), dprefix_sum.get_data());
+        exec, dmtx.get(), dprefix_sum.data());
 
     GKO_ASSERT_ARRAY_EQ(prefix_sum, dprefix_sum);
 }
@@ -104,21 +104,21 @@ TEST_F(SparsityCsr, KernelRemoveDiagonalElementsIsEquivalentToRef)
     const auto num_rows = this->mtx->get_size()[0];
     gko::array<index_type> prefix_sum{this->ref, num_rows + 1};
     gko::kernels::reference::sparsity_csr::diagonal_element_prefix_sum(
-        ref, mtx.get(), prefix_sum.get_data());
+        ref, mtx.get(), prefix_sum.data());
     gko::array<index_type> dprefix_sum{this->exec, prefix_sum};
     const auto out_mtx = Mtx::create(
         ref, mtx->get_size(),
-        mtx->get_num_nonzeros() - prefix_sum.get_const_data()[num_rows]);
+        mtx->get_num_nonzeros() - prefix_sum.const_data()[num_rows]);
     const auto dout_mtx = Mtx::create(
         exec, mtx->get_size(),
-        mtx->get_num_nonzeros() - prefix_sum.get_const_data()[num_rows]);
+        mtx->get_num_nonzeros() - prefix_sum.const_data()[num_rows]);
 
     gko::kernels::reference::sparsity_csr::remove_diagonal_elements(
         ref, mtx->get_const_row_ptrs(), mtx->get_const_col_idxs(),
-        prefix_sum.get_const_data(), out_mtx.get());
+        prefix_sum.const_data(), out_mtx.get());
     gko::kernels::EXEC_NAMESPACE::sparsity_csr::remove_diagonal_elements(
         exec, dmtx->get_const_row_ptrs(), dmtx->get_const_col_idxs(),
-        dprefix_sum.get_const_data(), dout_mtx.get());
+        dprefix_sum.const_data(), dout_mtx.get());
 
     GKO_ASSERT_MTX_NEAR(out_mtx, dout_mtx, 0.0);
 }

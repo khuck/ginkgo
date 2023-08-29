@@ -599,14 +599,14 @@ TEST_F(Dense, CalculateNNZPerRowIsEquivalentToRef)
     gko::array<gko::size_type> dnnz_per_row(exec);
     dnnz_per_row.resize_and_reset(dx->get_size()[0]);
 
-    gko::kernels::reference::dense::count_nonzeros_per_row(
-        ref, x.get(), nnz_per_row.get_data());
+    gko::kernels::reference::dense::count_nonzeros_per_row(ref, x.get(),
+                                                           nnz_per_row.data());
     gko::kernels::EXEC_NAMESPACE::dense::count_nonzeros_per_row(
-        exec, dx.get(), dnnz_per_row.get_data());
+        exec, dx.get(), dnnz_per_row.data());
 
     auto tmp = gko::array<gko::size_type>(ref, dnnz_per_row);
-    for (gko::size_type i = 0; i < nnz_per_row.get_num_elems(); i++) {
-        ASSERT_EQ(nnz_per_row.get_const_data()[i], tmp.get_const_data()[i]);
+    for (gko::size_type i = 0; i < nnz_per_row.size(); i++) {
+        ASSERT_EQ(nnz_per_row.const_data()[i], tmp.const_data()[i]);
     }
 }
 
@@ -1148,7 +1148,7 @@ TEST_F(Dense, AddsScaledDiagIsEquivalentToRef)
     auto mat = gen_mtx<Mtx>(532, 532);
     gko::array<Mtx::value_type> diag_values(this->ref, 532);
     gko::kernels::reference::components::fill_array(
-        this->ref, diag_values.get_data(), 532, Mtx::value_type{2.0});
+        this->ref, diag_values.data(), 532, Mtx::value_type{2.0});
     auto diag = gko::matrix::Diagonal<Mtx::value_type>::create(this->ref, 532,
                                                                diag_values);
     auto alpha = gko::initialize<Mtx>({2.0}, this->ref);
@@ -1168,7 +1168,7 @@ TEST_F(Dense, SubtractScaledDiagIsEquivalentToRef)
     auto mat = gen_mtx<Mtx>(532, 532);
     gko::array<Mtx::value_type> diag_values(this->ref, 532);
     gko::kernels::reference::components::fill_array(
-        this->ref, diag_values.get_data(), 532, Mtx::value_type{2.0});
+        this->ref, diag_values.data(), 532, Mtx::value_type{2.0});
     auto diag = gko::matrix::Diagonal<Mtx::value_type>::create(this->ref, 532,
                                                                diag_values);
     auto alpha = gko::initialize<Mtx>({2.0}, this->ref);
@@ -1201,8 +1201,7 @@ TEST_F(Dense, CanGatherRowsIntoDenseCrossExecutor)
     auto col_span = gko::span{0, x->get_size()[1] - 2};
     auto sub_x = x->create_submatrix(row_span, col_span);
     auto sub_dx = dx->create_submatrix(row_span, col_span);
-    auto gather_size =
-        gko::dim<2>{rgather_idxs->get_num_elems(), sub_x->get_size()[1]};
+    auto gather_size = gko::dim<2>{rgather_idxs->size(), sub_x->get_size()[1]};
     auto r_gather = Mtx::create(ref, gather_size);
     // test make_temporary_clone and non-default stride
     auto dr_gather = Mtx::create(ref, gather_size, sub_x->get_size()[1] + 2);
@@ -1221,8 +1220,7 @@ TEST_F(Dense, CanAdvancedGatherRowsIntoDenseCrossExecutor)
     auto col_span = gko::span{0, x->get_size()[1] - 2};
     auto sub_x = x->create_submatrix(row_span, col_span);
     auto sub_dx = dx->create_submatrix(row_span, col_span);
-    auto gather_size =
-        gko::dim<2>{rgather_idxs->get_num_elems(), sub_x->get_size()[1]};
+    auto gather_size = gko::dim<2>{rgather_idxs->size(), sub_x->get_size()[1]};
     auto r_gather = gen_mtx<Mtx>(gather_size[0], gather_size[1]);
     // test make_temporary_clone and non-default stride
     auto dr_gather = Mtx::create(ref, gather_size, sub_x->get_size()[1] + 2);
@@ -1242,8 +1240,7 @@ TEST_F(Dense, CanGatherRowsIntoMixedDenseCrossExecutor)
     auto col_span = gko::span{0, x->get_size()[1] - 2};
     auto sub_x = x->create_submatrix(row_span, col_span);
     auto sub_dx = dx->create_submatrix(row_span, col_span);
-    auto gather_size =
-        gko::dim<2>{rgather_idxs->get_num_elems(), sub_x->get_size()[1]};
+    auto gather_size = gko::dim<2>{rgather_idxs->size(), sub_x->get_size()[1]};
     auto r_gather = MixedMtx::create(ref, gather_size);
     // test make_temporary_clone and non-default stride
     auto dr_gather =
@@ -1263,8 +1260,7 @@ TEST_F(Dense, CanAdvancedGatherRowsIntoMixedDenseCrossExecutor)
     auto col_span = gko::span{0, x->get_size()[1] - 2};
     auto sub_x = x->create_submatrix(row_span, col_span);
     auto sub_dx = dx->create_submatrix(row_span, col_span);
-    auto gather_size =
-        gko::dim<2>{rgather_idxs->get_num_elems(), sub_x->get_size()[1]};
+    auto gather_size = gko::dim<2>{rgather_idxs->size(), sub_x->get_size()[1]};
     auto r_gather = gen_mtx<MixedMtx>(gather_size[0], gather_size[1]);
     // test make_temporary_clone and non-default stride
     auto dr_gather =

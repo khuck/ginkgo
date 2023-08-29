@@ -183,8 +183,7 @@ void kcycle_check_stop(std::shared_ptr<const DefaultExecutor> exec,
                        const ValueType rel_tol, bool& is_stop)
 {
     gko::array<bool> dis_stop(exec, 1);
-    components::fill_array(exec, dis_stop.get_data(), dis_stop.get_num_elems(),
-                           true);
+    components::fill_array(exec, dis_stop.data(), dis_stop.size(), true);
     const auto nrhs = new_norm->get_size()[1];
     const auto grid = ceildiv(nrhs, default_block_size);
     if (grid > 0) {
@@ -192,9 +191,9 @@ void kcycle_check_stop(std::shared_ptr<const DefaultExecutor> exec,
                                            exec->get_stream()>>>(
             nrhs, as_device_type(old_norm->get_const_values()),
             as_device_type(new_norm->get_const_values()), rel_tol,
-            as_device_type(dis_stop.get_data()));
+            as_device_type(dis_stop.data()));
     }
-    is_stop = exec->copy_val_to_host(dis_stop.get_const_data());
+    is_stop = exec->copy_val_to_host(dis_stop.const_data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_NON_COMPLEX_VALUE_TYPE(

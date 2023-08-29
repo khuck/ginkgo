@@ -89,7 +89,7 @@ public:
      *
      * @return the pointer to the row permutation array.
      */
-    index_type* get_permutation() noexcept { return permutation_.get_data(); }
+    index_type* get_permutation() noexcept { return permutation_.data(); }
 
     /**
      * @copydoc get_permutation()
@@ -100,7 +100,7 @@ public:
      */
     const index_type* get_const_permutation() const noexcept
     {
-        return permutation_.get_const_data();
+        return permutation_.const_data();
     }
 
     /**
@@ -112,7 +112,7 @@ public:
      */
     size_type get_permutation_size() const noexcept
     {
-        return permutation_.get_num_elems();
+        return permutation_.size();
     }
 
     /**
@@ -207,10 +207,10 @@ protected:
           enabled_permute_(enabled_permute)
     {
         if (enabled_permute_ & row_permute) {
-            GKO_ASSERT_EQ(size[0], permutation_.get_num_elems());
+            GKO_ASSERT_EQ(size[0], permutation_.size());
         }
         if (enabled_permute_ & column_permute) {
-            GKO_ASSERT_EQ(size[1], permutation_.get_num_elems());
+            GKO_ASSERT_EQ(size[1], permutation_.size());
         }
     }
 

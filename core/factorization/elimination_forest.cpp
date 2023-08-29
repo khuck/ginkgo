@@ -52,7 +52,7 @@ void compute_elim_forest_parent_impl(std::shared_ptr<const Executor> host_exec,
                                         static_cast<size_type>(num_rows)};
     // pseudo-root one past the last row to deal with disconnected matrices
     const auto unattached = num_rows;
-    auto subtree_root = subtree_root_array.get_data();
+    auto subtree_root = subtree_root_array.data();
     for (IndexType row = 0; row < num_rows; row++) {
         // so far the row is an unattached singleton subtree
         subtree_root[row] = row;
@@ -111,7 +111,7 @@ void compute_elim_forest_postorder_impl(
     array<IndexType> current_child_array{host_exec,
                                          static_cast<size_type>(size + 1)};
     current_child_array.fill(0);
-    auto current_child = current_child_array.get_data();
+    auto current_child = current_child_array.data();
     IndexType postorder_idx{};
     // for each tree in the elimination forest
     for (auto tree = child_ptr[size]; tree < child_ptr[size + 1]; tree++) {
@@ -179,19 +179,17 @@ void compute_elim_forest(const matrix::Csr<ValueType, IndexType>* mtx,
         std::make_unique<elimination_forest<IndexType>>(host_exec, num_rows);
     compute_elim_forest_parent_impl(host_exec, host_mtx->get_const_row_ptrs(),
                                     host_mtx->get_const_col_idxs(), num_rows,
-                                    forest->parents.get_data());
-    compute_elim_forest_children_impl(forest->parents.get_const_data(),
-                                      num_rows, forest->child_ptrs.get_data(),
-                                      forest->children.get_data());
+                                    forest->parents.data());
+    compute_elim_forest_children_impl(forest->parents.const_data(), num_rows,
+                                      forest->child_ptrs.data(),
+                                      forest->children.data());
     compute_elim_forest_postorder_impl(
-        host_exec, forest->parents.get_const_data(),
-        forest->child_ptrs.get_const_data(), forest->children.get_const_data(),
-        num_rows, forest->postorder.get_data(),
-        forest->inv_postorder.get_data());
+        host_exec, forest->parents.const_data(),
+        forest->child_ptrs.const_data(), forest->children.const_data(),
+        num_rows, forest->postorder.data(), forest->inv_postorder.data());
     compute_elim_forest_postorder_parent_impl(
-        forest->parents.get_const_data(),
-        forest->inv_postorder.get_const_data(), num_rows,
-        forest->postorder_parents.get_data());
+        forest->parents.const_data(), forest->inv_postorder.const_data(),
+        num_rows, forest->postorder_parents.data());
 
     forest->set_executor(mtx->get_executor());
 }

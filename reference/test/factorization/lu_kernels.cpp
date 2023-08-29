@@ -91,12 +91,12 @@ protected:
                              gko::matrix::csr::sparsity_type::hash;
         gko::kernels::reference::csr::build_lookup_offsets(
             ref, mtx_lu->get_const_row_ptrs(), mtx_lu->get_const_col_idxs(),
-            num_rows, allowed, storage_offsets.get_data());
-        storage.resize_and_reset(storage_offsets.get_const_data()[num_rows]);
+            num_rows, allowed, storage_offsets.data());
+        storage.resize_and_reset(storage_offsets.const_data()[num_rows]);
         gko::kernels::reference::csr::build_lookup(
             ref, mtx_lu->get_const_row_ptrs(), mtx_lu->get_const_col_idxs(),
-            num_rows, allowed, storage_offsets.get_const_data(),
-            row_descs.get_data(), storage.get_data());
+            num_rows, allowed, storage_offsets.const_data(), row_descs.data(),
+            storage.data());
     }
 
     void forall_matrices(std::function<void()> fn, bool symmetric = false)
@@ -201,13 +201,13 @@ TYPED_TEST(Lu, KernelInitializeWorks)
         gko::array<index_type> diag_idxs{this->ref, this->num_rows};
 
         gko::kernels::reference::lu_factorization::initialize(
-            this->ref, this->mtx.get(), this->storage_offsets.get_const_data(),
-            this->row_descs.get_const_data(), this->storage.get_const_data(),
-            diag_idxs.get_data(), this->mtx_lu.get());
+            this->ref, this->mtx.get(), this->storage_offsets.const_data(),
+            this->row_descs.const_data(), this->storage.const_data(),
+            diag_idxs.data(), this->mtx_lu.get());
 
         GKO_ASSERT_MTX_NEAR(this->mtx, this->mtx_lu, 0.0);
         for (gko::size_type row = 0; row < this->num_rows; row++) {
-            const auto diag_pos = diag_idxs.get_const_data()[row];
+            const auto diag_pos = diag_idxs.const_data()[row];
             ASSERT_GE(diag_pos, this->mtx_lu->get_const_row_ptrs()[row]);
             ASSERT_LT(diag_pos, this->mtx_lu->get_const_row_ptrs()[row + 1]);
             ASSERT_EQ(this->mtx_lu->get_const_col_idxs()[diag_pos], row);
@@ -228,14 +228,14 @@ TYPED_TEST(Lu, KernelFactorizeWorks)
         gko::array<index_type> diag_idxs{this->ref, this->num_rows};
         gko::array<int> tmp{this->ref};
         gko::kernels::reference::lu_factorization::initialize(
-            this->ref, this->mtx.get(), this->storage_offsets.get_const_data(),
-            this->row_descs.get_const_data(), this->storage.get_const_data(),
-            diag_idxs.get_data(), this->mtx_lu.get());
+            this->ref, this->mtx.get(), this->storage_offsets.const_data(),
+            this->row_descs.const_data(), this->storage.const_data(),
+            diag_idxs.data(), this->mtx_lu.get());
 
         gko::kernels::reference::lu_factorization::factorize(
-            this->ref, this->storage_offsets.get_const_data(),
-            this->row_descs.get_const_data(), this->storage.get_const_data(),
-            diag_idxs.get_const_data(), this->mtx_lu.get(), tmp);
+            this->ref, this->storage_offsets.const_data(),
+            this->row_descs.const_data(), this->storage.const_data(),
+            diag_idxs.const_data(), this->mtx_lu.get(), tmp);
 
         GKO_ASSERT_MTX_NEAR(this->mtx_lu, mtx_lu_ref,
                             15 * r<value_type>::value);

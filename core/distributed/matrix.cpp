@@ -185,7 +185,7 @@ void Matrix<ValueType, LocalIndexType, GlobalIndexType>::read_distributed(
         static_cast<size_type>(row_partition->get_part_size(local_part));
     const auto num_local_cols =
         static_cast<size_type>(col_partition->get_part_size(local_part));
-    const auto num_non_local_cols = non_local_to_global_.get_num_elems();
+    const auto num_non_local_cols = non_local_to_global_.size();
     device_matrix_data<value_type, local_index_type> local_data{
         exec, dim<2>{num_local_rows, num_local_cols}, std::move(local_row_idxs),
         std::move(local_col_idxs), std::move(local_values)};
@@ -200,7 +200,7 @@ void Matrix<ValueType, LocalIndexType, GlobalIndexType>::read_distributed(
 
     // exchange step 1: determine recv_sizes, send_sizes, send_offsets
     exec->get_master()->copy_from(
-        exec, num_parts, recv_sizes_array.get_const_data(), recv_sizes_.data());
+        exec, num_parts, recv_sizes_array.const_data(), recv_sizes_.data());
     std::partial_sum(recv_sizes_.begin(), recv_sizes_.end(),
                      recv_offsets_.begin() + 1);
     comm.all_to_all(exec, recv_sizes_.data(), 1, send_sizes_.data(), 1);
@@ -218,8 +218,8 @@ void Matrix<ValueType, LocalIndexType, GlobalIndexType>::read_distributed(
     }
     gather_idxs_.resize_and_reset(send_offsets_.back());
     comm.all_to_all_v(use_host_buffer ? exec->get_master() : exec,
-                      recv_gather_idxs.get_const_data(), recv_sizes_.data(),
-                      recv_offsets_.data(), gather_idxs_.get_data(),
+                      recv_gather_idxs.const_data(), recv_sizes_.data(),
+                      recv_offsets_.data(), gather_idxs_.data(),
                       send_sizes_.data(), send_offsets_.data());
     if (use_host_buffer) {
         gather_idxs_.set_executor(exec);

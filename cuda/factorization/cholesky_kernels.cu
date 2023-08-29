@@ -92,12 +92,12 @@ void symbolic_count(std::shared_ptr<const DefaultExecutor> exec,
     }
     const auto mtx_nnz = static_cast<IndexType>(mtx->get_num_stored_elements());
     tmp_storage.resize_and_reset(mtx_nnz + num_rows);
-    const auto postorder_cols = tmp_storage.get_data();
+    const auto postorder_cols = tmp_storage.data();
     const auto lower_ends = postorder_cols + mtx_nnz;
     const auto row_ptrs = mtx->get_const_row_ptrs();
     const auto cols = mtx->get_const_col_idxs();
-    const auto inv_postorder = forest.inv_postorder.get_const_data();
-    const auto postorder_parent = forest.postorder_parents.get_const_data();
+    const auto inv_postorder = forest.inv_postorder.const_data();
+    const auto postorder_parent = forest.postorder_parents.const_data();
     // transform col indices to postorder indices
     {
         const auto num_blocks = ceildiv(num_rows, default_block_size);
@@ -111,13 +111,13 @@ void symbolic_count(std::shared_ptr<const DefaultExecutor> exec,
         const auto handle = exec->get_cusparse_handle();
         auto descr = cusparse::create_mat_descr();
         array<IndexType> permutation_array(exec, mtx_nnz);
-        auto permutation = permutation_array.get_data();
+        auto permutation = permutation_array.data();
         components::fill_seq_array(exec, permutation, mtx_nnz);
         size_type buffer_size{};
         cusparse::csrsort_buffer_size(handle, num_rows, num_rows, mtx_nnz,
                                       row_ptrs, postorder_cols, buffer_size);
         array<char> buffer_array{exec, buffer_size};
-        auto buffer = buffer_array.get_data();
+        auto buffer = buffer_array.data();
         cusparse::csrsort(handle, num_rows, num_rows, mtx_nnz, descr, row_ptrs,
                           postorder_cols, permutation, buffer);
         cusparse::destroy(descr);

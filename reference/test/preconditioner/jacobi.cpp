@@ -70,11 +70,11 @@ protected:
           block_precisions(exec, 2),
           mtx(Mtx::create(exec, gko::dim<2>{5}, 13))
     {
-        block_pointers.get_data()[0] = 0;
-        block_pointers.get_data()[1] = 2;
-        block_pointers.get_data()[2] = 5;
-        block_precisions.get_data()[0] = gko::precision_reduction(0, 1);
-        block_precisions.get_data()[1] = gko::precision_reduction(0, 0);
+        block_pointers.data()[0] = 0;
+        block_pointers.data()[1] = 2;
+        block_pointers.data()[2] = 5;
+        block_precisions.data()[0] = gko::precision_reduction(0, 1);
+        block_precisions.data()[1] = gko::precision_reduction(0, 0);
         /* test matrix:
             4  -2 |        -2
            -1   4 |
@@ -132,16 +132,12 @@ protected:
         ASSERT_EQ(a->get_num_blocks(), b->get_num_blocks());
         ASSERT_EQ(a->get_parameters().max_block_size,
                   b->get_parameters().max_block_size);
-        const auto b_ptr_a =
-            a->get_parameters().block_pointers.get_const_data();
-        const auto b_ptr_b =
-            b->get_parameters().block_pointers.get_const_data();
+        const auto b_ptr_a = a->get_parameters().block_pointers.const_data();
+        const auto b_ptr_b = b->get_parameters().block_pointers.const_data();
         const auto b_prec_a =
-            a->get_parameters()
-                .storage_optimization.block_wise.get_const_data();
+            a->get_parameters().storage_optimization.block_wise.const_data();
         const auto b_prec_b =
-            b->get_parameters()
-                .storage_optimization.block_wise.get_const_data();
+            b->get_parameters().storage_optimization.block_wise.const_data();
         ASSERT_EQ(b_ptr_a[0], b_ptr_b[0]);
         for (int i = 0; i < a->get_num_blocks(); ++i) {
             ASSERT_EQ(b_ptr_a[i + 1], b_ptr_b[i + 1]);
@@ -211,7 +207,7 @@ TYPED_TEST(Jacobi, CanBeCopied)
     using Mtx = typename TestFixture::Mtx;
     using index_type = typename TestFixture::index_type;
     gko::array<index_type> empty(this->exec, 1);
-    empty.get_data()[0] = 0;
+    empty.data()[0] = 0;
     auto copy = Bj::build()
                     .with_block_pointers(empty)
                     .on(this->exec)
@@ -229,7 +225,7 @@ TYPED_TEST(Jacobi, CanBeCopiedWithAdaptivePrecision)
     using Mtx = typename TestFixture::Mtx;
     using index_type = typename TestFixture::index_type;
     gko::array<index_type> empty(this->exec, 1);
-    empty.get_data()[0] = 0;
+    empty.data()[0] = 0;
     auto copy = Bj::build()
                     .with_block_pointers(empty)
                     .on(this->exec)
@@ -248,7 +244,7 @@ TYPED_TEST(Jacobi, CanBeMoved)
     using index_type = typename TestFixture::index_type;
     auto tmp = clone(this->bj);
     gko::array<index_type> empty(this->exec, 1);
-    empty.get_data()[0] = 0;
+    empty.data()[0] = 0;
     auto copy = Bj::build()
                     .with_block_pointers(empty)
                     .on(this->exec)
@@ -267,7 +263,7 @@ TYPED_TEST(Jacobi, CanBeMovedWithAdaptivePrecision)
     using index_type = typename TestFixture::index_type;
     auto tmp = clone(this->adaptive_bj);
     gko::array<index_type> empty(this->exec, 1);
-    empty.get_data()[0] = 0;
+    empty.data()[0] = 0;
     auto copy = Bj::build()
                     .with_block_pointers(empty)
                     .on(this->exec)
@@ -286,8 +282,7 @@ TYPED_TEST(Jacobi, CanBeCleared)
     ASSERT_EQ(this->bj->get_size(), gko::dim<2>(0, 0));
     ASSERT_EQ(this->bj->get_num_stored_elements(), 0);
     ASSERT_EQ(this->bj->get_parameters().max_block_size, 32);
-    ASSERT_EQ(this->bj->get_parameters().block_pointers.get_const_data(),
-              nullptr);
+    ASSERT_EQ(this->bj->get_parameters().block_pointers.const_data(), nullptr);
     ASSERT_EQ(this->bj->get_blocks(), nullptr);
 }
 
@@ -299,11 +294,10 @@ TYPED_TEST(Jacobi, CanBeClearedWithAdaptivePrecision)
     ASSERT_EQ(this->adaptive_bj->get_size(), gko::dim<2>(0, 0));
     ASSERT_EQ(this->adaptive_bj->get_num_stored_elements(), 0);
     ASSERT_EQ(this->adaptive_bj->get_parameters().max_block_size, 32);
-    ASSERT_EQ(
-        this->adaptive_bj->get_parameters().block_pointers.get_const_data(),
-        nullptr);
+    ASSERT_EQ(this->adaptive_bj->get_parameters().block_pointers.const_data(),
+              nullptr);
     ASSERT_EQ(this->adaptive_bj->get_parameters()
-                  .storage_optimization.block_wise.get_const_data(),
+                  .storage_optimization.block_wise.const_data(),
               nullptr);
     ASSERT_EQ(this->adaptive_bj->get_blocks(), nullptr);
 }
@@ -356,8 +350,7 @@ TYPED_TEST(Jacobi, ScalarJacobiCanBeTransposed)
     ASSERT_EQ(scalar_j->get_num_stored_elements(), 5);
     ASSERT_EQ(scalar_j->get_parameters().max_block_size, 1);
     ASSERT_EQ(scalar_j->get_num_blocks(), 5);
-    ASSERT_EQ(scalar_j->get_parameters().block_pointers.get_const_data(),
-              nullptr);
+    ASSERT_EQ(scalar_j->get_parameters().block_pointers.const_data(), nullptr);
     EXPECT_EQ(trans_j[0], scal_j[0]);
     EXPECT_EQ(trans_j[1], scal_j[1]);
     EXPECT_EQ(trans_j[2], scal_j[2]);
@@ -401,8 +394,7 @@ TEST(Jacobi, ScalarJacobiCanBeConjTransposed)
     ASSERT_EQ(scalar_j->get_num_stored_elements(), 5);
     ASSERT_EQ(scalar_j->get_parameters().max_block_size, 1);
     ASSERT_EQ(scalar_j->get_num_blocks(), 5);
-    ASSERT_EQ(scalar_j->get_parameters().block_pointers.get_const_data(),
-              nullptr);
+    ASSERT_EQ(scalar_j->get_parameters().block_pointers.const_data(), nullptr);
     EXPECT_EQ(trans_j[0], gko::conj(scal_j[0]));
     EXPECT_EQ(trans_j[1], gko::conj(scal_j[1]));
     EXPECT_EQ(trans_j[2], gko::conj(scal_j[2]));

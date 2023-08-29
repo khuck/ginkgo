@@ -108,8 +108,8 @@ public:
           col_idxs_{exec, std::forward<ColIndexArray>(col_idxs)},
           values_{exec, std::forward<ValueArray>(values)}
     {
-        GKO_ASSERT_EQ(values_.get_num_elems(), row_idxs_.get_num_elems());
-        GKO_ASSERT_EQ(values_.get_num_elems(), col_idxs_.get_num_elems());
+        GKO_ASSERT_EQ(values_.size(), row_idxs_.size());
+        GKO_ASSERT_EQ(values_.size(), col_idxs_.size());
     }
 
     /**
@@ -175,14 +175,14 @@ public:
      *
      * @return the number of stored elements of the matrix.
      */
-    size_type get_num_elems() const { return values_.get_num_elems(); }
+    size_type get_num_elems() const { return values_.size(); }
 
     /**
      * Returns a pointer to the row index array
      *
      * @return a pointer to the row index array
      */
-    index_type* get_row_idxs() { return row_idxs_.get_data(); }
+    index_type* get_row_idxs() { return row_idxs_.data(); }
 
     /**
      * Returns a pointer to the constant row index array
@@ -191,7 +191,7 @@ public:
      */
     const index_type* get_const_row_idxs() const
     {
-        return row_idxs_.get_const_data();
+        return row_idxs_.const_data();
     }
 
     /**
@@ -199,7 +199,7 @@ public:
      *
      * @return a pointer to the column index array
      */
-    index_type* get_col_idxs() { return col_idxs_.get_data(); }
+    index_type* get_col_idxs() { return col_idxs_.data(); }
 
     /**
      * Returns a pointer to the constant column index array
@@ -208,7 +208,7 @@ public:
      */
     const index_type* get_const_col_idxs() const
     {
-        return col_idxs_.get_const_data();
+        return col_idxs_.const_data();
     }
 
     /**
@@ -216,17 +216,14 @@ public:
      *
      * @return a pointer to the value array
      */
-    value_type* get_values() { return values_.get_data(); }
+    value_type* get_values() { return values_.data(); }
 
     /**
      * Returns a pointer to the constant value array
      *
      * @return a pointer to the constant value array
      */
-    const value_type* get_const_values() const
-    {
-        return values_.get_const_data();
-    }
+    const value_type* get_const_values() const { return values_.const_data(); }
 
     /**
      * Resizes the internal storage to the given number of stored matrix

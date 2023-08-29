@@ -49,7 +49,7 @@ void check_consecutive_ranges(std::shared_ptr<const DefaultExecutor> exec,
                               bool& result)
 {
     array<uint32> result_uint32{exec, 1};
-    auto num_ranges = range_start_ends.get_num_elems() / 2;
+    auto num_ranges = range_start_ends.size() / 2;
     // need additional guard because DPCPP doesn't return the initial value for
     // empty inputs
     if (num_ranges > 1) {
@@ -62,10 +62,10 @@ void check_consecutive_ranges(std::shared_ptr<const DefaultExecutor> exec,
                 return static_cast<uint32>(a && b);
             },
             [] GKO_KERNEL(auto x) { return x; }, static_cast<uint32>(true),
-            result_uint32.get_data(), num_ranges - 1,
-            range_start_ends.get_const_data() + 1);
+            result_uint32.data(), num_ranges - 1,
+            range_start_ends.const_data() + 1);
         result =
-            static_cast<bool>(exec->copy_val_to_host(result_uint32.get_data()));
+            static_cast<bool>(exec->copy_val_to_host(result_uint32.data()));
     } else {
         result = true;
     }
@@ -88,8 +88,8 @@ void compress_ranges(std::shared_ptr<const DefaultExecutor> exec,
             }
             offsets[i + 1] = start_ends[2 * i + 1];
         },
-        range_offsets.get_num_elems() - 1, range_start_ends.get_const_data(),
-        range_offsets.get_data());
+        range_offsets.size() - 1, range_start_ends.const_data(),
+        range_offsets.data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_INDEX_TYPE(

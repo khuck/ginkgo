@@ -94,34 +94,32 @@ void populate_subsets(std::shared_ptr<const DefaultExecutor> exec,
                       array<IndexType>* subset_end,
                       array<IndexType>* superset_indices, const bool is_sorted)
 {
-    auto num_indices = indices->get_num_elems();
+    auto num_indices = indices->size();
     auto tmp_indices = gko::array<IndexType>(*indices);
     // Sort the indices if not sorted.
     if (!is_sorted) {
-        std::sort(tmp_indices.get_data(), tmp_indices.get_data() + num_indices);
+        std::sort(tmp_indices.data(), tmp_indices.data() + num_indices);
     }
-    GKO_ASSERT(tmp_indices.get_const_data()[num_indices - 1] <=
-               index_space_size);
+    GKO_ASSERT(tmp_indices.const_data()[num_indices - 1] <= index_space_size);
 
     // Detect subsets.
     auto tmp_subset_begin = gko::vector<IndexType>(exec);
     auto tmp_subset_end = gko::vector<IndexType>(exec);
     auto tmp_subset_superset_index = gko::vector<IndexType>(exec);
-    tmp_subset_begin.push_back(tmp_indices.get_data()[0]);
+    tmp_subset_begin.push_back(tmp_indices.data()[0]);
     tmp_subset_superset_index.push_back(0);
     for (size_type i = 1; i < num_indices; ++i) {
-        if ((tmp_indices.get_data()[i] ==
-             (tmp_indices.get_data()[i - 1] + 1)) ||
-            (tmp_indices.get_data()[i] == tmp_indices.get_data()[i - 1])) {
+        if ((tmp_indices.data()[i] == (tmp_indices.data()[i - 1] + 1)) ||
+            (tmp_indices.data()[i] == tmp_indices.data()[i - 1])) {
             continue;
         }
-        tmp_subset_end.push_back(tmp_indices.get_data()[i - 1] + 1);
+        tmp_subset_end.push_back(tmp_indices.data()[i - 1] + 1);
         tmp_subset_superset_index.push_back(tmp_subset_superset_index.back() +
                                             tmp_subset_end.back() -
                                             tmp_subset_begin.back());
-        tmp_subset_begin.push_back(tmp_indices.get_data()[i]);
+        tmp_subset_begin.push_back(tmp_indices.data()[i]);
     }
-    tmp_subset_end.push_back(tmp_indices.get_data()[num_indices - 1] + 1);
+    tmp_subset_end.push_back(tmp_indices.data()[num_indices - 1] + 1);
     tmp_subset_superset_index.push_back(tmp_subset_superset_index.back() +
                                         tmp_subset_end.back() -
                                         tmp_subset_begin.back());

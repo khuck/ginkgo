@@ -64,7 +64,7 @@ TYPED_TEST(Convergence, CatchesCriterionCheckCompleted)
             nullptr, nullptr, nullptr);
     constexpr gko::uint8 RelativeStoppingId{42};
     gko::array<gko::stopping_status> stop_status(exec, 1);
-    stop_status.get_data()[0].reset();
+    stop_status.data()[0].reset();
     using Mtx = gko::matrix::Dense<TypeParam>;
     using NormVector = gko::matrix::Dense<gko::remove_complex<TypeParam>>;
     auto residual = gko::initialize<Mtx>({1.0, 2.0, 2.0}, exec);
@@ -92,8 +92,8 @@ TYPED_TEST(Convergence, CatchesCriterionCheckCompletedWithConvCheck)
             nullptr, nullptr, nullptr);
     constexpr gko::uint8 RelativeStoppingId{42};
     gko::array<gko::stopping_status> stop_status(exec, 1);
-    stop_status.get_data()[0].reset();
-    stop_status.get_data()[0].converge(0);
+    stop_status.data()[0].reset();
+    stop_status.data()[0].converge(0);
     using Mtx = gko::matrix::Dense<TypeParam>;
     using NormVector = gko::matrix::Dense<gko::remove_complex<TypeParam>>;
     auto residual = gko::initialize<Mtx>({1.0, 2.0, 2.0}, exec);
@@ -121,8 +121,8 @@ TYPED_TEST(Convergence, CatchesCriterionCheckCompletedWithStopCheck)
             nullptr, nullptr, nullptr);
     constexpr gko::uint8 RelativeStoppingId{42};
     gko::array<gko::stopping_status> stop_status(exec, 1);
-    stop_status.get_data()[0].reset();
-    stop_status.get_data()[0].stop(0);
+    stop_status.data()[0].reset();
+    stop_status.data()[0].stop(0);
     using Mtx = gko::matrix::Dense<TypeParam>;
     using NormVector = gko::matrix::Dense<gko::remove_complex<TypeParam>>;
     auto residual = gko::initialize<Mtx>({1.0, 2.0, 2.0}, exec);
@@ -150,8 +150,8 @@ TYPED_TEST(Convergence, CanResetConvergenceStatus)
             nullptr, nullptr, nullptr);
     constexpr gko::uint8 RelativeStoppingId{42};
     gko::array<gko::stopping_status> stop_status(exec, 1);
-    stop_status.get_data()[0].reset();
-    stop_status.get_data()[0].converge(0);
+    stop_status.data()[0].reset();
+    stop_status.data()[0].converge(0);
     using Mtx = gko::matrix::Dense<TypeParam>;
     using NormVector = gko::matrix::Dense<gko::remove_complex<TypeParam>>;
     auto residual = gko::initialize<Mtx>({1.0, 2.0, 2.0}, exec);
@@ -178,7 +178,7 @@ TYPED_TEST(Convergence, CatchesCriterionCheckCompletedWithImplicitNorm)
             nullptr, nullptr, nullptr);
     constexpr gko::uint8 RelativeStoppingId{42};
     gko::array<gko::stopping_status> stop_status(exec, 1);
-    stop_status.get_data()[0].reset();
+    stop_status.data()[0].reset();
     using Mtx = gko::matrix::Dense<TypeParam>;
     using NormVector = gko::matrix::Dense<gko::remove_complex<TypeParam>>;
     auto residual = gko::initialize<Mtx>({1.0, 2.0, 2.0}, exec);

@@ -507,8 +507,8 @@ template <typename ValueType>
     const std::string& first_expression, const std::string& second_expression,
     const array<ValueType>& first, const array<ValueType>& second)
 {
-    const auto num_elems1 = first.get_num_elems();
-    const auto num_elems2 = second.get_num_elems();
+    const auto num_elems1 = first.size();
+    const auto num_elems2 = second.size();
     if (num_elems1 != num_elems2) {
         auto fail = ::testing::AssertionFailure();
         fail << "Array " << first_expression << " contains " << num_elems1
@@ -521,8 +521,7 @@ template <typename ValueType>
     array<ValueType> first_array(exec, first);
     array<ValueType> second_array(exec, second);
     for (size_type i = 0; i < num_elems1; ++i) {
-        if (!(first_array.get_const_data()[i] ==
-              second_array.get_const_data()[i])) {
+        if (!(first_array.const_data()[i] == second_array.const_data()[i])) {
             auto fail = ::testing::AssertionFailure();
             fail << "Array " << first_expression << " is different from "
                  << second_expression << " at index " << i << "\n";
@@ -537,11 +536,9 @@ template <typename ValueType>
             }
             for (auto j = context_begin; j < context_end; j++) {
                 fail << (j == i ? "> " : "  ")
-                     << ::testing::PrintToString(
-                            first_array.get_const_data()[j])
+                     << ::testing::PrintToString(first_array.const_data()[j])
                      << ", "
-                     << ::testing::PrintToString(
-                            second_array.get_const_data()[j])
+                     << ::testing::PrintToString(second_array.const_data()[j])
                      << '\n';
             }
             if (context_end < num_elems1) {

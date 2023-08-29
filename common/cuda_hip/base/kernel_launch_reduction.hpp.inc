@@ -130,21 +130,21 @@ void run_kernel_reduction_cached(std::shared_ptr<const DefaultExecutor> exec,
         ceildiv(size, block_size), exec->get_num_warps() * oversubscription);
     if (num_blocks > 1) {
         const auto required_storage = sizeof(ValueType) * num_blocks;
-        if (tmp.get_num_elems() < required_storage) {
+        if (tmp.size() < required_storage) {
             tmp.resize_and_reset(required_storage);
         }
         generic_kernel_reduction_1d<<<num_blocks, block_size, 0,
                                       exec->get_stream()>>>(
             static_cast<int64>(size), fn, op,
             [] __device__(auto v) { return v; }, as_device_type(identity),
-            as_device_type(reinterpret_cast<ValueType*>(tmp.get_data())),
+            as_device_type(reinterpret_cast<ValueType*>(tmp.data())),
             map_to_device(args)...);
         generic_kernel_reduction_1d<<<1, block_size, 0, exec->get_stream()>>>(
             static_cast<int64>(num_blocks),
             [] __device__(auto i, auto v) { return v[i]; }, op, finalize,
             as_device_type(identity), as_device_type(result),
             as_device_type(
-                reinterpret_cast<const ValueType*>(tmp.get_const_data())));
+                reinterpret_cast<const ValueType*>(tmp.const_data())));
     } else {
         generic_kernel_reduction_1d<<<1, block_size, 0, exec->get_stream()>>>(
             static_cast<int64>(size), fn, op, finalize,
@@ -171,21 +171,21 @@ void run_kernel_reduction_cached(std::shared_ptr<const DefaultExecutor> exec,
                         exec->get_num_warps() * oversubscription);
     if (num_blocks > 1) {
         const auto required_storage = sizeof(ValueType) * num_blocks;
-        if (tmp.get_num_elems() < required_storage) {
+        if (tmp.size() < required_storage) {
             tmp.resize_and_reset(required_storage);
         }
         generic_kernel_reduction_2d<<<num_blocks, block_size, 0,
                                       exec->get_stream()>>>(
             rows, cols, fn, op, [] __device__(auto v) { return v; },
             as_device_type(identity),
-            as_device_type(reinterpret_cast<ValueType*>(tmp.get_data())),
+            as_device_type(reinterpret_cast<ValueType*>(tmp.data())),
             map_to_device(args)...);
         generic_kernel_reduction_1d<<<1, block_size, 0, exec->get_stream()>>>(
             static_cast<int64>(num_blocks),
             [] __device__(auto i, auto v) { return v[i]; }, op, finalize,
             as_device_type(identity), as_device_type(result),
             as_device_type(
-                reinterpret_cast<const ValueType*>(tmp.get_const_data())));
+                reinterpret_cast<const ValueType*>(tmp.const_data())));
     } else {
         generic_kernel_reduction_2d<<<1, block_size, 0, exec->get_stream()>>>(
             rows, cols, fn, op, finalize, as_device_type(identity),
@@ -395,14 +395,14 @@ void run_generic_col_reduction_small(
                 as_device_type(result), args...);
     } else {
         const auto required_storage = sizeof(ValueType) * num_blocks * cols;
-        if (tmp.get_num_elems() < required_storage) {
+        if (tmp.size() < required_storage) {
             tmp.resize_and_reset(required_storage);
         }
         generic_kernel_col_reduction_2d_small<subwarp_size>
             <<<num_blocks, default_block_size, 0, exec->get_stream()>>>(
                 rows, cols, fn, op, [] __device__(auto v) { return v; },
                 as_device_type(identity),
-                as_device_type(reinterpret_cast<ValueType*>(tmp.get_data())),
+                as_device_type(reinterpret_cast<ValueType*>(tmp.data())),
                 args...);
         if (cols > 0) {
             generic_kernel_reduction_finalize_2d<<<
@@ -410,7 +410,7 @@ void run_generic_col_reduction_small(
                 exec->get_stream()>>>(
                 cols, num_blocks, op, finalize, as_device_type(identity),
                 as_device_type(
-                    reinterpret_cast<const ValueType*>(tmp.get_const_data())),
+                    reinterpret_cast<const ValueType*>(tmp.const_data())),
                 1, as_device_type(result));
         }
     }
@@ -441,7 +441,7 @@ void run_kernel_row_reduction_cached(
     if (rows * cols > resources && rows < cols) {
         const auto col_blocks = ceildiv(rows * cols, resources);
         const auto required_storage = sizeof(ValueType) * col_blocks * rows;
-        if (tmp.get_num_elems() < required_storage) {
+        if (tmp.size() < required_storage) {
             tmp.resize_and_reset(required_storage);
         }
         const auto num_blocks =
@@ -451,14 +451,14 @@ void run_kernel_row_reduction_cached(
             <<<num_blocks, default_block_size, 0, exec->get_stream()>>>(
                 rows, cols, col_blocks, fn, op,
                 [] __device__(auto v) { return v; }, as_device_type(identity),
-                as_device_type(reinterpret_cast<ValueType*>(tmp.get_data())), 1,
+                as_device_type(reinterpret_cast<ValueType*>(tmp.data())), 1,
                 map_to_device(args)...);
         const auto num_finalize_blocks = ceildiv(rows, default_block_size);
         generic_kernel_reduction_finalize_2d<<<
             num_finalize_blocks, default_block_size, 0, exec->get_stream()>>>(
             rows, col_blocks, op, finalize, as_device_type(identity),
             as_device_type(
-                reinterpret_cast<const ValueType*>(tmp.get_const_data())),
+                reinterpret_cast<const ValueType*>(tmp.const_data())),
             static_cast<int64>(result_stride), as_device_type(result));
     } else {
         select_run_generic_kernel_row_reduction(
@@ -512,7 +512,7 @@ void run_kernel_col_reduction_cached(
                 as_device_type(result), map_to_device(args)...);
         } else {
             const auto required_storage = sizeof(ValueType) * row_blocks * cols;
-            if (tmp.get_num_elems() < required_storage) {
+            if (tmp.size() < required_storage) {
                 tmp.resize_and_reset(required_storage);
             }
             // no need to guard this kernel, as cols > warp_size, row_blocks > 1
@@ -521,14 +521,14 @@ void run_kernel_col_reduction_cached(
                 exec->get_stream()>>>(
                 rows, cols, fn, op, [] __device__(auto v) { return v; },
                 as_device_type(identity),
-                as_device_type(reinterpret_cast<ValueType*>(tmp.get_data())),
+                as_device_type(reinterpret_cast<ValueType*>(tmp.data())),
                 map_to_device(args)...);
             generic_kernel_reduction_finalize_2d<<<
                 ceildiv(cols, default_block_size), default_block_size, 0,
                 exec->get_stream()>>>(
                 cols, row_blocks, op, finalize, as_device_type(identity),
                 as_device_type(
-                    reinterpret_cast<const ValueType*>(tmp.get_const_data())),
+                    reinterpret_cast<const ValueType*>(tmp.const_data())),
                 1, as_device_type(result));
         }
     }

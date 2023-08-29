@@ -114,10 +114,10 @@ Ell<ValueType, IndexType>& Ell<ValueType, IndexType>::operator=(
         auto exec_this_view =
             Ell{exec,
                 this->get_size(),
-                make_array_view(exec, exec_values_array->get_num_elems(),
-                                exec_values_array->get_data()),
-                make_array_view(exec, exec_cols_array->get_num_elems(),
-                                exec_cols_array->get_data()),
+                make_array_view(exec, exec_values_array->size(),
+                                exec_values_array->data()),
+                make_array_view(exec, exec_cols_array->size(),
+                                exec_cols_array->data()),
                 this->get_num_stored_elements_per_row(),
                 this->get_stride()};
         exec->run(ell::make_copy(&other, &exec_this_view));
@@ -230,11 +230,11 @@ void Ell<ValueType, IndexType>::convert_to(
         auto tmp = make_temporary_clone(exec, result);
         tmp->row_ptrs_.resize_and_reset(num_rows + 1);
         exec->run(
-            ell::make_count_nonzeros_per_row(this, tmp->row_ptrs_.get_data()));
-        exec->run(ell::make_prefix_sum_nonnegative(tmp->row_ptrs_.get_data(),
+            ell::make_count_nonzeros_per_row(this, tmp->row_ptrs_.data()));
+        exec->run(ell::make_prefix_sum_nonnegative(tmp->row_ptrs_.data(),
                                                    num_rows + 1));
         const auto nnz = static_cast<size_type>(
-            exec->copy_val_to_host(tmp->row_ptrs_.get_const_data() + num_rows));
+            exec->copy_val_to_host(tmp->row_ptrs_.const_data() + num_rows));
         tmp->col_idxs_.resize_and_reset(nnz);
         tmp->values_.resize_and_reset(nnz);
         tmp->set_size(this->get_size());
@@ -273,12 +273,12 @@ void Ell<ValueType, IndexType>::read(const device_mat_data& data)
     auto local_data = make_temporary_clone(exec, &data);
     exec->run(ell::make_convert_idxs_to_ptrs(
         local_data->get_const_row_idxs(), local_data->get_num_elems(),
-        data.get_size()[0], row_ptrs.get_data()));
+        data.get_size()[0], row_ptrs.data()));
     size_type max_nnz{};
     exec->run(ell::make_compute_max_row_nnz(row_ptrs, max_nnz));
     this->resize(data.get_size(), max_nnz);
-    exec->run(ell::make_fill_in_matrix_data(*local_data,
-                                            row_ptrs.get_const_data(), this));
+    exec->run(ell::make_fill_in_matrix_data(*local_data, row_ptrs.const_data(),
+                                            this));
 }
 
 

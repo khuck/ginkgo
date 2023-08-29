@@ -526,8 +526,8 @@ Dense<ValueType>& Dense<ValueType>::operator=(const Dense& other)
         // matrix on the array to avoid special-casing cross-executor copies
         auto exec_this_view =
             Dense{exec, this->get_size(),
-                  make_array_view(exec, exec_values_array->get_num_elems(),
-                                  exec_values_array->get_data()),
+                  make_array_view(exec, exec_values_array->size(),
+                                  exec_values_array->data()),
                   this->get_stride()};
         exec->run(dense::make_copy(&other, &exec_this_view));
     }
@@ -593,15 +593,13 @@ void Dense<ValueType>::convert_impl(Coo<ValueType, IndexType>* result) const
     const auto num_rows = this->get_size()[0];
 
     array<int64> row_ptrs{exec, num_rows + 1};
-    exec->run(dense::make_count_nonzeros_per_row(this, row_ptrs.get_data()));
+    exec->run(dense::make_count_nonzeros_per_row(this, row_ptrs.data()));
     exec->run(
-        dense::make_prefix_sum_nonnegative(row_ptrs.get_data(), num_rows + 1));
-    const auto nnz =
-        exec->copy_val_to_host(row_ptrs.get_const_data() + num_rows);
+        dense::make_prefix_sum_nonnegative(row_ptrs.data(), num_rows + 1));
+    const auto nnz = exec->copy_val_to_host(row_ptrs.const_data() + num_rows);
     result->resize(this->get_size(), nnz);
-    exec->run(
-        dense::make_convert_to_coo(this, row_ptrs.get_const_data(),
-                                   make_temporary_clone(exec, result).get()));
+    exec->run(dense::make_convert_to_coo(
+        this, row_ptrs.const_data(), make_temporary_clone(exec, result).get()));
 }
 
 
@@ -788,7 +786,7 @@ void Dense<ValueType>::convert_impl(Hybrid<ValueType, IndexType>* result) const
     const auto num_cols = this->get_size()[1];
     array<size_type> row_nnz{exec, num_rows};
     array<int64> coo_row_ptrs{exec, num_rows + 1};
-    exec->run(dense::make_count_nonzeros_per_row(this, row_nnz.get_data()));
+    exec->run(dense::make_count_nonzeros_per_row(this, row_nnz.data()));
     size_type ell_lim{};
     size_type coo_nnz{};
     result->get_strategy()->compute_hybrid_config(row_nnz, &ell_lim, &coo_nnz);
@@ -797,11 +795,11 @@ void Dense<ValueType>::convert_impl(Hybrid<ValueType, IndexType>* result) const
         ell_lim = num_cols;
     }
     exec->run(dense::make_compute_hybrid_coo_row_ptrs(row_nnz, ell_lim,
-                                                      coo_row_ptrs.get_data()));
-    coo_nnz = exec->copy_val_to_host(coo_row_ptrs.get_const_data() + num_rows);
+                                                      coo_row_ptrs.data()));
+    coo_nnz = exec->copy_val_to_host(coo_row_ptrs.const_data() + num_rows);
     auto tmp = make_temporary_clone(exec, result);
     tmp->resize(this->get_size(), ell_lim, coo_nnz);
-    exec->run(dense::make_convert_to_hybrid(this, coo_row_ptrs.get_const_data(),
+    exec->run(dense::make_convert_to_hybrid(this, coo_row_ptrs.const_data(),
                                             tmp.get()));
 }
 
@@ -897,12 +895,11 @@ void Dense<ValueType>::convert_impl(
     const auto num_rows = this->get_size()[0];
     auto tmp = make_temporary_clone(exec, result);
     tmp->row_ptrs_.resize_and_reset(num_rows + 1);
-    exec->run(
-        dense::make_count_nonzeros_per_row(this, tmp->row_ptrs_.get_data()));
-    exec->run(dense::make_prefix_sum_nonnegative(tmp->row_ptrs_.get_data(),
+    exec->run(dense::make_count_nonzeros_per_row(this, tmp->row_ptrs_.data()));
+    exec->run(dense::make_prefix_sum_nonnegative(tmp->row_ptrs_.data(),
                                                  num_rows + 1));
     const auto nnz =
-        exec->copy_val_to_host(tmp->row_ptrs_.get_const_data() + num_rows);
+        exec->copy_val_to_host(tmp->row_ptrs_.const_data() + num_rows);
     tmp->col_idxs_.resize_and_reset(nnz);
     tmp->value_.fill(one<ValueType>());
     tmp->set_size(this->get_size());
@@ -1085,7 +1082,7 @@ void Dense<ValueType>::permute_impl(const array<IndexType>* permutation_indices,
 {
     GKO_ASSERT_IS_SQUARE_MATRIX(this);
     GKO_ASSERT_EQUAL_DIMENSIONS(this, output);
-    GKO_ASSERT_EQ(permutation_indices->get_num_elems(), this->get_size()[0]);
+    GKO_ASSERT_EQ(permutation_indices->size(), this->get_size()[0]);
     auto exec = this->get_executor();
 
     exec->run(dense::make_symm_permute(
@@ -1101,7 +1098,7 @@ void Dense<ValueType>::inverse_permute_impl(
 {
     GKO_ASSERT_IS_SQUARE_MATRIX(this);
     GKO_ASSERT_EQUAL_DIMENSIONS(this, output);
-    GKO_ASSERT_EQ(permutation_indices->get_num_elems(), this->get_size()[0]);
+    GKO_ASSERT_EQ(permutation_indices->size(), this->get_size()[0]);
     auto exec = this->get_executor();
 
     exec->run(dense::make_inv_symm_permute(
@@ -1115,7 +1112,7 @@ template <typename IndexType>
 void Dense<ValueType>::row_permute_impl(
     const array<IndexType>* permutation_indices, Dense<ValueType>* output) const
 {
-    GKO_ASSERT_EQ(permutation_indices->get_num_elems(), this->get_size()[0]);
+    GKO_ASSERT_EQ(permutation_indices->size(), this->get_size()[0]);
     GKO_ASSERT_EQUAL_DIMENSIONS(this, output);
     auto exec = this->get_executor();
 
@@ -1131,7 +1128,7 @@ void Dense<ValueType>::row_gather_impl(const array<IndexType>* row_idxs,
                                        Dense<OutputType>* row_collection) const
 {
     auto exec = this->get_executor();
-    dim<2> expected_dim{row_idxs->get_num_elems(), this->get_size()[1]};
+    dim<2> expected_dim{row_idxs->size(), this->get_size()[1]};
     GKO_ASSERT_EQUAL_DIMENSIONS(expected_dim, row_collection);
 
     exec->run(dense::make_row_gather(
@@ -1147,7 +1144,7 @@ void Dense<ValueType>::row_gather_impl(const Dense<ValueType>* alpha,
                                        Dense<OutputType>* row_collection) const
 {
     auto exec = this->get_executor();
-    dim<2> expected_dim{row_idxs->get_num_elems(), this->get_size()[1]};
+    dim<2> expected_dim{row_idxs->size(), this->get_size()[1]};
     GKO_ASSERT_EQUAL_DIMENSIONS(expected_dim, row_collection);
 
     exec->run(dense::make_advanced_row_gather(
@@ -1163,7 +1160,7 @@ template <typename IndexType>
 void Dense<ValueType>::column_permute_impl(
     const array<IndexType>* permutation_indices, Dense<ValueType>* output) const
 {
-    GKO_ASSERT_EQ(permutation_indices->get_num_elems(), this->get_size()[1]);
+    GKO_ASSERT_EQ(permutation_indices->size(), this->get_size()[1]);
     GKO_ASSERT_EQUAL_DIMENSIONS(this, output);
     auto exec = this->get_executor();
 
@@ -1178,7 +1175,7 @@ template <typename IndexType>
 void Dense<ValueType>::inverse_row_permute_impl(
     const array<IndexType>* permutation_indices, Dense<ValueType>* output) const
 {
-    GKO_ASSERT_EQ(permutation_indices->get_num_elems(), this->get_size()[0]);
+    GKO_ASSERT_EQ(permutation_indices->size(), this->get_size()[0]);
     GKO_ASSERT_EQUAL_DIMENSIONS(this, output);
     auto exec = this->get_executor();
 
@@ -1193,7 +1190,7 @@ template <typename IndexType>
 void Dense<ValueType>::inverse_column_permute_impl(
     const array<IndexType>* permutation_indices, Dense<ValueType>* output) const
 {
-    GKO_ASSERT_EQ(permutation_indices->get_num_elems(), this->get_size()[1]);
+    GKO_ASSERT_EQ(permutation_indices->size(), this->get_size()[1]);
     GKO_ASSERT_EQUAL_DIMENSIONS(this, output);
     auto exec = this->get_executor();
 
@@ -1316,7 +1313,7 @@ std::unique_ptr<Dense<ValueType>> Dense<ValueType>::row_gather(
     const array<int32>* row_idxs) const
 {
     auto exec = this->get_executor();
-    dim<2> out_dim{row_idxs->get_num_elems(), this->get_size()[1]};
+    dim<2> out_dim{row_idxs->size(), this->get_size()[1]};
     auto result = Dense::create(exec, out_dim);
     this->row_gather(row_idxs, result);
     return result;
@@ -1327,7 +1324,7 @@ std::unique_ptr<Dense<ValueType>> Dense<ValueType>::row_gather(
     const array<int64>* row_idxs) const
 {
     auto exec = this->get_executor();
-    dim<2> out_dim{row_idxs->get_num_elems(), this->get_size()[1]};
+    dim<2> out_dim{row_idxs->size(), this->get_size()[1]};
     auto result = Dense::create(exec, out_dim);
     this->row_gather(row_idxs, result);
     return result;

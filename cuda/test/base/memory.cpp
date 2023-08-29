@@ -100,8 +100,8 @@ TEST_F(Memory, UnifiedDeviceAllocationWorks)
     gko::array<int> data{exec_with_unified, {1, 2}};
     exec->synchronize();
 
-    ASSERT_EQ(data.get_const_data()[0], 1);
-    ASSERT_EQ(data.get_const_data()[1], 2);
+    ASSERT_EQ(data.const_data()[0], 1);
+    ASSERT_EQ(data.const_data()[1], 2);
 }
 
 
@@ -109,8 +109,8 @@ TEST_F(Memory, HostUnifiedAllocationWorks)
 {
     gko::array<int> data{host_exec_with_unified, {1, 2}};
 
-    ASSERT_EQ(data.get_const_data()[0], 1);
-    ASSERT_EQ(data.get_const_data()[1], 2);
+    ASSERT_EQ(data.const_data()[0], 1);
+    ASSERT_EQ(data.const_data()[1], 2);
 }
 
 
@@ -118,8 +118,8 @@ TEST_F(Memory, HostPinnedAllocationWorks)
 {
     gko::array<int> data{host_exec_with_pinned, {1, 2}};
 
-    ASSERT_EQ(data.get_const_data()[0], 1);
-    ASSERT_EQ(data.get_const_data()[1], 2);
+    ASSERT_EQ(data.const_data()[0], 1);
+    ASSERT_EQ(data.const_data()[1], 2);
 }
 
 

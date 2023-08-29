@@ -94,7 +94,7 @@ std::pair<IndexType, size_type> rls_contender_and_height(
 
     // This stores a reordering in bfs order, starting with the root node.
     array<IndexType> rls(exec, num_vertices);
-    auto rls_p = rls.get_data();
+    auto rls_p = rls.data();
     rls_p[0] = root;
     IndexType rls_offset = 1;
     visited_local[root] = true;
@@ -233,7 +233,7 @@ void get_permutation(std::shared_ptr<const ReferenceExecutor> exec,
 {
     // Storing vertices left to proceess.
     array<IndexType> linear_queue(exec, num_vertices);
-    auto linear_queue_p = linear_queue.get_data();
+    auto linear_queue_p = linear_queue.data();
     IndexType head_offset = 0;
     IndexType tail_offset = 0;
 

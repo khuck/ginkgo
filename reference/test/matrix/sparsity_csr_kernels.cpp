@@ -411,9 +411,9 @@ TYPED_TEST(SparsityCsr, ComputesCorrectDiagonalElementPrefixSum)
     gko::array<index_type> prefix_sum2{this->exec, 4};
 
     gko::kernels::reference::sparsity_csr::diagonal_element_prefix_sum(
-        this->exec, mtx2.get(), prefix_sum1.get_data());
+        this->exec, mtx2.get(), prefix_sum1.data());
     gko::kernels::reference::sparsity_csr::diagonal_element_prefix_sum(
-        this->exec, mtx_s.get(), prefix_sum2.get_data());
+        this->exec, mtx_s.get(), prefix_sum2.data());
 
     GKO_ASSERT_ARRAY_EQ(prefix_sum1, I<index_type>({0, 1, 2, 3}));
     GKO_ASSERT_ARRAY_EQ(prefix_sum2, I<index_type>({0, 1, 1, 2}));
@@ -437,11 +437,11 @@ TYPED_TEST(SparsityCsr, RemovesDiagonalElementsForFullRankMatrix)
     tmp_mtx->copy_from(mtx2);
     gko::array<index_type> prefix_sum{this->exec, 4};
     gko::kernels::reference::sparsity_csr::diagonal_element_prefix_sum(
-        this->exec, mtx2.get(), prefix_sum.get_data());
+        this->exec, mtx2.get(), prefix_sum.data());
 
     gko::kernels::reference::sparsity_csr::remove_diagonal_elements(
         this->exec, mtx2->get_const_row_ptrs(), mtx2->get_const_col_idxs(),
-        prefix_sum.get_const_data(), tmp_mtx.get());
+        prefix_sum.const_data(), tmp_mtx.get());
 
     GKO_ASSERT_MTX_NEAR(tmp_mtx, mtx_s, 0.0);
 }
@@ -464,11 +464,11 @@ TYPED_TEST(SparsityCsr, RemovesDiagonalElementsForIncompleteRankMatrix)
     tmp_mtx->copy_from(mtx2);
     gko::array<index_type> prefix_sum{this->exec, 4};
     gko::kernels::reference::sparsity_csr::diagonal_element_prefix_sum(
-        this->exec, mtx2.get(), prefix_sum.get_data());
+        this->exec, mtx2.get(), prefix_sum.data());
 
     gko::kernels::reference::sparsity_csr::remove_diagonal_elements(
         this->exec, mtx2->get_const_row_ptrs(), mtx2->get_const_col_idxs(),
-        prefix_sum.get_const_data(), tmp_mtx.get());
+        prefix_sum.const_data(), tmp_mtx.get());
 
     GKO_ASSERT_MTX_NEAR(tmp_mtx, mtx_s, 0.0);
 }

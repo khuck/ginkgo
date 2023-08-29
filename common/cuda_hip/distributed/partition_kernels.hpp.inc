@@ -54,7 +54,7 @@ void setup_sizes_ids_permutation(
             permutation[i] = static_cast<GlobalIndexType>(i);
         },
         num_ranges, num_ranges, num_parts, range_offsets, range_parts,
-        range_sizes.get_data(), part_ids.get_data(), permutation.get_data());
+        range_sizes.data(), part_ids.data(), permutation.data());
 }
 
 
@@ -84,8 +84,8 @@ void compute_part_sizes_and_starting_indices(
                 prev_part == cur_part ? grouped_starting_indices[i - 1]
                                       : LocalIndexType{};
         },
-        num_ranges, range_sizes.get_const_data(), part_ids.get_const_data(),
-        permutation.get_const_data(), starting_indices, part_sizes);
+        num_ranges, range_sizes.const_data(), part_ids.const_data(),
+        permutation.const_data(), starting_indices, part_sizes);
 }
 
 
@@ -113,9 +113,9 @@ void build_starting_indices(std::shared_ptr<const DefaultExecutor> exec,
             exec, num_ranges, num_parts, range_offsets, range_parts,
             range_sizes, tmp_part_ids, permutation);
 
-        auto tmp_part_id_ptr = tmp_part_ids.get_data();
-        auto range_sizes_ptr = range_sizes.get_data();
-        auto permutation_ptr = permutation.get_data();
+        auto tmp_part_id_ptr = tmp_part_ids.data();
+        auto range_sizes_ptr = range_sizes.data();
+        auto permutation_ptr = permutation.data();
         auto value_it = thrust::make_zip_iterator(
             thrust::make_tuple(range_sizes_ptr, permutation_ptr));
         // group range_sizes by part ID

@@ -69,9 +69,9 @@ void match_edge(std::shared_ptr<const ReferenceExecutor> exec,
                 const array<IndexType>& strongest_neighbor,
                 array<IndexType>& agg)
 {
-    auto agg_vals = agg.get_data();
-    auto strongest_neighbor_vals = strongest_neighbor.get_const_data();
-    for (size_type i = 0; i < agg.get_num_elems(); i++) {
+    auto agg_vals = agg.data();
+    auto strongest_neighbor_vals = strongest_neighbor.const_data();
+    for (size_type i = 0; i < agg.size(); i++) {
         if (agg_vals[i] == -1) {
             auto neighbor = strongest_neighbor_vals[i];
             // i < neighbor always holds when neighbor is not -1
@@ -93,8 +93,8 @@ void count_unagg(std::shared_ptr<const ReferenceExecutor> exec,
                  const array<IndexType>& agg, IndexType* num_unagg)
 {
     IndexType unagg = 0;
-    for (size_type i = 0; i < agg.get_num_elems(); i++) {
-        unagg += (agg.get_const_data()[i] == -1);
+    for (size_type i = 0; i < agg.size(); i++) {
+        unagg += (agg.const_data()[i] == -1);
     }
     *num_unagg = unagg;
 }
@@ -106,10 +106,10 @@ template <typename IndexType>
 void renumber(std::shared_ptr<const ReferenceExecutor> exec,
               array<IndexType>& agg, IndexType* num_agg)
 {
-    const auto num = agg.get_num_elems();
+    const auto num = agg.size();
     array<IndexType> agg_map(exec, num + 1);
-    auto agg_vals = agg.get_data();
-    auto agg_map_vals = agg_map.get_data();
+    auto agg_vals = agg.data();
+    auto agg_map_vals = agg_map.data();
     for (size_type i = 0; i < num + 1; i++) {
         agg_map_vals[i] = 0;
     }
@@ -200,12 +200,12 @@ void find_strongest_neighbor(
     const auto col_idxs = weight_mtx->get_const_col_idxs();
     const auto vals = weight_mtx->get_const_values();
     const auto diag_vals = diag->get_const_values();
-    for (size_type row = 0; row < agg.get_num_elems(); row++) {
+    for (size_type row = 0; row < agg.size(); row++) {
         auto max_weight_unagg = zero<ValueType>();
         auto max_weight_agg = zero<ValueType>();
         IndexType strongest_unagg = -1;
         IndexType strongest_agg = -1;
-        if (agg.get_const_data()[row] == -1) {
+        if (agg.const_data()[row] == -1) {
             for (auto idx = row_ptrs[row]; idx < row_ptrs[row + 1]; idx++) {
                 auto col = col_idxs[idx];
                 if (col == row) {
@@ -213,12 +213,12 @@ void find_strongest_neighbor(
                 }
                 auto weight =
                     vals[idx] / max(abs(diag_vals[row]), abs(diag_vals[col]));
-                if (agg.get_const_data()[col] == -1 &&
+                if (agg.const_data()[col] == -1 &&
                     std::tie(weight, col) >
                         std::tie(max_weight_unagg, strongest_unagg)) {
                     max_weight_unagg = weight;
                     strongest_unagg = col;
-                } else if (agg.get_const_data()[col] != -1 &&
+                } else if (agg.const_data()[col] != -1 &&
                            std::tie(weight, col) >
                                std::tie(max_weight_agg, strongest_agg)) {
                     max_weight_agg = weight;
@@ -228,13 +228,13 @@ void find_strongest_neighbor(
 
             if (strongest_unagg == -1 && strongest_agg != -1) {
                 // all neighbor is agg, connect to the strongest agg
-                agg.get_data()[row] = agg.get_data()[strongest_agg];
+                agg.data()[row] = agg.data()[strongest_agg];
             } else if (strongest_unagg != -1) {
                 // set the strongest neighbor in the unagg group
-                strongest_neighbor.get_data()[row] = strongest_unagg;
+                strongest_neighbor.data()[row] = strongest_unagg;
             } else {
                 // no neighbor
-                strongest_neighbor.get_data()[row] = row;
+                strongest_neighbor.data()[row] = row;
             }
         }
     }
@@ -254,12 +254,11 @@ void assign_to_exist_agg(std::shared_ptr<const ReferenceExecutor> exec,
     const auto row_ptrs = weight_mtx->get_const_row_ptrs();
     const auto col_idxs = weight_mtx->get_const_col_idxs();
     const auto vals = weight_mtx->get_const_values();
-    const auto agg_const_val = agg.get_const_data();
-    auto agg_val = (intermediate_agg.get_num_elems() > 0)
-                       ? intermediate_agg.get_data()
-                       : agg.get_data();
+    const auto agg_const_val = agg.const_data();
+    auto agg_val =
+        (intermediate_agg.size() > 0) ? intermediate_agg.data() : agg.data();
     const auto diag_vals = diag->get_const_values();
-    for (IndexType row = 0; row < agg.get_num_elems(); row++) {
+    for (IndexType row = 0; row < agg.size(); row++) {
         if (agg_const_val[row] != -1) {
             continue;
         }
@@ -286,7 +285,7 @@ void assign_to_exist_agg(std::shared_ptr<const ReferenceExecutor> exec,
         }
     }
 
-    if (intermediate_agg.get_num_elems() > 0) {
+    if (intermediate_agg.size() > 0) {
         // Copy the intermediate_agg to agg
         agg = intermediate_agg;
     }

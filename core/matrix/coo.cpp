@@ -156,7 +156,7 @@ void Coo<ValueType, IndexType>::convert_to(
     exec->run(coo::make_convert_idxs_to_ptrs(
         this->get_const_row_idxs(), this->get_num_stored_elements(),
         this->get_size()[0],
-        make_temporary_clone(exec, &result->row_ptrs_)->get_data()));
+        make_temporary_clone(exec, &result->row_ptrs_)->data()));
     result->make_srow();
 }
 
@@ -172,7 +172,7 @@ void Coo<ValueType, IndexType>::move_to(Csr<ValueType, IndexType>* result)
     result->values_ = std::move(this->values_);
     exec->run(coo::make_convert_idxs_to_ptrs(
         this->get_const_row_idxs(), nnz, this->get_size()[0],
-        make_temporary_clone(exec, &result->row_ptrs_)->get_data()));
+        make_temporary_clone(exec, &result->row_ptrs_)->data()));
     result->make_srow();
 }
 
@@ -239,9 +239,9 @@ void Coo<ValueType, IndexType>::write(mat_data& data) const
     data = {this->get_size(), {}};
 
     for (size_type i = 0; i < tmp->get_num_stored_elements(); ++i) {
-        const auto row = tmp->row_idxs_.get_const_data()[i];
-        const auto col = tmp->col_idxs_.get_const_data()[i];
-        const auto val = tmp->values_.get_const_data()[i];
+        const auto row = tmp->row_idxs_.const_data()[i];
+        const auto col = tmp->col_idxs_.const_data()[i];
+        const auto val = tmp->values_.const_data()[i];
         data.nonzeros.emplace_back(row, col, val);
     }
 }

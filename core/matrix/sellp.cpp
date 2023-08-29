@@ -205,12 +205,12 @@ void Sellp<ValueType, IndexType>::convert_to(
     {
         auto tmp = make_temporary_clone(exec, result);
         tmp->row_ptrs_.resize_and_reset(num_rows + 1);
-        exec->run(sellp::make_count_nonzeros_per_row(
-            this, tmp->row_ptrs_.get_data()));
-        exec->run(sellp::make_prefix_sum_nonnegative(tmp->row_ptrs_.get_data(),
+        exec->run(
+            sellp::make_count_nonzeros_per_row(this, tmp->row_ptrs_.data()));
+        exec->run(sellp::make_prefix_sum_nonnegative(tmp->row_ptrs_.data(),
                                                      num_rows + 1));
         const auto nnz = static_cast<size_type>(
-            exec->copy_val_to_host(tmp->row_ptrs_.get_const_data() + num_rows));
+            exec->copy_val_to_host(tmp->row_ptrs_.const_data() + num_rows));
         tmp->col_idxs_.resize_and_reset(nnz);
         tmp->values_.resize_and_reset(nnz);
         tmp->set_size(this->get_size());
@@ -239,16 +239,16 @@ void Sellp<ValueType, IndexType>::read(const device_mat_data& data)
     auto local_data = make_temporary_clone(exec, &data);
     exec->run(sellp::make_convert_idxs_to_ptrs(local_data->get_const_row_idxs(),
                                                local_data->get_num_elems(),
-                                               size[0], row_ptrs.get_data()));
+                                               size[0], row_ptrs.data()));
     exec->run(sellp::make_compute_slice_sets(
         row_ptrs, this->get_slice_size(), this->get_stride_factor(),
-        slice_sets_.get_data(), slice_lengths_.get_data()));
-    const auto total_cols = exec->copy_val_to_host(
-        slice_sets_.get_data() + slice_sets_.get_num_elems() - 1);
+        slice_sets_.data(), slice_lengths_.data()));
+    const auto total_cols =
+        exec->copy_val_to_host(slice_sets_.data() + slice_sets_.size() - 1);
     values_.resize_and_reset(total_cols * slice_size_);
     col_idxs_.resize_and_reset(total_cols * slice_size_);
     exec->run(sellp::make_fill_in_matrix_data(*local_data,
-                                              row_ptrs.get_const_data(), this));
+                                              row_ptrs.const_data(), this));
 }
 
 

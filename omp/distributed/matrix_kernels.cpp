@@ -78,7 +78,7 @@ void build_local_nonlocal(
     auto row_part_ids = row_partition->get_part_ids();
     auto col_part_ids = col_partition->get_part_ids();
     auto num_parts = row_partition->get_num_parts();
-    auto recv_sizes_ptr = recv_sizes.get_data();
+    auto recv_sizes_ptr = recv_sizes.data();
     size_type row_range_id_hint = 0;
     size_type col_range_id_hint = 0;
     // zero recv_sizes values
@@ -201,9 +201,9 @@ void build_local_nonlocal(
 #pragma omp parallel for
     for (size_type i = 0; i < local_entries.size(); ++i) {
         const auto& entry = local_entries[i];
-        local_row_idxs.get_data()[i] = entry.row;
-        local_col_idxs.get_data()[i] = entry.column;
-        local_values.get_data()[i] = entry.value;
+        local_row_idxs.data()[i] = entry.row;
+        local_col_idxs.data()[i] = entry.column;
+        local_values.data()[i] = entry.value;
     }
 
     // count non-local columns per part
@@ -223,7 +223,7 @@ void build_local_nonlocal(
         auto range = entry.second;
         auto part = col_part_ids[range];
         auto idx = recv_sizes_ptr[part];
-        local_gather_idxs.get_data()[idx] =
+        local_gather_idxs.data()[idx] =
             map_to_local(entry.first, col_partition, entry.second);
         non_local_global_to_local[entry.first] = idx;
         ++recv_sizes_ptr[part];
@@ -231,13 +231,12 @@ void build_local_nonlocal(
 
     // build local-to-global map for non-local columns
     non_local_to_global.resize_and_reset(num_non_local_cols);
-    std::fill_n(non_local_to_global.get_data(),
-                non_local_to_global.get_num_elems(),
+    std::fill_n(non_local_to_global.data(), non_local_to_global.size(),
                 invalid_index<GlobalIndexType>());
     for (const auto& key_value : non_local_global_to_local) {
         const auto global_idx = key_value.first;
         const auto local_idx = key_value.second;
-        non_local_to_global.get_data()[local_idx] = global_idx;
+        non_local_to_global.data()[local_idx] = global_idx;
     }
 
     // compute sizes from shifted offsets
@@ -252,11 +251,9 @@ void build_local_nonlocal(
 #pragma omp parallel for
     for (size_type i = 0; i < non_local_entries.size(); i++) {
         auto global = non_local_entries[i];
-        non_local_row_idxs.get_data()[i] =
-            static_cast<LocalIndexType>(global.row);
-        non_local_col_idxs.get_data()[i] =
-            non_local_global_to_local[global.column];
-        non_local_values.get_data()[i] = global.value;
+        non_local_row_idxs.data()[i] = static_cast<LocalIndexType>(global.row);
+        non_local_col_idxs.data()[i] = non_local_global_to_local[global.column];
+        non_local_values.data()[i] = global.value;
     }
 }
 

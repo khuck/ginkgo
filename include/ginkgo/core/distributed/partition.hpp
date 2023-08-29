@@ -137,10 +137,7 @@ public:
      *
      * @return number of ranges.
      */
-    size_type get_num_ranges() const noexcept
-    {
-        return offsets_.get_num_elems() - 1;
-    }
+    size_type get_num_ranges() const noexcept { return offsets_.size() - 1; }
 
     /**
      * Returns the number of parts represented in this partition.
@@ -168,7 +165,7 @@ public:
      */
     const global_index_type* get_range_bounds() const noexcept
     {
-        return offsets_.get_const_data();
+        return offsets_.const_data();
     }
 
     /**
@@ -180,7 +177,7 @@ public:
      */
     const comm_index_type* get_part_ids() const noexcept
     {
-        return part_ids_.get_const_data();
+        return part_ids_.const_data();
     }
 
     /**
@@ -198,7 +195,7 @@ public:
      */
     const local_index_type* get_range_starting_indices() const noexcept
     {
-        return starting_indices_.get_const_data();
+        return starting_indices_.const_data();
     }
 
     /**
@@ -209,7 +206,7 @@ public:
      */
     const local_index_type* get_part_sizes() const noexcept
     {
-        return part_sizes_.get_const_data();
+        return part_sizes_.const_data();
     }
 
     /**
@@ -222,8 +219,8 @@ public:
      */
     local_index_type get_part_size(comm_index_type part) const
     {
-        return this->get_executor()->copy_val_to_host(
-            part_sizes_.get_const_data() + part);
+        return this->get_executor()->copy_val_to_host(part_sizes_.const_data() +
+                                                      part);
     }
 
     /**

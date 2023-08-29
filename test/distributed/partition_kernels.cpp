@@ -348,8 +348,8 @@ TYPED_TEST(Partition, IsOrderedTrue)
     gko::size_type global_size = num_parts * size_per_part;
     gko::array<comm_index_type> mapping{this->ref, global_size};
     for (comm_index_type i = 0; i < num_parts; ++i) {
-        std::fill(mapping.get_data() + i * size_per_part,
-                  mapping.get_data() + (i + 1) * size_per_part, i);
+        std::fill(mapping.data() + i * size_per_part,
+                  mapping.data() + (i + 1) * size_per_part, i);
     }
     auto dpart = part_type::build_from_mapping(this->exec, mapping, num_parts);
 
@@ -365,9 +365,8 @@ TYPED_TEST(Partition, IsOrderedFail)
     gko::size_type global_size = num_parts * size_per_part;
     gko::array<comm_index_type> mapping{this->ref, global_size};
     for (comm_index_type i = 0; i < num_parts; ++i) {
-        std::fill(mapping.get_data() + i * size_per_part,
-                  mapping.get_data() + (i + 1) * size_per_part,
-                  num_parts - 1 - i);
+        std::fill(mapping.data() + i * size_per_part,
+                  mapping.data() + (i + 1) * size_per_part, num_parts - 1 - i);
     }
     auto dpart = part_type::build_from_mapping(this->exec, mapping, num_parts);
 

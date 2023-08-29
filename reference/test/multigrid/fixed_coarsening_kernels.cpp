@@ -111,7 +111,7 @@ protected:
 
     void create_mtx(Mtx* fine, gko::array<index_type>* coarse_rows, Mtx* coarse)
     {
-        auto coarse_rows_val = coarse_rows->get_data();
+        auto coarse_rows_val = coarse_rows->data();
         coarse_rows_val[0] = 0;
         coarse_rows_val[1] = -1;
         coarse_rows_val[2] = 1;

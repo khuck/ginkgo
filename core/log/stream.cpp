@@ -424,7 +424,7 @@ void Stream<ValueType>::on_criterion_check_completed(
     if (verbose_) {
         array<stopping_status> tmp(status->get_executor()->get_master(),
                                    *status);
-        *os_ << tmp.get_const_data();
+        *os_ << tmp.const_data();
         if (residual != nullptr) {
             *os_ << demangle_name(residual)
                  << as<gko::matrix::Dense<ValueType>>(residual) << std::endl;
@@ -479,7 +479,7 @@ void Stream<ValueType>::on_iteration_complete(
         if (status != nullptr) {
             array<stopping_status> tmp(status->get_executor()->get_master(),
                                        *status);
-            *os_ << tmp.get_const_data();
+            *os_ << tmp.const_data();
         }
         *os_ << demangle_name(right_hand_side)
              << as<gko::matrix::Dense<ValueType>>(right_hand_side) << std::endl;

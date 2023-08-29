@@ -516,16 +516,16 @@ TEST(Record, CatchesCriterionCheckCompletedOld)
         criterion.get(), 1, nullptr, nullptr, nullptr, RelativeStoppingId, true,
         &stop_status, true, true);
 
-    stop_status.get_data()->reset();
-    stop_status.get_data()->stop(RelativeStoppingId);
+    stop_status.data()->reset();
+    stop_status.data()->stop(RelativeStoppingId);
     auto& data = logger->get().criterion_check_completed.back();
     ASSERT_NE(data->criterion, nullptr);
     ASSERT_EQ(data->stopping_id, RelativeStoppingId);
     ASSERT_EQ(data->set_finalized, true);
-    ASSERT_EQ(data->status->get_const_data()->has_stopped(), true);
-    ASSERT_EQ(data->status->get_const_data()->get_id(),
-              stop_status.get_const_data()->get_id());
-    ASSERT_EQ(data->status->get_const_data()->is_finalized(), true);
+    ASSERT_EQ(data->status->const_data()->has_stopped(), true);
+    ASSERT_EQ(data->status->const_data()->get_id(),
+              stop_status.const_data()->get_id());
+    ASSERT_EQ(data->status->const_data()->is_finalized(), true);
     ASSERT_EQ(data->oneChanged, true);
     ASSERT_EQ(data->converged, true);
 }
@@ -546,16 +546,16 @@ TEST(Record, CatchesCriterionCheckCompleted)
         criterion.get(), 1, nullptr, nullptr, nullptr, nullptr,
         RelativeStoppingId, true, &stop_status, true, true);
 
-    stop_status.get_data()->reset();
-    stop_status.get_data()->stop(RelativeStoppingId);
+    stop_status.data()->reset();
+    stop_status.data()->stop(RelativeStoppingId);
     auto& data = logger->get().criterion_check_completed.back();
     ASSERT_NE(data->criterion, nullptr);
     ASSERT_EQ(data->stopping_id, RelativeStoppingId);
     ASSERT_EQ(data->set_finalized, true);
-    ASSERT_EQ(data->status->get_const_data()->has_stopped(), true);
-    ASSERT_EQ(data->status->get_const_data()->get_id(),
-              stop_status.get_const_data()->get_id());
-    ASSERT_EQ(data->status->get_const_data()->is_finalized(), true);
+    ASSERT_EQ(data->status->const_data()->has_stopped(), true);
+    ASSERT_EQ(data->status->const_data()->get_id(),
+              stop_status.const_data()->get_id());
+    ASSERT_EQ(data->status->const_data()->is_finalized(), true);
     ASSERT_EQ(data->oneChanged, true);
     ASSERT_EQ(data->converged, true);
 }
@@ -580,16 +580,16 @@ TEST(Record, CatchesIterations)
     auto implicit_sq_residual_norm = gko::initialize<Dense>({-3.5}, exec);
     constexpr gko::uint8 RelativeStoppingId{42};
     gko::array<gko::stopping_status> stop_status(exec, 1);
-    stop_status.get_data()->reset();
-    stop_status.get_data()->converge(RelativeStoppingId);
+    stop_status.data()->reset();
+    stop_status.data()->converge(RelativeStoppingId);
 
     logger->on<gko::log::Logger::iteration_complete>(
         solver.get(), right_hand_side.get(), solution.get(), num_iters,
         residual.get(), residual_norm.get(), implicit_sq_residual_norm.get(),
         &stop_status, true);
 
-    stop_status.get_data()->reset();
-    stop_status.get_data()->stop(RelativeStoppingId);
+    stop_status.data()->reset();
+    stop_status.data()->stop(RelativeStoppingId);
     auto& data = logger->get().iteration_completed.back();
     ASSERT_NE(data->solver.get(), nullptr);
     ASSERT_EQ(data->num_iterations, num_iters);
@@ -601,10 +601,10 @@ TEST(Record, CatchesIterations)
                         residual_norm, 0);
     GKO_ASSERT_MTX_NEAR(gko::as<Dense>(data->implicit_sq_residual_norm.get()),
                         implicit_sq_residual_norm, 0);
-    ASSERT_EQ(data->status.get_const_data()->has_stopped(), true);
-    ASSERT_EQ(data->status.get_const_data()->get_id(),
-              stop_status.get_const_data()->get_id());
-    ASSERT_EQ(data->status.get_const_data()->is_finalized(), true);
+    ASSERT_EQ(data->status.const_data()->has_stopped(), true);
+    ASSERT_EQ(data->status.const_data()->get_id(),
+              stop_status.const_data()->get_id());
+    ASSERT_EQ(data->status.const_data()->is_finalized(), true);
     ASSERT_TRUE(data->all_stopped);
 }
 

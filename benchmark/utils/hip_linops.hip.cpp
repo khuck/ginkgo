@@ -159,10 +159,10 @@ protected:
         gko::kernels::hip::hipsparse::spmv(
             this->get_gpu_exec()->get_hipsparse_handle(), trans_,
             this->get_size()[0], this->get_size()[1],
-            csr_->get_num_stored_elements(), &scalars.get_const_data()[0],
+            csr_->get_num_stored_elements(), &scalars.const_data()[0],
             this->get_descr(), csr_->get_const_values(),
             csr_->get_const_row_ptrs(), csr_->get_const_col_idxs(), db,
-            &scalars.get_const_data()[1], dx);
+            &scalars.const_data()[1], dx);
     }
 
     void apply_impl(const gko::LinOp* alpha, const gko::LinOp* b,
@@ -234,10 +234,10 @@ protected:
         gko::kernels::hip::hipsparse::spmm(
             this->get_gpu_exec()->get_hipsparse_handle(), trans_,
             this->get_size()[0], dense_b->get_size()[1], this->get_size()[1],
-            csr_->get_num_stored_elements(), &scalars.get_const_data()[0],
+            csr_->get_num_stored_elements(), &scalars.const_data()[0],
             this->get_descr(), csr_->get_const_values(),
             csr_->get_const_row_ptrs(), csr_->get_const_col_idxs(), db,
-            dense_b->get_size()[0], &scalars.get_const_data()[1], dx,
+            dense_b->get_size()[0], &scalars.const_data()[1], dx,
             dense_x->get_size()[0]);
     }
 
@@ -332,8 +332,8 @@ protected:
         auto guard = this->get_gpu_exec()->get_scoped_device_id_guard();
         gko::kernels::hip::hipsparse::spmv(
             this->get_gpu_exec()->get_hipsparse_handle(), trans_,
-            &scalars.get_const_data()[0], this->get_descr(), hyb_, db,
-            &scalars.get_const_data()[1], dx);
+            &scalars.const_data()[0], this->get_descr(), hyb_, db,
+            &scalars.const_data()[1], dx);
     }
 
     void apply_impl(const gko::LinOp* alpha, const gko::LinOp* b,

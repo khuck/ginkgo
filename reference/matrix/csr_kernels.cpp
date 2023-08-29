@@ -253,8 +253,8 @@ void spgemm(std::shared_ptr<const ReferenceExecutor> exec,
     auto& c_vals_array = c_builder.get_value_array();
     c_col_idxs_array.resize_and_reset(new_nnz);
     c_vals_array.resize_and_reset(new_nnz);
-    auto c_col_idxs = c_col_idxs_array.get_data();
-    auto c_vals = c_vals_array.get_data();
+    auto c_col_idxs = c_col_idxs_array.data();
+    auto c_vals = c_vals_array.data();
 
     map<IndexType, ValueType> local_row_nzs(exec);
     for (size_type a_row = 0; a_row < num_rows; ++a_row) {
@@ -307,8 +307,8 @@ void advanced_spgemm(std::shared_ptr<const ReferenceExecutor> exec,
     auto& c_vals_array = c_builder.get_value_array();
     c_col_idxs_array.resize_and_reset(new_nnz);
     c_vals_array.resize_and_reset(new_nnz);
-    auto c_col_idxs = c_col_idxs_array.get_data();
-    auto c_vals = c_vals_array.get_data();
+    auto c_col_idxs = c_col_idxs_array.data();
+    auto c_vals = c_vals_array.data();
 
     map<IndexType, ValueType> local_row_nzs(exec);
     for (size_type a_row = 0; a_row < num_rows; ++a_row) {
@@ -361,8 +361,8 @@ void spgeam(std::shared_ptr<const ReferenceExecutor> exec,
     auto& c_vals_array = c_builder.get_value_array();
     c_col_idxs_array.resize_and_reset(new_nnz);
     c_vals_array.resize_and_reset(new_nnz);
-    auto c_col_idxs = c_col_idxs_array.get_data();
-    auto c_vals = c_vals_array.get_data();
+    auto c_col_idxs = c_col_idxs_array.data();
+    auto c_vals = c_vals_array.data();
 
     abstract_spgeam(
         a, b, [&](IndexType row) { return c_row_ptrs[row]; },
@@ -494,9 +494,9 @@ void convert_to_fbcsr(std::shared_ptr<const DefaultExecutor> exec,
     const auto in_cols = source->get_const_col_idxs();
     const auto in_vals = source->get_const_values();
     const auto nnz = source->get_num_stored_elements();
-    auto out_row_ptrs = row_ptrs.get_data();
+    auto out_row_ptrs = row_ptrs.data();
     array<entry> entry_array{exec, nnz};
-    auto entries = entry_array.get_data();
+    auto entries = entry_array.data();
     for (IndexType row = 0; row < num_rows; row++) {
         for (auto nz = in_row_ptrs[row]; nz < in_row_ptrs[row + 1]; nz++) {
             entries[nz] = {row, in_cols[nz], in_vals[nz]};
@@ -534,15 +534,15 @@ void convert_to_fbcsr(std::shared_ptr<const DefaultExecutor> exec,
         value_vec[value_vec.size() - bs * bs + local_row + local_col * bs] =
             entry.value;
     }
-    while (block_row < static_cast<int64>(row_ptrs.get_num_elems() - 1)) {
+    while (block_row < static_cast<int64>(row_ptrs.size() - 1)) {
         // we finished row block_row, so store its end pointer
         out_row_ptrs[block_row + 1] = col_idx_vec.size();
         ++block_row;
     }
     values.resize_and_reset(value_vec.size());
     col_idxs.resize_and_reset(col_idx_vec.size());
-    std::copy(value_vec.begin(), value_vec.end(), values.get_data());
-    std::copy(col_idx_vec.begin(), col_idx_vec.end(), col_idxs.get_data());
+    std::copy(value_vec.begin(), value_vec.end(), values.data());
+    std::copy(col_idx_vec.begin(), col_idx_vec.end(), col_idxs.data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
@@ -628,12 +628,12 @@ void calculate_nonzeros_per_row_in_span(
 {
     size_type res_row = 0;
     for (auto row = row_span.begin; row < row_span.end; ++row) {
-        row_nnz->get_data()[res_row] = zero<IndexType>();
+        row_nnz->data()[res_row] = zero<IndexType>();
         for (auto nnz = source->get_const_row_ptrs()[row];
              nnz < source->get_const_row_ptrs()[row + 1]; ++nnz) {
             if (source->get_const_col_idxs()[nnz] < col_span.end &&
                 source->get_const_col_idxs()[nnz] >= col_span.begin) {
-                row_nnz->get_data()[res_row]++;
+                row_nnz->data()[res_row]++;
             }
         }
         res_row++;

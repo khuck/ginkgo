@@ -189,13 +189,13 @@ TYPED_TEST(EliminationForest, WorksForAni1)
     // the elimination tree is a path
     gko::array<index_type> iota_arr{this->ref, 36};
     gko::array<index_type> iota_arr2{this->ref, 38};
-    std::iota(iota_arr.get_data(), iota_arr.get_data() + 36, 1);
-    std::iota(iota_arr2.get_data() + 1, iota_arr2.get_data() + 38, 0);
-    iota_arr2.get_data()[0] = 0;
+    std::iota(iota_arr.data(), iota_arr.data() + 36, 1);
+    std::iota(iota_arr2.data() + 1, iota_arr2.data() + 38, 0);
+    iota_arr2.data()[0] = 0;
     GKO_ASSERT_ARRAY_EQ(forest->parents, iota_arr);
     GKO_ASSERT_ARRAY_EQ(forest->postorder_parents, iota_arr);
     GKO_ASSERT_ARRAY_EQ(forest->child_ptrs, iota_arr2);
-    std::iota(iota_arr.get_data(), iota_arr.get_data() + 36, 0);
+    std::iota(iota_arr.data(), iota_arr.data() + 36, 0);
     GKO_ASSERT_ARRAY_EQ(forest->children, iota_arr);
     GKO_ASSERT_ARRAY_EQ(forest->postorder, iota_arr);
     GKO_ASSERT_ARRAY_EQ(forest->inv_postorder, iota_arr);
@@ -228,7 +228,7 @@ TYPED_TEST(EliminationForest, WorksForAni1Amd)
                        14, 15, 16, 17, 19, 20, 21, 22, 18, 23, 24, 25,
                        9,  26, 27, 5,  28, 29, 30, 31, 32, 33, 34, 35}));
     gko::array<index_type> iota_arr{this->ref, 36};
-    std::iota(iota_arr.get_data(), iota_arr.get_data() + 36, 0);
+    std::iota(iota_arr.data(), iota_arr.data() + 36, 0);
     GKO_ASSERT_ARRAY_EQ(forest->postorder, iota_arr);
     GKO_ASSERT_ARRAY_EQ(forest->inv_postorder, iota_arr);
     GKO_ASSERT_ARRAY_EQ(

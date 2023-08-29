@@ -36,8 +36,8 @@ void remove_zeros(std::shared_ptr<const DefaultExecutor> exec,
                   array<IndexType>& col_idxs)
 {
     using device_value_type = device_type<ValueType>;
-    auto value_ptr = as_device_type(values.get_const_data());
-    auto size = values.get_num_elems();
+    auto value_ptr = as_device_type(values.const_data());
+    auto size = values.size();
     // count nonzeros
     auto nnz = thrust::count_if(
         thrust_policy(exec), value_ptr, value_ptr + size,
@@ -51,10 +51,10 @@ void remove_zeros(std::shared_ptr<const DefaultExecutor> exec,
         array<IndexType> new_col_idxs{exec, static_cast<size_type>(nnz)};
         // copy nonzeros
         auto it = thrust::make_zip_iterator(thrust::make_tuple(
-            row_idxs.get_const_data(), col_idxs.get_const_data(), value_ptr));
+            row_idxs.const_data(), col_idxs.const_data(), value_ptr));
         auto out_it = thrust::make_zip_iterator(
-            thrust::make_tuple(new_row_idxs.get_data(), new_col_idxs.get_data(),
-                               as_device_type(new_values.get_data())));
+            thrust::make_tuple(new_row_idxs.data(), new_col_idxs.data(),
+                               as_device_type(new_values.data())));
         thrust::copy_if(thrust_policy(exec), it, it + size, out_it,
                         [] __device__(tuple_type entry) {
                             return is_nonzero(thrust::get<2>(entry));
@@ -75,9 +75,9 @@ void sum_duplicates(std::shared_ptr<const DefaultExecutor> exec, size_type,
                     array<ValueType>& values, array<IndexType>& row_idxs,
                     array<IndexType>& col_idxs)
 {
-    const auto size = values.get_num_elems();
-    const auto rows = row_idxs.get_const_data();
-    const auto cols = col_idxs.get_const_data();
+    const auto size = values.size();
+    const auto rows = row_idxs.const_data();
+    const auto cols = col_idxs.const_data();
     auto iota = thrust::make_counting_iterator(size_type{});
     const auto new_size = static_cast<size_type>(thrust::count_if(
         thrust_policy(exec), iota, iota + size,
@@ -96,10 +96,10 @@ void sum_duplicates(std::shared_ptr<const DefaultExecutor> exec, size_type,
         // reduce duplicates
         auto in_locs =
             thrust::make_zip_iterator(thrust::make_tuple(rows, cols));
-        auto in_vals = as_device_type(values.get_const_data());
-        auto out_locs = thrust::make_zip_iterator(thrust::make_tuple(
-            new_row_idxs.get_data(), new_col_idxs.get_data()));
-        auto out_vals = as_device_type(new_values.get_data());
+        auto in_vals = as_device_type(values.const_data());
+        auto out_locs = thrust::make_zip_iterator(
+            thrust::make_tuple(new_row_idxs.data(), new_col_idxs.data()));
+        auto out_vals = as_device_type(new_values.data());
         thrust::reduce_by_key(thrust_policy(exec), in_locs, in_locs + size,
                               in_vals, out_locs, out_vals);
         // swap out storage

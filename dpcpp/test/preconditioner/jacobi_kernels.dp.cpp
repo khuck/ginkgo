@@ -111,7 +111,7 @@ protected:
         }
         gko::array<gko::int32> block_ptrs(ref, block_pointers);
         gko::array<gko::precision_reduction> block_prec(ref, block_precisions);
-        if (block_prec.get_num_elems() == 0) {
+        if (block_prec.size() == 0) {
             bj_factory = Bj::build()
                              .with_max_block_size(max_block_size)
                              .with_block_pointers(block_ptrs)
@@ -579,9 +579,9 @@ TEST_F(Jacobi, SelectsTheSamePrecisionsAsRef)
     auto d_bj = gko::clone(ref, d_bj_factory->generate(mtx));
 
     auto bj_prec =
-        bj->get_parameters().storage_optimization.block_wise.get_const_data();
+        bj->get_parameters().storage_optimization.block_wise.const_data();
     auto d_bj_prec =
-        d_bj->get_parameters().storage_optimization.block_wise.get_const_data();
+        d_bj->get_parameters().storage_optimization.block_wise.const_data();
     for (int i = 0; i < gko::as<Bj>(bj.get())->get_num_blocks(); ++i) {
         EXPECT_EQ(bj_prec[i], d_bj_prec[i]);
     }
@@ -616,7 +616,7 @@ TEST_F(Jacobi, AvoidsPrecisionsThatOverflow)
     // dpcpp considers all block separately
     auto h_bj = clone(ref, bj);
     auto prec =
-        h_bj->get_parameters().storage_optimization.block_wise.get_const_data();
+        h_bj->get_parameters().storage_optimization.block_wise.const_data();
     ASSERT_EQ(prec[0], gko::precision_reduction(0, 2));
 #if GINKGO_DPCPP_SINGLE_MODE
     // In single value, precision_reduction(1, 1) == precision_reduction(2, 0)

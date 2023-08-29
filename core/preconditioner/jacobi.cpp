@@ -209,17 +209,16 @@ void Jacobi<ValueType, IndexType>::write(mat_data& data) const
                 static_cast<ValueType>(local_clone->get_blocks()[row]));
         }
     } else {
-        const auto ptrs =
-            local_clone->parameters_.block_pointers.get_const_data();
+        const auto ptrs = local_clone->parameters_.block_pointers.const_data();
         for (size_type block = 0; block < local_clone->get_num_blocks();
              ++block) {
             const auto scheme = local_clone->get_storage_scheme();
-            const auto group_data = local_clone->blocks_.get_const_data() +
+            const auto group_data = local_clone->blocks_.const_data() +
                                     scheme.get_group_offset(block);
             const auto block_size = ptrs[block + 1] - ptrs[block];
             const auto precisions =
                 local_clone->parameters_.storage_optimization.block_wise
-                    .get_const_data();
+                    .const_data();
             const auto prec =
                 precisions ? precisions[block] : precision_reduction();
             GKO_PRECONDITIONER_JACOBI_RESOLVE_PRECISION(ValueType, prec, {
@@ -249,7 +248,7 @@ std::unique_ptr<LinOp> Jacobi<ValueType, IndexType>::transpose() const
     res->set_size(this->get_size());
     res->storage_scheme_ = storage_scheme_;
     res->num_blocks_ = num_blocks_;
-    res->blocks_.resize_and_reset(blocks_.get_num_elems());
+    res->blocks_.resize_and_reset(blocks_.size());
     res->conditioning_ = conditioning_;
     res->parameters_ = parameters_;
     if (parameters_.max_block_size == 1) {
@@ -275,7 +274,7 @@ std::unique_ptr<LinOp> Jacobi<ValueType, IndexType>::conj_transpose() const
     res->set_size(this->get_size());
     res->storage_scheme_ = storage_scheme_;
     res->num_blocks_ = num_blocks_;
-    res->blocks_.resize_and_reset(blocks_.get_num_elems());
+    res->blocks_.resize_and_reset(blocks_.size());
     res->conditioning_ = conditioning_;
     res->parameters_ = parameters_;
     if (parameters_.max_block_size == 1) {
@@ -327,13 +326,13 @@ void Jacobi<ValueType, IndexType>::generate(const LinOp* system_matrix,
         auto temp =
             make_array_view(diag_vt->get_executor(), diag_vt->get_size()[0],
                             diag_vt->get_values());
-        this->blocks_ = array<ValueType>(exec, temp.get_num_elems());
+        this->blocks_ = array<ValueType>(exec, temp.size());
         exec->run(jacobi::make_invert_diagonal(temp, this->blocks_));
         this->num_blocks_ = diag_vt->get_size()[0];
     } else {
         auto csr_mtx = convert_to_with_sorting<csr_type>(exec, system_matrix,
                                                          skip_sorting);
-        if (parameters_.block_pointers.get_data() == nullptr) {
+        if (parameters_.block_pointers.data() == nullptr) {
             this->detect_blocks(csr_mtx.get());
         }
         const auto all_block_opt =
@@ -348,7 +347,7 @@ void Jacobi<ValueType, IndexType>::generate(const LinOp* system_matrix,
                     gko::array<precision_reduction>(exec, {all_block_opt});
             }
             array<precision_reduction> tmp(
-                exec, parameters_.block_pointers.get_num_elems() - 1);
+                exec, parameters_.block_pointers.size() - 1);
             exec->run(jacobi::make_initialize_precisions(precisions, tmp));
             precisions = std::move(tmp);
             conditioning_.resize_and_reset(num_blocks_);

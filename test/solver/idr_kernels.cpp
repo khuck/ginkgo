@@ -119,7 +119,7 @@ protected:
         stop_status =
             std::make_unique<gko::array<gko::stopping_status>>(ref, nrhs);
         for (size_t i = 0; i < nrhs; ++i) {
-            stop_status->get_data()[i].reset();
+            stop_status->data()[i].reset();
         }
 
         d_mtx = gko::clone(exec, mtx);

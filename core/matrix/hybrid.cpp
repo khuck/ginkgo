@@ -212,23 +212,23 @@ void Hybrid<ValueType, IndexType>::convert_to(
         auto tmp = make_temporary_clone(exec, result);
         array<IndexType> ell_row_ptrs{exec, num_rows + 1};
         array<IndexType> coo_row_ptrs{exec, num_rows + 1};
-        exec->run(hybrid::make_ell_count_nonzeros_per_row(
-            this->get_ell(), ell_row_ptrs.get_data()));
-        exec->run(hybrid::make_prefix_sum_nonnegative(ell_row_ptrs.get_data(),
+        exec->run(hybrid::make_ell_count_nonzeros_per_row(this->get_ell(),
+                                                          ell_row_ptrs.data()));
+        exec->run(hybrid::make_prefix_sum_nonnegative(ell_row_ptrs.data(),
                                                       num_rows + 1));
         exec->run(hybrid::make_convert_idxs_to_ptrs(
             this->get_const_coo_row_idxs(), this->get_coo_num_stored_elements(),
-            num_rows, coo_row_ptrs.get_data()));
+            num_rows, coo_row_ptrs.data()));
         const auto nnz = static_cast<size_type>(
-            exec->copy_val_to_host(ell_row_ptrs.get_const_data() + num_rows) +
-            exec->copy_val_to_host(coo_row_ptrs.get_const_data() + num_rows));
+            exec->copy_val_to_host(ell_row_ptrs.const_data() + num_rows) +
+            exec->copy_val_to_host(coo_row_ptrs.const_data() + num_rows));
         tmp->row_ptrs_.resize_and_reset(num_rows + 1);
         tmp->col_idxs_.resize_and_reset(nnz);
         tmp->values_.resize_and_reset(nnz);
         tmp->set_size(this->get_size());
-        exec->run(hybrid::make_convert_to_csr(
-            this, ell_row_ptrs.get_const_data(), coo_row_ptrs.get_const_data(),
-            tmp.get()));
+        exec->run(hybrid::make_convert_to_csr(this, ell_row_ptrs.const_data(),
+                                              coo_row_ptrs.const_data(),
+                                              tmp.get()));
     }
     result->make_srow();
 }
@@ -262,9 +262,9 @@ void Hybrid<ValueType, IndexType>::read(const device_mat_data& data)
     array<int64> row_ptrs{exec, num_rows + 1};
     exec->run(hybrid::make_convert_idxs_to_ptrs(
         local_data->get_const_row_idxs(), local_data->get_num_elems(), num_rows,
-        row_ptrs.get_data()));
+        row_ptrs.data()));
     array<size_type> row_nnz{exec, data.get_size()[0]};
-    exec->run(hybrid::make_compute_row_nnz(row_ptrs, row_nnz.get_data()));
+    exec->run(hybrid::make_compute_row_nnz(row_ptrs, row_nnz.data()));
     size_type ell_max_nnz{};
     size_type coo_nnz{};
     this->get_strategy()->compute_hybrid_config(row_nnz, &ell_max_nnz,
@@ -275,12 +275,11 @@ void Hybrid<ValueType, IndexType>::read(const device_mat_data& data)
     }
     array<int64> coo_row_ptrs{exec, num_rows + 1};
     exec->run(hybrid::make_compute_coo_row_ptrs(row_nnz, ell_max_nnz,
-                                                coo_row_ptrs.get_data()));
-    coo_nnz = exec->copy_val_to_host(coo_row_ptrs.get_const_data() + num_rows);
+                                                coo_row_ptrs.data()));
+    coo_nnz = exec->copy_val_to_host(coo_row_ptrs.const_data() + num_rows);
     this->resize(data.get_size(), ell_max_nnz, coo_nnz);
-    exec->run(
-        hybrid::make_fill_in_matrix_data(*local_data, row_ptrs.get_const_data(),
-                                         coo_row_ptrs.get_const_data(), this));
+    exec->run(hybrid::make_fill_in_matrix_data(
+        *local_data, row_ptrs.const_data(), coo_row_ptrs.const_data(), this));
 }
 
 

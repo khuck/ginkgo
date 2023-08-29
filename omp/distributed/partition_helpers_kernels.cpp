@@ -48,12 +48,12 @@ void sort_by_range_start(
     array<GlobalIndexType>& range_start_ends,
     array<experimental::distributed::comm_index_type>& part_ids)
 {
-    auto part_ids_d = part_ids.get_data();
-    auto num_parts = part_ids.get_num_elems();
+    auto part_ids_d = part_ids.data();
+    auto num_parts = part_ids.size();
     auto start_it = detail::make_permute_iterator(
-        range_start_ends.get_data(), [](const auto i) { return 2 * i; });
+        range_start_ends.data(), [](const auto i) { return 2 * i; });
     auto end_it = detail::make_permute_iterator(
-        range_start_ends.get_data() + 1, [](const auto i) { return 2 * i; });
+        range_start_ends.data() + 1, [](const auto i) { return 2 * i; });
     auto sort_it = detail::make_zip_iterator(start_it, end_it, part_ids_d);
     // TODO: use TBB or parallel std with c++17
     std::stable_sort(sort_it, sort_it + num_parts,

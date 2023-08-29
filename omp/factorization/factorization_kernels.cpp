@@ -177,29 +177,29 @@ void add_diagonal_elements(std::shared_ptr<const OmpExecutor> exec,
     bool needs_change{};
     if (is_sorted) {
         kernel::find_missing_diagonal_elements<true>(
-            mtx, row_ptrs_addition.get_data(), &needs_change);
+            mtx, row_ptrs_addition.data(), &needs_change);
     } else {
         kernel::find_missing_diagonal_elements<false>(
-            mtx, row_ptrs_addition.get_data(), &needs_change);
+            mtx, row_ptrs_addition.data(), &needs_change);
     }
     if (!needs_change) {
         return;
     }
 
-    row_ptrs_addition.get_data()[row_ptrs_size - 1] = 0;
-    components::prefix_sum_nonnegative(exec, row_ptrs_addition.get_data(),
+    row_ptrs_addition.data()[row_ptrs_size - 1] = 0;
+    components::prefix_sum_nonnegative(exec, row_ptrs_addition.data(),
                                        row_ptrs_size);
 
     size_type new_num_elems = mtx->get_num_stored_elements() +
-                              row_ptrs_addition.get_data()[row_ptrs_size - 1];
+                              row_ptrs_addition.data()[row_ptrs_size - 1];
     array<ValueType> new_values{exec, new_num_elems};
     array<IndexType> new_col_idxs{exec, new_num_elems};
-    kernel::add_missing_diagonal_elements(mtx, new_values.get_data(),
-                                          new_col_idxs.get_data(),
-                                          row_ptrs_addition.get_const_data());
+    kernel::add_missing_diagonal_elements(mtx, new_values.data(),
+                                          new_col_idxs.data(),
+                                          row_ptrs_addition.const_data());
 
     auto old_row_ptrs_ptr = mtx->get_row_ptrs();
-    auto row_ptrs_addition_ptr = row_ptrs_addition.get_const_data();
+    auto row_ptrs_addition_ptr = row_ptrs_addition.const_data();
 #pragma omp parallel for
     for (IndexType i = 0; i < row_ptrs_size; ++i) {
         old_row_ptrs_ptr[i] += row_ptrs_addition_ptr[i];

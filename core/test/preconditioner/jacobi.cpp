@@ -62,10 +62,10 @@ protected:
           mtx(gko::matrix::Csr<value_type, index_type>::create(
               exec, gko::dim<2>{5, 5}, 13))
     {
-        block_pointers.get_data()[0] = 2;
-        block_pointers.get_data()[1] = 3;
-        block_precisions.get_data()[0] = gko::precision_reduction(0, 1);
-        block_precisions.get_data()[1] = gko::precision_reduction(0, 0);
+        block_pointers.data()[0] = 2;
+        block_pointers.data()[1] = 3;
+        block_precisions.data()[0] = gko::precision_reduction(0, 1);
+        block_precisions.data()[1] = gko::precision_reduction(0, 0);
     }
 
     std::shared_ptr<const gko::Executor> exec;
@@ -100,8 +100,8 @@ TYPED_TEST(JacobiFactory, CanSetBlockPointers)
                           .on(this->exec);
 
     auto ptrs = bj_factory->get_parameters().block_pointers;
-    EXPECT_EQ(ptrs.get_data()[0], 2);
-    EXPECT_EQ(ptrs.get_data()[1], 3);
+    EXPECT_EQ(ptrs.data()[0], 2);
+    EXPECT_EQ(ptrs.data()[1], 3);
 }
 
 
@@ -114,8 +114,8 @@ TYPED_TEST(JacobiFactory, CanMoveBlockPointers)
                           .on(this->exec);
 
     auto ptrs = bj_factory->get_parameters().block_pointers;
-    EXPECT_EQ(ptrs.get_data()[0], 2);
-    EXPECT_EQ(ptrs.get_data()[1], 3);
+    EXPECT_EQ(ptrs.data()[0], 2);
+    EXPECT_EQ(ptrs.data()[1], 3);
 }
 
 
@@ -128,8 +128,8 @@ TYPED_TEST(JacobiFactory, CanSetBlockPrecisions)
                           .on(this->exec);
 
     auto prec = bj_factory->get_parameters().storage_optimization.block_wise;
-    EXPECT_EQ(prec.get_data()[0], gko::precision_reduction(0, 1));
-    EXPECT_EQ(prec.get_data()[1], gko::precision_reduction(0, 0));
+    EXPECT_EQ(prec.data()[0], gko::precision_reduction(0, 1));
+    EXPECT_EQ(prec.data()[1], gko::precision_reduction(0, 0));
 }
 
 
@@ -143,8 +143,8 @@ TYPED_TEST(JacobiFactory, CanMoveBlockPrecisions)
             .on(this->exec);
 
     auto prec = bj_factory->get_parameters().storage_optimization.block_wise;
-    EXPECT_EQ(prec.get_data()[0], gko::precision_reduction(0, 1));
-    EXPECT_EQ(prec.get_data()[1], gko::precision_reduction(0, 0));
+    EXPECT_EQ(prec.data()[0], gko::precision_reduction(0, 1));
+    EXPECT_EQ(prec.data()[1], gko::precision_reduction(0, 0));
 }
 
 

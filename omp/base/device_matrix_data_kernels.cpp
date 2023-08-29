@@ -55,7 +55,7 @@ void remove_zeros(std::shared_ptr<const DefaultExecutor> exec,
                   array<ValueType>& values, array<IndexType>& row_idxs,
                   array<IndexType>& col_idxs)
 {
-    const auto size = values.get_num_elems();
+    const auto size = values.size();
     const auto num_threads = omp_get_max_threads();
     const auto per_thread = static_cast<size_type>(ceildiv(size, num_threads));
     vector<size_type> partial_counts(num_threads, {exec});
@@ -65,8 +65,7 @@ void remove_zeros(std::shared_ptr<const DefaultExecutor> exec,
         const auto begin = per_thread * tidx;
         const auto end = std::min(size, begin + per_thread);
         for (auto i = begin; i < end; i++) {
-            partial_counts[tidx] +=
-                is_nonzero(values.get_const_data()[i]) ? 1 : 0;
+            partial_counts[tidx] += is_nonzero(values.const_data()[i]) ? 1 : 0;
         }
     }
     std::partial_sum(partial_counts.begin(), partial_counts.end(),
@@ -83,13 +82,11 @@ void remove_zeros(std::shared_ptr<const DefaultExecutor> exec,
             const auto end = std::min(size, begin + per_thread);
             auto out_idx = tidx == 0 ? size_type{} : partial_counts[tidx - 1];
             for (auto i = begin; i < end; i++) {
-                auto val = values.get_const_data()[i];
+                auto val = values.const_data()[i];
                 if (is_nonzero(val)) {
-                    new_values.get_data()[out_idx] = val;
-                    new_row_idxs.get_data()[out_idx] =
-                        row_idxs.get_const_data()[i];
-                    new_col_idxs.get_data()[out_idx] =
-                        col_idxs.get_const_data()[i];
+                    new_values.data()[out_idx] = val;
+                    new_row_idxs.data()[out_idx] = row_idxs.const_data()[i];
+                    new_col_idxs.data()[out_idx] = col_idxs.const_data()[i];
                     out_idx++;
                 }
             }
@@ -109,20 +106,20 @@ void sum_duplicates(std::shared_ptr<const DefaultExecutor> exec,
                     size_type num_rows, array<ValueType>& values,
                     array<IndexType>& row_idxs, array<IndexType>& col_idxs)
 {
-    const auto size = values.get_num_elems();
+    const auto size = values.size();
     array<int64> row_ptrs_array{exec, num_rows + 1};
     array<int64> out_row_ptrs_array{exec, num_rows + 1};
-    components::convert_idxs_to_ptrs(exec, row_idxs.get_const_data(),
-                                     row_idxs.get_num_elems(), num_rows,
-                                     row_ptrs_array.get_data());
-    const auto row_ptrs = row_ptrs_array.get_const_data();
-    const auto out_row_ptrs = out_row_ptrs_array.get_data();
+    components::convert_idxs_to_ptrs(exec, row_idxs.const_data(),
+                                     row_idxs.size(), num_rows,
+                                     row_ptrs_array.data());
+    const auto row_ptrs = row_ptrs_array.const_data();
+    const auto out_row_ptrs = out_row_ptrs_array.data();
 #pragma omp parallel for
     for (IndexType row = 0; row < num_rows; row++) {
         int64 count_unique{};
         auto col = invalid_index<IndexType>();
         for (auto i = row_ptrs[row]; i < row_ptrs[row + 1]; i++) {
-            const auto new_col = col_idxs.get_const_data()[i];
+            const auto new_col = col_idxs.const_data()[i];
             if (col != new_col) {
                 col = new_col;
                 count_unique++;
@@ -141,15 +138,15 @@ void sum_duplicates(std::shared_ptr<const DefaultExecutor> exec,
             auto out_i = out_row_ptrs[row] - 1;
             auto col = invalid_index<IndexType>();
             for (auto i = row_ptrs[row]; i < row_ptrs[row + 1]; i++) {
-                const auto new_col = col_idxs.get_const_data()[i];
+                const auto new_col = col_idxs.const_data()[i];
                 if (col != new_col) {
                     col = new_col;
                     out_i++;
-                    new_row_idxs.get_data()[out_i] = row;
-                    new_col_idxs.get_data()[out_i] = col;
-                    new_values.get_data()[out_i] = zero<ValueType>();
+                    new_row_idxs.data()[out_i] = row;
+                    new_col_idxs.data()[out_i] = col;
+                    new_values.data()[out_i] = zero<ValueType>();
                 }
-                new_values.get_data()[out_i] += values.get_const_data()[i];
+                new_values.data()[out_i] += values.const_data()[i];
             }
         }
         values = std::move(new_values);
@@ -169,7 +166,7 @@ void sort_row_major(std::shared_ptr<const DefaultExecutor> exec,
     array<matrix_data_entry<ValueType, IndexType>> tmp{exec,
                                                        data.get_num_elems()};
     soa_to_aos(exec, data, tmp);
-    std::sort(tmp.get_data(), tmp.get_data() + tmp.get_num_elems());
+    std::sort(tmp.data(), tmp.data() + tmp.size());
     aos_to_soa(exec, tmp, data);
 }
 

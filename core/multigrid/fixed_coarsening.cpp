@@ -87,16 +87,16 @@ void FixedCoarsening<ValueType, IndexType>::generate()
         this->set_fine_op(fixed_coarsening_op_shared_ptr);
     }
 
-    GKO_ASSERT(parameters_.coarse_rows.get_data() != nullptr);
-    GKO_ASSERT(parameters_.coarse_rows.get_num_elems() > 0);
-    size_type coarse_dim = parameters_.coarse_rows.get_num_elems();
+    GKO_ASSERT(parameters_.coarse_rows.data() != nullptr);
+    GKO_ASSERT(parameters_.coarse_rows.size() > 0);
+    size_type coarse_dim = parameters_.coarse_rows.size();
 
     auto fine_dim = system_matrix_->get_size()[0];
     auto restrict_op = share(
         csr_type::create(exec, gko::dim<2>{coarse_dim, fine_dim}, coarse_dim,
                          fixed_coarsening_op->get_strategy()));
     exec->copy_from(parameters_.coarse_rows.get_executor(), coarse_dim,
-                    parameters_.coarse_rows.get_const_data(),
+                    parameters_.coarse_rows.const_data(),
                     restrict_op->get_col_idxs());
     exec->run(fixed_coarsening::make_fill_array(restrict_op->get_values(),
                                                 coarse_dim, one<ValueType>()));

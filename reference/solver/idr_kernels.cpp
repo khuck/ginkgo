@@ -65,7 +65,7 @@ void solve_lower_triangular(const size_type nrhs,
                             const array<stopping_status>* stop_status)
 {
     for (size_type i = 0; i < f->get_size()[1]; i++) {
-        if (stop_status->get_const_data()[i].has_stopped()) {
+        if (stop_status->const_data()[i].has_stopped()) {
             continue;
         }
 
@@ -89,7 +89,7 @@ void update_g_and_u(const size_type nrhs, const size_type k,
                     const array<stopping_status>* stop_status)
 {
     for (size_type i = 0; i < nrhs; i++) {
-        if (stop_status->get_const_data()[i].has_stopped()) {
+        if (stop_status->const_data()[i].has_stopped()) {
             continue;
         }
 
@@ -139,7 +139,7 @@ void initialize(std::shared_ptr<const ReferenceExecutor> exec,
 {
     // Initialize M
     for (size_type i = 0; i < nrhs; i++) {
-        stop_status->get_data()[i].reset();
+        stop_status->data()[i].reset();
     }
 
     for (size_type row = 0; row < m->get_size()[0]; row++) {
@@ -204,7 +204,7 @@ void step_1(std::shared_ptr<const ReferenceExecutor> exec, const size_type nrhs,
     solve_lower_triangular(nrhs, m, f, c, stop_status);
 
     for (size_type i = 0; i < nrhs; i++) {
-        if (stop_status->get_const_data()[i].has_stopped()) {
+        if (stop_status->const_data()[i].has_stopped()) {
             continue;
         }
         // v = residual - c_k * g_k - ... - c_s * g_s
@@ -229,7 +229,7 @@ void step_2(std::shared_ptr<const ReferenceExecutor> exec, const size_type nrhs,
             const array<stopping_status>* stop_status)
 {
     for (size_type i = 0; i < nrhs; i++) {
-        if (stop_status->get_const_data()[i].has_stopped()) {
+        if (stop_status->const_data()[i].has_stopped()) {
             continue;
         }
 
@@ -258,7 +258,7 @@ void step_3(std::shared_ptr<const ReferenceExecutor> exec, const size_type nrhs,
     update_g_and_u(nrhs, k, p, m, g, g_k, u, stop_status);
 
     for (size_type i = 0; i < nrhs; i++) {
-        if (stop_status->get_const_data()[i].has_stopped()) {
+        if (stop_status->const_data()[i].has_stopped()) {
             continue;
         }
 
@@ -297,7 +297,7 @@ void compute_omega(
     matrix::Dense<ValueType>* omega, const array<stopping_status>* stop_status)
 {
     for (size_type i = 0; i < nrhs; i++) {
-        if (stop_status->get_const_data()[i].has_stopped()) {
+        if (stop_status->const_data()[i].has_stopped()) {
             continue;
         }
 

@@ -144,7 +144,7 @@ public:
                        const bool is_sorted = false)
         : exec_(std::move(exec)), index_space_size_(size)
     {
-        GKO_ASSERT(index_space_size_ >= indices.get_num_elems());
+        GKO_ASSERT(index_space_size_ >= indices.size());
         this->populate_subsets(indices, is_sorted);
     }
 
@@ -397,10 +397,7 @@ public:
      *
      * @return  the number of stored subsets.
      */
-    index_type get_num_subsets() const
-    {
-        return this->subsets_begin_.get_num_elems();
-    }
+    index_type get_num_subsets() const { return this->subsets_begin_.size(); }
 
     /**
      * Returns a pointer to the beginning indices of the subsets.
@@ -409,7 +406,7 @@ public:
      */
     const index_type* get_subsets_begin() const
     {
-        return this->subsets_begin_.get_const_data();
+        return this->subsets_begin_.const_data();
     }
 
     /**
@@ -419,7 +416,7 @@ public:
      */
     const index_type* get_subsets_end() const
     {
-        return this->subsets_end_.get_const_data();
+        return this->subsets_end_.const_data();
     }
 
     /**
@@ -431,7 +428,7 @@ public:
      */
     const index_type* get_superset_indices() const
     {
-        return this->superset_cumulative_indices_.get_const_data();
+        return this->superset_cumulative_indices_.const_data();
     }
 
 private:

@@ -76,9 +76,9 @@ void threshold_select(std::shared_ptr<const DefaultExecutor> exec,
     auto values = m->get_const_values();
     IndexType size = m->get_num_stored_elements();
     tmp.resize_and_reset(size);
-    std::copy_n(values, size, tmp.get_data());
+    std::copy_n(values, size, tmp.data());
 
-    auto begin = tmp.get_data();
+    auto begin = tmp.data();
     auto target = begin + rank;
     auto end = begin + size;
     std::nth_element(begin, target, end,
@@ -203,7 +203,7 @@ void threshold_filter_approx(std::shared_ptr<const DefaultExecutor> exec,
                 sizeof(ValueType));
     tmp.resize_and_reset(storage_size);
     // pick and sort sample
-    auto sample = reinterpret_cast<AbsType*>(tmp.get_data());
+    auto sample = reinterpret_cast<AbsType*>(tmp.data());
     // assuming rounding towards zero
     auto stride = double(size) / sample_size;
     for (IndexType i = 0; i < sample_size; ++i) {

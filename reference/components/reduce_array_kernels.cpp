@@ -46,9 +46,8 @@ template <typename ValueType>
 void reduce_add_array(std::shared_ptr<const DefaultExecutor> exec,
                       const array<ValueType>& arr, array<ValueType>& val)
 {
-    val.get_data()[0] = std::accumulate(
-        arr.get_const_data(), arr.get_const_data() + arr.get_num_elems(),
-        val.get_const_data()[0]);
+    val.data()[0] = std::accumulate(
+        arr.const_data(), arr.const_data() + arr.size(), val.const_data()[0]);
 }
 
 GKO_INSTANTIATE_FOR_EACH_TEMPLATE_TYPE(GKO_DECLARE_REDUCE_ADD_ARRAY_KERNEL);

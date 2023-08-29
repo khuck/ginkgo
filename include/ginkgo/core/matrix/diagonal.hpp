@@ -128,7 +128,7 @@ public:
      *
      * @return the pointer to the array of values
      */
-    value_type* get_values() noexcept { return values_.get_data(); }
+    value_type* get_values() noexcept { return values_.data(); }
 
     /**
      * @copydoc get_values()
@@ -139,7 +139,7 @@ public:
      */
     const value_type* get_const_values() const noexcept
     {
-        return values_.get_const_data();
+        return values_.const_data();
     }
 
     /**
@@ -252,7 +252,7 @@ protected:
         : EnableLinOp<Diagonal>(exec, dim<2>(size)),
           values_{exec, std::forward<ValuesArray>(values)}
     {
-        GKO_ENSURE_IN_BOUNDS(size - 1, values_.get_num_elems());
+        GKO_ENSURE_IN_BOUNDS(size - 1, values_.size());
     }
 
     void apply_impl(const LinOp* b, LinOp* x) const override;

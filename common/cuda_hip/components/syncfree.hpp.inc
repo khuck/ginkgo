@@ -41,7 +41,7 @@ struct syncfree_storage {
                      array<status_word>& status_array, size_type num_elements)
     {
         status_array.resize_and_reset(num_elements + 1);
-        status = status_array.get_data();
+        status = status_array.data();
         block_counter = status + num_elements;
         components::fill_array(exec, status, num_elements + 1, 0);
     }

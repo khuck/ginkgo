@@ -57,9 +57,9 @@ void count_ranges(std::shared_ptr<const DefaultExecutor> exec,
             auto prev_part = i == 0 ? comm_index_type{-1} : mapping[i - 1];
             return cur_part != prev_part ? 1 : 0;
         },
-        GKO_KERNEL_REDUCE_SUM(size_type), result.get_data(),
-        mapping.get_num_elems(), mapping);
-    num_ranges = exec->copy_val_to_host(result.get_const_data());
+        GKO_KERNEL_REDUCE_SUM(size_type), result.data(), mapping.size(),
+        mapping);
+    num_ranges = exec->copy_val_to_host(result.const_data());
 }
 
 
@@ -80,8 +80,8 @@ void build_from_contiguous(std::shared_ptr<const DefaultExecutor> exec,
             bounds[i + 1] = ranges[i + 1];
             ids[i] = uses_mapping ? mapping[i] : i;
         },
-        ranges.get_num_elems() - 1, ranges, part_id_mapping, range_bounds,
-        part_ids, part_id_mapping.get_num_elems() > 0);
+        ranges.size() - 1, ranges, part_id_mapping, range_bounds, part_ids,
+        part_id_mapping.size() > 0);
 }
 
 GKO_INSTANTIATE_FOR_EACH_INDEX_TYPE(GKO_PARTITION_BUILD_FROM_CONTIGUOUS);
@@ -93,7 +93,7 @@ void build_from_mapping(std::shared_ptr<const DefaultExecutor> exec,
                         GlobalIndexType* range_bounds,
                         comm_index_type* part_ids)
 {
-    array<size_type> range_starting_index{exec, mapping.get_num_elems() + 1};
+    array<size_type> range_starting_index{exec, mapping.size() + 1};
     run_kernel(
         exec,
         [] GKO_KERNEL(auto i, auto mapping, auto range_starting_index) {
@@ -102,9 +102,9 @@ void build_from_mapping(std::shared_ptr<const DefaultExecutor> exec,
             const auto cur_part = mapping[i];
             range_starting_index[i] = cur_part != prev_part ? 1 : 0;
         },
-        mapping.get_num_elems(), mapping, range_starting_index);
-    components::prefix_sum_nonnegative(exec, range_starting_index.get_data(),
-                                       mapping.get_num_elems() + 1);
+        mapping.size(), mapping, range_starting_index);
+    components::prefix_sum_nonnegative(exec, range_starting_index.data(),
+                                       mapping.size() + 1);
     run_kernel(
         exec,
         [] GKO_KERNEL(auto i, auto size, auto mapping,
@@ -122,8 +122,8 @@ void build_from_mapping(std::shared_ptr<const DefaultExecutor> exec,
                 }
             }
         },
-        mapping.get_num_elems() + 1, mapping.get_num_elems(), mapping,
-        range_starting_index, range_bounds, part_ids);
+        mapping.size() + 1, mapping.size(), mapping, range_starting_index,
+        range_bounds, part_ids);
 }
 
 GKO_INSTANTIATE_FOR_EACH_INDEX_TYPE(GKO_PARTITION_BUILD_FROM_MAPPING);
@@ -142,9 +142,8 @@ void build_ranges_from_global_size(std::shared_ptr<const DefaultExecutor> exec,
         [] GKO_KERNEL(auto i, auto size_per_part, auto rest, auto ranges) {
             ranges[i] = size_per_part + (i < rest ? 1 : 0);
         },
-        ranges.get_num_elems() - 1, size_per_part, rest, ranges.get_data());
-    components::prefix_sum_nonnegative(exec, ranges.get_data(),
-                                       ranges.get_num_elems());
+        ranges.size() - 1, size_per_part, rest, ranges.data());
+    components::prefix_sum_nonnegative(exec, ranges.data(), ranges.size());
 }
 
 GKO_INSTANTIATE_FOR_EACH_INDEX_TYPE(GKO_PARTITION_BUILD_FROM_GLOBAL_SIZE);
@@ -171,9 +170,9 @@ void has_ordered_parts(
             return static_cast<uint32>(a && b);
         },
         [] GKO_KERNEL(const auto a) { return a; }, uint32(1),
-        result_uint32.get_data(), num_ranges - 1, part_ids);
-    *result = static_cast<bool>(
-        exec->copy_val_to_host(result_uint32.get_const_data()));
+        result_uint32.data(), num_ranges - 1, part_ids);
+    *result =
+        static_cast<bool>(exec->copy_val_to_host(result_uint32.const_data()));
 }
 
 GKO_INSTANTIATE_FOR_EACH_LOCAL_GLOBAL_INDEX_TYPE(

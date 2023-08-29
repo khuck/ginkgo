@@ -139,7 +139,7 @@ struct CudaSolveStruct : gko::solver::SolveStruct {
                                 CUSPARSE_OPERATION_NON_TRANSPOSE,
                                 one<ValueType>(), descr_a, descr_b, descr_c,
                                 CUSPARSE_SPSM_ALG_DEFAULT, spsm_descr,
-                                work.get_data());
+                                work.data());
 
         cusparse::destroy(descr_b);
         cusparse::destroy(descr_c);
@@ -258,7 +258,7 @@ struct CudaSolveStruct : gko::solver::SolveStruct {
             matrix->get_num_stored_elements(), one<ValueType>(), factor_descr,
             matrix->get_const_values(), matrix->get_const_row_ptrs(),
             matrix->get_const_col_idxs(), nullptr, num_rhs, solve_info, policy,
-            work.get_data());
+            work.data());
     }
 
     void solve(const matrix::Csr<ValueType, IndexType>* matrix,
@@ -286,7 +286,7 @@ struct CudaSolveStruct : gko::solver::SolveStruct {
             one<ValueType>(), factor_descr, matrix->get_const_values(),
             matrix->get_const_row_ptrs(), matrix->get_const_col_idxs(),
             output->get_values(), output->get_stride(), solve_info, policy,
-            work.get_data());
+            work.data());
     }
 
     ~CudaSolveStruct()
@@ -542,8 +542,8 @@ void sptrsv_naive_caching(std::shared_ptr<const CudaExecutor> exec,
 
     array<bool> nan_produced(exec, 1);
     array<IndexType> atomic_counter(exec, 1);
-    sptrsv_init_kernel<<<1, 1, 0, exec->get_stream()>>>(
-        nan_produced.get_data(), atomic_counter.get_data());
+    sptrsv_init_kernel<<<1, 1, 0, exec->get_stream()>>>(nan_produced.data(),
+                                                        atomic_counter.data());
 
     const dim3 block_size(
         is_fallback_required ? fallback_block_size : default_block_size, 1, 1);
@@ -556,7 +556,7 @@ void sptrsv_naive_caching(std::shared_ptr<const CudaExecutor> exec,
                 as_device_type(matrix->get_const_values()),
                 as_device_type(b->get_const_values()), b->get_stride(),
                 as_device_type(x->get_values()), x->get_stride(), n, nrhs,
-                unit_diag, nan_produced.get_data(), atomic_counter.get_data());
+                unit_diag, nan_produced.data(), atomic_counter.data());
     } else {
         sptrsv_naive_caching_kernel<is_upper>
             <<<grid_size, block_size, 0, exec->get_stream()>>>(
@@ -564,11 +564,11 @@ void sptrsv_naive_caching(std::shared_ptr<const CudaExecutor> exec,
                 as_device_type(matrix->get_const_values()),
                 as_device_type(b->get_const_values()), b->get_stride(),
                 as_device_type(x->get_values()), x->get_stride(), n, nrhs,
-                unit_diag, nan_produced.get_data(), atomic_counter.get_data());
+                unit_diag, nan_produced.data(), atomic_counter.data());
     }
 
 #if GKO_VERBOSE_LEVEL >= 1
-    if (exec->copy_val_to_host(nan_produced.get_const_data())) {
+    if (exec->copy_val_to_host(nan_produced.const_data())) {
         std::cerr
             << "Error: triangular solve produced NaN, either not all diagonal "
                "elements are nonzero, or the system is very ill-conditioned. "

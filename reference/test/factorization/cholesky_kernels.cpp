@@ -144,8 +144,7 @@ protected:
         ref_row_nnz.resize_and_reset(num_rows);
         const auto ref_row_ptrs = l_factor_ref->get_const_row_ptrs();
         for (gko::size_type row = 0; row < num_rows; row++) {
-            ref_row_nnz.get_data()[row] =
-                ref_row_ptrs[row + 1] - ref_row_ptrs[row];
+            ref_row_nnz.data()[row] = ref_row_ptrs[row + 1] - ref_row_ptrs[row];
         }
 
         const auto allowed = gko::matrix::csr::sparsity_type::bitmap |
@@ -153,12 +152,12 @@ protected:
                              gko::matrix::csr::sparsity_type::hash;
         gko::kernels::reference::csr::build_lookup_offsets(
             ref, combined->get_const_row_ptrs(), combined->get_const_col_idxs(),
-            num_rows, allowed, storage_offsets.get_data());
-        storage.resize_and_reset(storage_offsets.get_const_data()[num_rows]);
+            num_rows, allowed, storage_offsets.data());
+        storage.resize_and_reset(storage_offsets.const_data()[num_rows]);
         gko::kernels::reference::csr::build_lookup(
             ref, combined->get_const_row_ptrs(), combined->get_const_col_idxs(),
-            num_rows, allowed, storage_offsets.get_const_data(),
-            row_descs.get_data(), storage.get_data());
+            num_rows, allowed, storage_offsets.const_data(), row_descs.data(),
+            storage.data());
     }
 
     void assert_equal_forests(elimination_forest& lhs, elimination_forest& rhs,
@@ -297,7 +296,7 @@ TYPED_TEST(Cholesky, KernelSymbolicCount)
             gko::array<index_type> row_nnz{this->ref, this->num_rows};
 
             gko::kernels::reference::cholesky::symbolic_count(
-                this->ref, this->mtx.get(), *this->forest, row_nnz.get_data(),
+                this->ref, this->mtx.get(), *this->forest, row_nnz.data(),
                 this->tmp);
 
             GKO_ASSERT_ARRAY_EQ(row_nnz, this->ref_row_nnz);
@@ -403,15 +402,13 @@ TYPED_TEST(Cholesky, KernelInitializeWorks)
                 this->ref, this->combined->get_num_stored_elements()};
 
             gko::kernels::reference::cholesky::initialize(
-                this->ref, this->mtx.get(),
-                this->storage_offsets.get_const_data(),
-                this->row_descs.get_const_data(),
-                this->storage.get_const_data(), diag_idxs.get_data(),
-                transpose_idxs.get_data(), this->combined.get());
+                this->ref, this->mtx.get(), this->storage_offsets.const_data(),
+                this->row_descs.const_data(), this->storage.const_data(),
+                diag_idxs.data(), transpose_idxs.data(), this->combined.get());
 
             GKO_ASSERT_MTX_NEAR(this->mtx, this->combined, 0.0);
             for (gko::size_type row = 0; row < this->num_rows; row++) {
-                const auto diag_pos = diag_idxs.get_const_data()[row];
+                const auto diag_pos = diag_idxs.const_data()[row];
                 const auto begin_pos =
                     this->combined->get_const_row_ptrs()[row];
                 const auto end_pos =
@@ -420,7 +417,7 @@ TYPED_TEST(Cholesky, KernelInitializeWorks)
                 ASSERT_LT(diag_pos, end_pos);
                 ASSERT_EQ(this->combined->get_const_col_idxs()[diag_pos], row);
                 for (auto nz = begin_pos; nz < end_pos; nz++) {
-                    const auto trans_pos = transpose_idxs.get_const_data()[nz];
+                    const auto trans_pos = transpose_idxs.const_data()[nz];
                     const auto col = this->combined->get_const_col_idxs()[nz];
                     ASSERT_GE(trans_pos,
                               this->combined->get_const_row_ptrs()[col]);
@@ -428,7 +425,7 @@ TYPED_TEST(Cholesky, KernelInitializeWorks)
                               this->combined->get_const_row_ptrs()[col + 1]);
                     ASSERT_EQ(this->combined->get_const_col_idxs()[trans_pos],
                               row);
-                    ASSERT_EQ(transpose_idxs.get_const_data()[trans_pos], nz);
+                    ASSERT_EQ(transpose_idxs.const_data()[trans_pos], nz);
                 }
             }
         },
@@ -447,18 +444,15 @@ TYPED_TEST(Cholesky, KernelFactorizeWorks)
                 this->ref, this->combined->get_num_stored_elements()};
             gko::array<int> tmp{this->ref};
             gko::kernels::reference::cholesky::initialize(
-                this->ref, this->mtx.get(),
-                this->storage_offsets.get_const_data(),
-                this->row_descs.get_const_data(),
-                this->storage.get_const_data(), diag_idxs.get_data(),
-                transpose_idxs.get_data(), this->combined.get());
+                this->ref, this->mtx.get(), this->storage_offsets.const_data(),
+                this->row_descs.const_data(), this->storage.const_data(),
+                diag_idxs.data(), transpose_idxs.data(), this->combined.get());
 
             gko::kernels::reference::cholesky::factorize(
-                this->ref, this->storage_offsets.get_const_data(),
-                this->row_descs.get_const_data(),
-                this->storage.get_const_data(), diag_idxs.get_data(),
-                transpose_idxs.get_data(), *this->forest, this->combined.get(),
-                tmp);
+                this->ref, this->storage_offsets.const_data(),
+                this->row_descs.const_data(), this->storage.const_data(),
+                diag_idxs.data(), transpose_idxs.data(), *this->forest,
+                this->combined.get(), tmp);
 
             GKO_ASSERT_MTX_NEAR(this->combined, this->combined_ref,
                                 r<value_type>::value);

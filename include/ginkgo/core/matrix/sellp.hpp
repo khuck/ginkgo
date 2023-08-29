@@ -136,7 +136,7 @@ public:
      *
      * @return the values of the matrix.
      */
-    value_type* get_values() noexcept { return values_.get_data(); }
+    value_type* get_values() noexcept { return values_.data(); }
 
     /**
      * @copydoc Sellp::get_values()
@@ -147,7 +147,7 @@ public:
      */
     const value_type* get_const_values() const noexcept
     {
-        return values_.get_const_data();
+        return values_.const_data();
     }
 
     /**
@@ -155,7 +155,7 @@ public:
      *
      * @return the column indexes of the matrix.
      */
-    index_type* get_col_idxs() noexcept { return col_idxs_.get_data(); }
+    index_type* get_col_idxs() noexcept { return col_idxs_.data(); }
 
     /**
      * @copydoc Sellp::get_col_idxs()
@@ -166,7 +166,7 @@ public:
      */
     const index_type* get_const_col_idxs() const noexcept
     {
-        return col_idxs_.get_const_data();
+        return col_idxs_.const_data();
     }
 
     /**
@@ -174,10 +174,7 @@ public:
      *
      * @return the lengths(columns) of slices.
      */
-    size_type* get_slice_lengths() noexcept
-    {
-        return slice_lengths_.get_data();
-    }
+    size_type* get_slice_lengths() noexcept { return slice_lengths_.data(); }
 
     /**
      * @copydoc Sellp::get_slice_lengths()
@@ -188,7 +185,7 @@ public:
      */
     const size_type* get_const_slice_lengths() const noexcept
     {
-        return slice_lengths_.get_const_data();
+        return slice_lengths_.const_data();
     }
 
     /**
@@ -196,7 +193,7 @@ public:
      *
      * @return the offsets of slices.
      */
-    size_type* get_slice_sets() noexcept { return slice_sets_.get_data(); }
+    size_type* get_slice_sets() noexcept { return slice_sets_.data(); }
 
     /**
      * @copydoc Sellp::get_slice_sets()
@@ -207,7 +204,7 @@ public:
      */
     const size_type* get_const_slice_sets() const noexcept
     {
-        return slice_sets_.get_const_data();
+        return slice_sets_.const_data();
     }
 
     /**
@@ -231,7 +228,7 @@ public:
      */
     size_type get_total_cols() const noexcept
     {
-        return values_.get_num_elems() / slice_size_;
+        return values_.size() / slice_size_;
     }
 
     /**
@@ -241,7 +238,7 @@ public:
      */
     size_type get_num_stored_elements() const noexcept
     {
-        return values_.get_num_elems();
+        return values_.size();
     }
 
     /**
@@ -259,7 +256,7 @@ public:
     value_type& val_at(size_type row, size_type slice_set,
                        size_type idx) noexcept
     {
-        return values_.get_data()[this->linearize_index(row, slice_set, idx)];
+        return values_.data()[this->linearize_index(row, slice_set, idx)];
     }
 
     /**
@@ -268,8 +265,7 @@ public:
     value_type val_at(size_type row, size_type slice_set,
                       size_type idx) const noexcept
     {
-        return values_
-            .get_const_data()[this->linearize_index(row, slice_set, idx)];
+        return values_.const_data()[this->linearize_index(row, slice_set, idx)];
     }
 
     /**

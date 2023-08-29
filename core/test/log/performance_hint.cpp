@@ -150,8 +150,8 @@ TEST(PerformanceHint, CatchesRepeatedCrossExecutorCopy)
     gko::array<int> a{exec, 16};
     gko::array<int> b{exec2, 16};
     b.fill(0);
-    const auto ptr1 = ptr_to_str(a.get_data());
-    const auto ptr2 = ptr_to_str(b.get_data());
+    const auto ptr1 = ptr_to_str(a.data());
+    const auto ptr2 = ptr_to_str(b.data());
 
     for (int i = 0; i < 101; i++) {
         a_small = b_small;
@@ -216,8 +216,8 @@ TEST(PerformanceHint, PrintsStatus)
     gko::array<int> a{exec, 16};
     gko::array<int> b{exec2, 16};
     b.fill(0);
-    const auto ptr1 = ptr_to_str(a.get_data());
-    const auto ptr2 = ptr_to_str(b.get_data());
+    const auto ptr1 = ptr_to_str(a.data());
+    const auto ptr2 = ptr_to_str(b.data());
 
     for (int i = 0; i < 101; i++) {
         gko::array<int>{exec, 16};

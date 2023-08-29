@@ -179,26 +179,26 @@ std::unique_ptr<LinOp> Amd<IndexType>::generate_impl(
     // copy data to the CPU
     array<IndexType> row_ptrs{host_exec, num_rows + 1};
     host_exec->copy_from(exec, num_rows + 1, pattern->get_const_row_ptrs(),
-                         row_ptrs.get_data());
-    const auto nnz = row_ptrs.get_data()[num_rows];
+                         row_ptrs.data());
+    const auto nnz = row_ptrs.data()[num_rows];
     // we use this much space for the column index workspace, the rest for
     // row workspace
     const auto col_idxs_plus_workspace_size = nnz + nnz / 5 + 2 * num_rows;
     array<IndexType> col_idxs_plus_workspace{
         host_exec, col_idxs_plus_workspace_size + 6 * num_rows};
     host_exec->copy_from(exec, nnz, pattern->get_const_col_idxs(),
-                         col_idxs_plus_workspace.get_data());
+                         col_idxs_plus_workspace.data());
 
     array<IndexType> permutation{host_exec, num_rows};
     array<IndexType> row_lengths{host_exec, num_rows};
     for (size_type row = 0; row < num_rows; row++) {
-        row_lengths.get_data()[row] =
-            row_ptrs.get_data()[row + 1] - row_ptrs.get_data()[row];
+        row_lengths.data()[row] =
+            row_ptrs.data()[row + 1] - row_ptrs.data()[row];
     }
     // different temporary workspace arrays for amd
-    const auto last = permutation.get_data();
+    const auto last = permutation.data();
     const auto nv =
-        col_idxs_plus_workspace.get_data() + col_idxs_plus_workspace_size;
+        col_idxs_plus_workspace.data() + col_idxs_plus_workspace_size;
     const auto next = nv + num_rows;
     const auto head = next + num_rows;
     const auto elen = head + num_rows;
@@ -206,8 +206,8 @@ std::unique_ptr<LinOp> Amd<IndexType>::generate_impl(
     const auto w = degree + num_rows;
     // run AMD
     exec->run(suitesparse_wrapper::make_amd_reorder(
-        static_cast<IndexType>(num_rows), row_ptrs.get_data(),
-        col_idxs_plus_workspace.get_data(), row_lengths.get_data(),
+        static_cast<IndexType>(num_rows), row_ptrs.data(),
+        col_idxs_plus_workspace.data(), row_lengths.data(),
         static_cast<IndexType>(col_idxs_plus_workspace_size), nv, next, last,
         head, elen, degree, w));
 

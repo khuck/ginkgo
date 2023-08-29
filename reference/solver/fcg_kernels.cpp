@@ -62,7 +62,7 @@ void initialize(std::shared_ptr<const ReferenceExecutor> exec,
         rho->at(j) = zero<ValueType>();
         prev_rho->at(j) = one<ValueType>();
         rho_t->at(j) = one<ValueType>();
-        stop_status->get_data()[j].reset();
+        stop_status->data()[j].reset();
     }
     for (size_type i = 0; i < b->get_size()[0]; ++i) {
         for (size_type j = 0; j < b->get_size()[1]; ++j) {
@@ -84,7 +84,7 @@ void step_1(std::shared_ptr<const ReferenceExecutor> exec,
 {
     for (size_type i = 0; i < p->get_size()[0]; ++i) {
         for (size_type j = 0; j < p->get_size()[1]; ++j) {
-            if (stop_status->get_const_data()[j].has_stopped()) {
+            if (stop_status->const_data()[j].has_stopped()) {
                 continue;
             }
             if (is_zero(prev_rho->at(j))) {
@@ -111,7 +111,7 @@ void step_2(std::shared_ptr<const ReferenceExecutor> exec,
 {
     for (size_type i = 0; i < x->get_size()[0]; ++i) {
         for (size_type j = 0; j < x->get_size()[1]; ++j) {
-            if (stop_status->get_const_data()[j].has_stopped()) {
+            if (stop_status->const_data()[j].has_stopped()) {
                 continue;
             }
             if (is_nonzero(beta->at(j))) {

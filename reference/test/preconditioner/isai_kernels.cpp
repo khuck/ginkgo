@@ -340,11 +340,11 @@ TYPED_TEST(Isai, KernelGenerateA)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_general_inverse(
-        this->exec, this->a_csr.get(), result.get(), a1.get_data(),
-        a2.get_data(), false);
+        this->exec, this->a_csr.get(), result.get(), a1.data(), a2.data(),
+        false);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->a_csr_inv);
     GKO_ASSERT_MTX_NEAR(result, this->a_csr_inv, r<value_type>::value);
@@ -366,11 +366,11 @@ TYPED_TEST(Isai, KernelGenerateA2)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_general_inverse(
-        this->exec, a_transpose.get(), result.get(), a1.get_data(),
-        a2.get_data(), false);
+        this->exec, a_transpose.get(), result.get(), a1.data(), a2.data(),
+        false);
 
     const auto expected = this->transpose(this->a_csr_inv);
     GKO_ASSERT_MTX_EQ_SPARSITY(result, expected);
@@ -392,11 +392,11 @@ TYPED_TEST(Isai, KernelGenerateAsparse)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_general_inverse(
-        this->exec, this->a_sparse.get(), result.get(), a1.get_data(),
-        a2.get_data(), false);
+        this->exec, this->a_sparse.get(), result.get(), a1.data(), a2.data(),
+        false);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->a_sparse_inv);
     GKO_ASSERT_MTX_NEAR(result, this->a_sparse_inv, r<value_type>::value);
@@ -417,18 +417,18 @@ TYPED_TEST(Isai, KernelGenerateALongrow)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
     // only the 32nd row has some excess storage
     auto a1_expect = zeros;
-    std::fill_n(a1_expect.get_data() + 15, 21, 86);
-    std::fill_n(a1_expect.get_data() + 36, 65, 122);
+    std::fill_n(a1_expect.data() + 15, 21, 86);
+    std::fill_n(a1_expect.data() + 36, 65, 122);
     auto a2_expect = zeros;
-    std::fill_n(a2_expect.get_data() + 15, 21, 355);
-    std::fill_n(a2_expect.get_data() + 36, 65, 509);
+    std::fill_n(a2_expect.data() + 15, 21, 355);
+    std::fill_n(a2_expect.data() + 36, 65, 509);
 
     gko::kernels::reference::isai::generate_general_inverse(
-        this->exec, this->a_csr_longrow.get(), result.get(), a1.get_data(),
-        a2.get_data(), false);
+        this->exec, this->a_csr_longrow.get(), result.get(), a1.data(),
+        a2.data(), false);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->a_csr_longrow_inv_partial);
     GKO_ASSERT_MTX_NEAR(result, this->a_csr_longrow_inv_partial,
@@ -446,21 +446,21 @@ TYPED_TEST(Isai, KernelGenerateExcessALongrow)
     using index_type = typename TestFixture::index_type;
     auto num_rows = this->a_csr_longrow->get_size()[0];
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
     // only the 32nd row has some excess storage
     auto a1 = zeros;
-    std::fill_n(a1.get_data() + 15, 21, 86);
-    std::fill_n(a1.get_data() + 36, 65, 122);
+    std::fill_n(a1.data() + 15, 21, 86);
+    std::fill_n(a1.data() + 36, 65, 122);
     auto a2 = zeros;
-    std::fill_n(a2.get_data() + 15, 21, 355);
-    std::fill_n(a2.get_data() + 36, 65, 509);
+    std::fill_n(a2.data() + 15, 21, 355);
+    std::fill_n(a2.data() + 36, 65, 509);
     auto result = Csr::create(this->exec, gko::dim<2>(122, 122), 509);
     auto result_rhs = Dense::create(this->exec, gko::dim<2>(122, 1));
 
     gko::kernels::reference::isai::generate_excess_system(
         this->exec, this->a_csr_longrow.get(), this->a_csr_longrow.get(),
-        a1.get_const_data(), a2.get_const_data(), result.get(),
-        result_rhs.get(), 0, num_rows);
+        a1.const_data(), a2.const_data(), result.get(), result_rhs.get(), 0,
+        num_rows);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->a_csr_longrow_e);
     GKO_ASSERT_MTX_NEAR(result, this->a_csr_longrow_e, 0);
@@ -479,11 +479,11 @@ TYPED_TEST(Isai, KernelGenerateL1)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, this->l_csr.get(), result.get(), a1.get_data(),
-        a2.get_data(), true);
+        this->exec, this->l_csr.get(), result.get(), a1.data(), a2.data(),
+        true);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->l_csr_inv);
     GKO_ASSERT_MTX_NEAR(result, this->l_csr_inv, r<value_type>::value);
@@ -505,11 +505,10 @@ TYPED_TEST(Isai, KernelGenerateL2)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, l_mtx.get(), result.get(), a1.get_data(), a2.get_data(),
-        true);
+        this->exec, l_mtx.get(), result.get(), a1.data(), a2.data(), true);
 
     const auto expected = this->transpose(this->u_csr_inv);
     GKO_ASSERT_MTX_EQ_SPARSITY(result, expected);
@@ -531,11 +530,11 @@ TYPED_TEST(Isai, KernelGenerateLsparse1)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, this->l_sparse.get(), result.get(), a1.get_data(),
-        a2.get_data(), true);
+        this->exec, this->l_sparse.get(), result.get(), a1.data(), a2.data(),
+        true);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->l_sparse_inv);
     GKO_ASSERT_MTX_NEAR(result, this->l_sparse_inv, r<value_type>::value);
@@ -556,11 +555,11 @@ TYPED_TEST(Isai, KernelGenerateLsparse2)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, this->l_sparse2.get(), result.get(), a1.get_data(),
-        a2.get_data(), true);
+        this->exec, this->l_sparse2.get(), result.get(), a1.data(), a2.data(),
+        true);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->l_sparse2_inv);
     GKO_ASSERT_MTX_NEAR(result, this->l_sparse2_inv, r<value_type>::value);
@@ -582,11 +581,10 @@ TYPED_TEST(Isai, KernelGenerateLsparse3)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, l_mtx.get(), result.get(), a1.get_data(), a2.get_data(),
-        true);
+        this->exec, l_mtx.get(), result.get(), a1.data(), a2.data(), true);
 
     // Results in a slightly different version than u_sparse_inv->transpose()
     // because a different row-sparsity pattern is used in u_sparse vs. l_mtx
@@ -614,20 +612,20 @@ TYPED_TEST(Isai, KernelGenerateLLongrow)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
     // only the 32nd row has some excess storage
     auto a1_expect = zeros;
-    a1_expect.get_data()[33] = 33;
-    a1_expect.get_data()[34] = 33;
-    a1_expect.get_data()[35] = 66;
+    a1_expect.data()[33] = 33;
+    a1_expect.data()[34] = 33;
+    a1_expect.data()[35] = 66;
     auto a2_expect = zeros;
-    a2_expect.get_data()[33] = 124;
-    a2_expect.get_data()[34] = 124;
-    a2_expect.get_data()[35] = 248;
+    a2_expect.data()[33] = 124;
+    a2_expect.data()[34] = 124;
+    a2_expect.data()[35] = 248;
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, this->l_csr_longrow.get(), result.get(), a1.get_data(),
-        a2.get_data(), true);
+        this->exec, this->l_csr_longrow.get(), result.get(), a1.data(),
+        a2.data(), true);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->l_csr_longrow_inv_partial);
     GKO_ASSERT_MTX_NEAR(result, this->l_csr_longrow_inv_partial,
@@ -645,23 +643,23 @@ TYPED_TEST(Isai, KernelGenerateExcessLLongrow)
     using index_type = typename TestFixture::index_type;
     auto num_rows = this->l_csr_longrow->get_size()[0];
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
     // only the 32nd row has some excess storage
     auto a1 = zeros;
-    a1.get_data()[33] = 33;
-    a1.get_data()[34] = 33;
-    a1.get_data()[35] = 66;
+    a1.data()[33] = 33;
+    a1.data()[34] = 33;
+    a1.data()[35] = 66;
     auto a2 = zeros;
-    a2.get_data()[33] = 124;
-    a2.get_data()[34] = 124;
-    a2.get_data()[35] = 248;
+    a2.data()[33] = 124;
+    a2.data()[34] = 124;
+    a2.data()[35] = 248;
     auto result = Csr::create(this->exec, gko::dim<2>(66, 66), 248);
     auto result_rhs = Dense::create(this->exec, gko::dim<2>(66, 1));
 
     gko::kernels::reference::isai::generate_excess_system(
         this->exec, this->l_csr_longrow.get(), this->l_csr_longrow.get(),
-        a1.get_const_data(), a2.get_const_data(), result.get(),
-        result_rhs.get(), 0, num_rows);
+        a1.const_data(), a2.const_data(), result.get(), result_rhs.get(), 0,
+        num_rows);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->l_csr_longrow_e);
     GKO_ASSERT_MTX_NEAR(result, this->l_csr_longrow_e, 0);
@@ -681,11 +679,10 @@ TYPED_TEST(Isai, KernelGenerateU1)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, u_mtx.get(), result.get(), a1.get_data(), a2.get_data(),
-        false);
+        this->exec, u_mtx.get(), result.get(), a1.data(), a2.data(), false);
 
     auto expected = this->transpose(this->l_csr_inv);
     GKO_ASSERT_MTX_EQ_SPARSITY(result, expected);
@@ -707,11 +704,11 @@ TYPED_TEST(Isai, KernelGenerateU2)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, this->u_csr.get(), result.get(), a1.get_data(),
-        a2.get_data(), false);
+        this->exec, this->u_csr.get(), result.get(), a1.data(), a2.data(),
+        false);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->u_csr_inv);
     GKO_ASSERT_MTX_NEAR(result, this->u_csr_inv, r<value_type>::value);
@@ -733,11 +730,10 @@ TYPED_TEST(Isai, KernelGenerateUsparse1)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, u_mtx.get(), result.get(), a1.get_data(), a2.get_data(),
-        false);
+        this->exec, u_mtx.get(), result.get(), a1.data(), a2.data(), false);
 
     const auto expected = this->transpose(this->l_sparse_inv);
     GKO_ASSERT_MTX_EQ_SPARSITY(result, expected);
@@ -760,11 +756,10 @@ TYPED_TEST(Isai, KernelGenerateUsparse2)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, u_mtx.get(), result.get(), a1.get_data(), a2.get_data(),
-        false);
+        this->exec, u_mtx.get(), result.get(), a1.data(), a2.data(), false);
 
     // Results in a slightly different version than l_sparse2_inv->transpose()
     // because a different row-sparsity pattern is used in l_sparse2 vs. u_mtx
@@ -792,11 +787,11 @@ TYPED_TEST(Isai, KernelGenerateUsparse3)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, this->u_sparse.get(), result.get(), a1.get_data(),
-        a2.get_data(), false);
+        this->exec, this->u_sparse.get(), result.get(), a1.data(), a2.data(),
+        false);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->u_sparse_inv);
     GKO_ASSERT_MTX_NEAR(result, this->u_sparse_inv, r<value_type>::value);
@@ -817,16 +812,16 @@ TYPED_TEST(Isai, KernelGenerateULongrow)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
     // only the 32nd row has some excess storage
     auto a1_expect = zeros;
-    std::fill_n(a1_expect.get_data() + 3, 33, 33);
+    std::fill_n(a1_expect.data() + 3, 33, 33);
     auto a2_expect = zeros;
-    std::fill_n(a2_expect.get_data() + 3, 33, 153);
+    std::fill_n(a2_expect.data() + 3, 33, 153);
 
     gko::kernels::reference::isai::generate_tri_inverse(
-        this->exec, this->u_csr_longrow.get(), result.get(), a1.get_data(),
-        a2.get_data(), false);
+        this->exec, this->u_csr_longrow.get(), result.get(), a1.data(),
+        a2.data(), false);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->u_csr_longrow_inv_partial);
     GKO_ASSERT_MTX_NEAR(result, this->u_csr_longrow_inv_partial,
@@ -844,19 +839,19 @@ TYPED_TEST(Isai, KernelGenerateExcessULongrow)
     using index_type = typename TestFixture::index_type;
     auto num_rows = this->u_csr_longrow->get_size()[0];
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
     // only the 32nd row has some excess storage
     auto a1 = zeros;
-    std::fill_n(a1.get_data() + 3, 33, 33);
+    std::fill_n(a1.data() + 3, 33, 33);
     auto a2 = zeros;
-    std::fill_n(a2.get_data() + 3, 33, 153);
+    std::fill_n(a2.data() + 3, 33, 153);
     auto result = Csr::create(this->exec, gko::dim<2>(33, 33), 153);
     auto result_rhs = Dense::create(this->exec, gko::dim<2>(33, 1));
 
     gko::kernels::reference::isai::generate_excess_system(
         this->exec, this->u_csr_longrow.get(), this->u_csr_longrow.get(),
-        a1.get_const_data(), a2.get_const_data(), result.get(),
-        result_rhs.get(), 0, num_rows);
+        a1.const_data(), a2.const_data(), result.get(), result_rhs.get(), 0,
+        num_rows);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->u_csr_longrow_e);
     GKO_ASSERT_MTX_NEAR(result, this->u_csr_longrow_e, 0);
@@ -875,11 +870,11 @@ TYPED_TEST(Isai, KernelGenerateSpd)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_general_inverse(
-        this->exec, this->spd_csr.get(), result.get(), a1.get_data(),
-        a2.get_data(), true);
+        this->exec, this->spd_csr.get(), result.get(), a1.data(), a2.data(),
+        true);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->spd_csr_inv);
     GKO_ASSERT_MTX_NEAR(result, this->spd_csr_inv, r<value_type>::value);
@@ -900,11 +895,11 @@ TYPED_TEST(Isai, KernelGenerateSpdsparse)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
 
     gko::kernels::reference::isai::generate_general_inverse(
-        this->exec, this->spd_sparse.get(), result.get(), a1.get_data(),
-        a2.get_data(), true);
+        this->exec, this->spd_sparse.get(), result.get(), a1.data(), a2.data(),
+        true);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->spd_sparse_inv);
     GKO_ASSERT_MTX_NEAR(result, this->spd_sparse_inv, r<value_type>::value);
@@ -925,16 +920,16 @@ TYPED_TEST(Isai, KernelGenerateSpdLongrow)
     gko::array<index_type> a2(this->exec, num_rows + 1);
     // zero-filled array
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
     // only the 36th row has some excess storage
     auto a1_expect = zeros;
-    std::fill_n(a1_expect.get_data() + 36, 65, 36);
+    std::fill_n(a1_expect.data() + 36, 65, 36);
     auto a2_expect = zeros;
-    std::fill_n(a2_expect.get_data() + 36, 65, 338);
+    std::fill_n(a2_expect.data() + 36, 65, 338);
 
     gko::kernels::reference::isai::generate_general_inverse(
-        this->exec, this->spd_csr_longrow.get(), result.get(), a1.get_data(),
-        a2.get_data(), true);
+        this->exec, this->spd_csr_longrow.get(), result.get(), a1.data(),
+        a2.data(), true);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->spd_csr_longrow_inv_partial);
     GKO_ASSERT_MTX_NEAR(result, this->spd_csr_longrow_inv_partial,
@@ -952,19 +947,19 @@ TYPED_TEST(Isai, KernelGenerateExcessSpdLongrow)
     using index_type = typename TestFixture::index_type;
     auto num_rows = this->spd_csr_longrow->get_size()[0];
     gko::array<index_type> zeros(this->exec, num_rows + 1);
-    std::fill_n(zeros.get_data(), num_rows + 1, 0);
+    std::fill_n(zeros.data(), num_rows + 1, 0);
     // only the 36th row has some excess storage
     auto a1 = zeros;
-    std::fill_n(a1.get_data() + 36, 65, 36);
+    std::fill_n(a1.data() + 36, 65, 36);
     auto a2 = zeros;
-    std::fill_n(a2.get_data() + 36, 65, 338);
+    std::fill_n(a2.data() + 36, 65, 338);
     auto result = Csr::create(this->exec, gko::dim<2>(36, 36), 338);
     auto result_rhs = Dense::create(this->exec, gko::dim<2>(36, 1));
 
     gko::kernels::reference::isai::generate_excess_system(
         this->exec, this->spd_csr_longrow.get(),
-        this->spd_csr_longrow_inv_partial.get(), a1.get_const_data(),
-        a2.get_const_data(), result.get(), result_rhs.get(), 0, num_rows);
+        this->spd_csr_longrow_inv_partial.get(), a1.const_data(),
+        a2.const_data(), result.get(), result_rhs.get(), 0, num_rows);
 
     GKO_ASSERT_MTX_EQ_SPARSITY(result, this->spd_csr_longrow_e);
     GKO_ASSERT_MTX_NEAR(result, this->spd_csr_longrow_e, 0);
@@ -992,7 +987,7 @@ TYPED_TEST(Isai, KernelScatterExcessSolution)
                              I<value_type>{11, 12, 13, 14, 15, 16, 17}, 1);
 
     gko::kernels::reference::isai::scatter_excess_solution(
-        this->exec, ptrs.get_const_data(), sol.get(), mtx.get(), 0, 6);
+        this->exec, ptrs.const_data(), sol.get(), mtx.get(), 0, 6);
 
     GKO_ASSERT_MTX_NEAR(mtx, expect, 0);
 }

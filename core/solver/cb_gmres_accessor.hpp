@@ -105,15 +105,15 @@ public:
     {
         array<ValueType> h_scale{exec->get_master(),
                                  krylov_dim[0] * krylov_dim[2]};
-        for (size_type i = 0; i < h_scale.get_num_elems(); ++i) {
-            h_scale.get_data()[i] = one<ValueType>();
+        for (size_type i = 0; i < h_scale.size(); ++i) {
+            h_scale.data()[i] = one<ValueType>();
         }
         scale_ = h_scale;
     }
 
     Range get_range()
     {
-        return Range(krylov_dim_, bases_.get_data(), scale_.get_data());
+        return Range(krylov_dim_, bases_.data(), scale_.data());
     }
 
     gko::array<StorageType>& get_bases() { return bases_; }
@@ -140,7 +140,7 @@ public:
           bases_{std::move(exec), krylov_dim[0] * krylov_dim[1] * krylov_dim[2]}
     {}
 
-    Range get_range() { return Range(krylov_dim_, bases_.get_data()); }
+    Range get_range() { return Range(krylov_dim_, bases_.data()); }
 
     gko::array<StorageType>& get_bases() { return bases_; }
 

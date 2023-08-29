@@ -120,8 +120,8 @@ void generic_generate(std::shared_ptr<const DefaultExecutor> exec,
     {
         auto thread_num = static_cast<size_type>(omp_get_thread_num());
 
-        auto rhs = rhs_array.get_data() + thread_num * row_size_limit;
-        auto dense_system_ptr = dense_system_array.get_data() +
+        auto rhs = rhs_array.data() + thread_num * row_size_limit;
+        auto dense_system_ptr = dense_system_array.data() +
                                 thread_num * row_size_limit * row_size_limit;
 
 #pragma omp for

@@ -36,16 +36,16 @@ void sort_by_range_start(
     array<GlobalIndexType>& range_start_ends,
     array<experimental::distributed::comm_index_type>& part_ids)
 {
-    auto num_ranges = range_start_ends.get_num_elems() / 2;
+    auto num_ranges = range_start_ends.size() / 2;
     auto strided_indices = thrust::make_transform_iterator(
         thrust::make_counting_iterator(0),
         [] __host__ __device__(const int i) { return 2 * i; });
-    auto start_it = thrust::make_permutation_iterator(
-        range_start_ends.get_data(), strided_indices);
-    auto end_it = thrust::make_permutation_iterator(
-        range_start_ends.get_data() + 1, strided_indices);
-    auto zip_it = thrust::make_zip_iterator(
-        thrust::make_tuple(end_it, part_ids.get_data()));
+    auto start_it = thrust::make_permutation_iterator(range_start_ends.data(),
+                                                      strided_indices);
+    auto end_it = thrust::make_permutation_iterator(range_start_ends.data() + 1,
+                                                    strided_indices);
+    auto zip_it =
+        thrust::make_zip_iterator(thrust::make_tuple(end_it, part_ids.data()));
     thrust::stable_sort_by_key(thrust_policy(exec), start_it,
                                start_it + num_ranges, zip_it);
 }

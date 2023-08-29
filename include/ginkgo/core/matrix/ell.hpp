@@ -145,7 +145,7 @@ public:
      *
      * @return the values of the matrix.
      */
-    value_type* get_values() noexcept { return values_.get_data(); }
+    value_type* get_values() noexcept { return values_.data(); }
 
     /**
      * @copydoc Ell::get_values()
@@ -156,7 +156,7 @@ public:
      */
     const value_type* get_const_values() const noexcept
     {
-        return values_.get_const_data();
+        return values_.const_data();
     }
 
     /**
@@ -164,7 +164,7 @@ public:
      *
      * @return the column indexes of the matrix.
      */
-    index_type* get_col_idxs() noexcept { return col_idxs_.get_data(); }
+    index_type* get_col_idxs() noexcept { return col_idxs_.data(); }
 
     /**
      * @copydoc Ell::get_col_idxs()
@@ -175,7 +175,7 @@ public:
      */
     const index_type* get_const_col_idxs() const noexcept
     {
-        return col_idxs_.get_const_data();
+        return col_idxs_.const_data();
     }
 
     /**
@@ -202,7 +202,7 @@ public:
      */
     size_type get_num_stored_elements() const noexcept
     {
-        return values_.get_num_elems();
+        return values_.size();
     }
 
     /**
@@ -217,7 +217,7 @@ public:
      */
     value_type& val_at(size_type row, size_type idx) noexcept
     {
-        return values_.get_data()[this->linearize_index(row, idx)];
+        return values_.data()[this->linearize_index(row, idx)];
     }
 
     /**
@@ -225,7 +225,7 @@ public:
      */
     value_type val_at(size_type row, size_type idx) const noexcept
     {
-        return values_.get_const_data()[this->linearize_index(row, idx)];
+        return values_.const_data()[this->linearize_index(row, idx)];
     }
 
     /**
@@ -381,10 +381,8 @@ protected:
           num_stored_elements_per_row_{num_stored_elements_per_row},
           stride_{stride}
     {
-        GKO_ASSERT_EQ(num_stored_elements_per_row_ * stride_,
-                      values_.get_num_elems());
-        GKO_ASSERT_EQ(num_stored_elements_per_row_ * stride_,
-                      col_idxs_.get_num_elems());
+        GKO_ASSERT_EQ(num_stored_elements_per_row_ * stride_, values_.size());
+        GKO_ASSERT_EQ(num_stored_elements_per_row_ * stride_, col_idxs_.size());
     }
 
     /**

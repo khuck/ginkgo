@@ -47,8 +47,8 @@ namespace ir {
 void initialize(std::shared_ptr<const ReferenceExecutor> exec,
                 array<stopping_status>* stop_status)
 {
-    for (size_type j = 0; j < stop_status->get_num_elems(); ++j) {
-        stop_status->get_data()[j].reset();
+    for (size_type j = 0; j < stop_status->size(); ++j) {
+        stop_status->data()[j].reset();
     }
 }
 

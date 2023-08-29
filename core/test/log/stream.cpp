@@ -729,8 +729,8 @@ TYPED_TEST(Stream, CatchesCriterionCheckCompletedWithVerbose)
     std::stringstream true_in_stream;
     true_in_stream << true;
 
-    stop_status.get_data()->reset();
-    stop_status.get_data()->stop(RelativeStoppingId);
+    stop_status.data()->reset();
+    stop_status.data()->stop(RelativeStoppingId);
     logger->template on<gko::log::Logger::criterion_check_completed>(
         criterion.get(), 1, nullptr, nullptr, nullptr, RelativeStoppingId, true,
         &stop_status, true, true);

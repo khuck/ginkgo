@@ -135,7 +135,7 @@ TEST_F(Workspace, AnyArrayInitWorks)
     ASSERT_TRUE(array.template contains<int>());
     ASSERT_FALSE(array.template contains<double>());
     ASSERT_EQ(&array.template get<int>(), &arr);
-    ASSERT_EQ(arr.get_num_elems(), 1);
+    ASSERT_EQ(arr.size(), 1);
     ASSERT_EQ(arr.get_executor(), exec);
 }
 
@@ -160,8 +160,8 @@ TEST_F(Workspace, CanCreateArrays)
     auto& arr1 = ws.create_or_get_array<int>(1, 2);
     auto& arr2 = ws.create_or_get_array<double>(0, 3);
 
-    ASSERT_EQ(arr1.get_num_elems(), 2);
-    ASSERT_EQ(arr2.get_num_elems(), 3);
+    ASSERT_EQ(arr1.size(), 2);
+    ASSERT_EQ(arr2.size(), 3);
     ASSERT_EQ(arr1.get_executor(), exec);
     ASSERT_EQ(arr2.get_executor(), exec);
 }
@@ -177,8 +177,8 @@ TEST_F(Workspace, CanReuseArrays)
     auto& arr1_reuse = ws.create_or_get_array<int>(1, 2);
     auto& arr2_reuse = ws.create_or_get_array<double>(0, 3);
 
-    ASSERT_EQ(arr1.get_num_elems(), 2);
-    ASSERT_EQ(arr2.get_num_elems(), 3);
+    ASSERT_EQ(arr1.size(), 2);
+    ASSERT_EQ(arr2.size(), 3);
     ASSERT_EQ(arr1.get_executor(), exec);
     ASSERT_EQ(arr2.get_executor(), exec);
     ASSERT_EQ(&arr1, &arr1_reuse);
@@ -196,8 +196,8 @@ TEST_F(Workspace, CanResizeArrays)
     auto& arr1_reuse = ws.create_or_get_array<int>(1, 4);
     auto& arr2_reuse = ws.create_or_get_array<double>(0, 5);
 
-    ASSERT_EQ(arr1.get_num_elems(), 4);
-    ASSERT_EQ(arr2.get_num_elems(), 5);
+    ASSERT_EQ(arr1.size(), 4);
+    ASSERT_EQ(arr2.size(), 5);
     ASSERT_EQ(arr1.get_executor(), exec);
     ASSERT_EQ(arr2.get_executor(), exec);
     ASSERT_EQ(&arr1, &arr1_reuse);

@@ -57,11 +57,11 @@ void remove_zeros(std::shared_ptr<const DefaultExecutor> exec,
                   array<IndexType>& col_idxs)
 {
     using nonzero_type = matrix_data_entry<ValueType, IndexType>;
-    auto size = values.get_num_elems();
+    auto size = values.size();
     auto policy = onedpl_policy(exec);
-    auto nnz = std::count_if(
-        policy, values.get_const_data(), values.get_const_data() + size,
-        [](ValueType val) { return is_nonzero<ValueType>(val); });
+    auto nnz =
+        std::count_if(policy, values.const_data(), values.const_data() + size,
+                      [](ValueType val) { return is_nonzero<ValueType>(val); });
     if (nnz < size) {
         // allocate new storage
         array<ValueType> new_values{exec, static_cast<size_type>(nnz)};
@@ -69,11 +69,9 @@ void remove_zeros(std::shared_ptr<const DefaultExecutor> exec,
         array<IndexType> new_col_idxs{exec, static_cast<size_type>(nnz)};
         // copy nonzeros
         auto input_it = oneapi::dpl::make_zip_iterator(
-            row_idxs.get_const_data(), col_idxs.get_const_data(),
-            values.get_const_data());
-        auto output_it = oneapi::dpl::make_zip_iterator(new_row_idxs.get_data(),
-                                                        new_col_idxs.get_data(),
-                                                        new_values.get_data());
+            row_idxs.const_data(), col_idxs.const_data(), values.const_data());
+        auto output_it = oneapi::dpl::make_zip_iterator(
+            new_row_idxs.data(), new_col_idxs.data(), new_values.data());
         std::copy_if(policy, input_it, input_it + size, output_it,
                      [](auto tuple) { return is_nonzero(std::get<2>(tuple)); });
         // swap out storage
@@ -93,13 +91,13 @@ void sum_duplicates(std::shared_ptr<const DefaultExecutor> exec, size_type,
                     array<IndexType>& col_idxs)
 {
     using nonzero_type = matrix_data_entry<ValueType, IndexType>;
-    auto size = values.get_num_elems();
+    auto size = values.size();
     if (size == 0) {
         return;
     }
     auto policy = onedpl_policy(exec);
-    auto in_loc_it = oneapi::dpl::make_zip_iterator(row_idxs.get_const_data(),
-                                                    col_idxs.get_const_data());
+    auto in_loc_it = oneapi::dpl::make_zip_iterator(row_idxs.const_data(),
+                                                    col_idxs.const_data());
     auto adj_in_loc_it =
         oneapi::dpl::make_zip_iterator(in_loc_it, in_loc_it + 1);
     auto nnz =
@@ -116,10 +114,10 @@ void sum_duplicates(std::shared_ptr<const DefaultExecutor> exec, size_type,
         array<IndexType> new_col_idxs{exec, static_cast<size_type>(nnz)};
         // copy nonzeros
         auto out_loc_it = oneapi::dpl::make_zip_iterator(
-            new_row_idxs.get_data(), new_col_idxs.get_data());
+            new_row_idxs.data(), new_col_idxs.data());
         oneapi::dpl::reduce_by_segment(policy, in_loc_it, in_loc_it + size,
-                                       values.get_const_data(), out_loc_it,
-                                       new_values.get_data());
+                                       values.const_data(), out_loc_it,
+                                       new_values.data());
         // swap out storage
         values = std::move(new_values);
         row_idxs = std::move(new_row_idxs);

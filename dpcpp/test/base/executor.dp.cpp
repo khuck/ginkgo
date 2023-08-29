@@ -198,11 +198,11 @@ TEST_F(DpcppExecutor, CopiesDataToCPU)
     is_set.set_executor(dpcpp);
     ASSERT_NO_THROW(dpcpp->synchronize());
     ASSERT_NO_THROW(dpcpp->get_queue()->submit([&](sycl::handler& cgh) {
-        auto* is_set_ptr = is_set.get_data();
+        auto* is_set_ptr = is_set.data();
         cgh.single_task([=]() { check_data(copy, is_set_ptr); });
     }));
     is_set.set_executor(ref);
-    ASSERT_EQ(*is_set.get_data(), true);
+    ASSERT_EQ(*is_set.data(), true);
     ASSERT_NO_THROW(dpcpp->synchronize());
     dpcpp->free(copy);
 }
@@ -247,11 +247,11 @@ TEST_F(DpcppExecutor, CopiesDataFromDpcppToDpcpp)
     // Check that the data is really on GPU
     is_set.set_executor(dpcpp2);
     ASSERT_NO_THROW(dpcpp2->get_queue()->submit([&](sycl::handler& cgh) {
-        auto* is_set_ptr = is_set.get_data();
+        auto* is_set_ptr = is_set.data();
         cgh.single_task([=]() { check_data(copy_dpcpp2, is_set_ptr); });
     }));
     is_set.set_executor(ref);
-    ASSERT_EQ(*is_set.get_data(), true);
+    ASSERT_EQ(*is_set.data(), true);
 
     // Put the results on OpenMP and run CPU side assertions
     ref->copy_from(dpcpp2, 2, copy_dpcpp2, copy);
@@ -277,8 +277,8 @@ TEST_F(DpcppExecutor, FreeAfterKernel)
     {
         gko::array<float> x(dpcpp, length);
         gko::array<float> y(dpcpp, length);
-        auto x_val = x.get_data();
-        auto y_val = y.get_data();
+        auto x_val = x.data();
+        auto y_val = y.data();
         dpcpp->get_queue()->submit([&](sycl::handler& cgh) {
             cgh.parallel_for(sycl::range<1>{length},
                              [=](sycl::id<1> i) { y_val[i] += x_val[i]; });

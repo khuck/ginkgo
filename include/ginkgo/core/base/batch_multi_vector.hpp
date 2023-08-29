@@ -160,7 +160,7 @@ public:
      *
      * @return the pointer to the array of values
      */
-    value_type* get_values() noexcept { return values_.get_data(); }
+    value_type* get_values() noexcept { return values_.data(); }
 
     /**
      * @copydoc get_values()
@@ -171,7 +171,7 @@ public:
      */
     const value_type* get_const_values() const noexcept
     {
-        return values_.get_const_data();
+        return values_.const_data();
     }
 
     /**
@@ -185,7 +185,7 @@ public:
     value_type* get_values_for_item(size_type batch_id) noexcept
     {
         GKO_ASSERT(batch_id < this->get_num_batch_items());
-        return values_.get_data() +
+        return values_.data() +
                this->get_size().get_cumulative_offset(batch_id);
     }
 
@@ -200,7 +200,7 @@ public:
         size_type batch_id) const noexcept
     {
         GKO_ASSERT(batch_id < this->get_num_batch_items());
-        return values_.get_const_data() +
+        return values_.const_data() +
                this->get_size().get_cumulative_offset(batch_id);
     }
 
@@ -213,7 +213,7 @@ public:
      */
     size_type get_num_stored_elements() const noexcept
     {
-        return values_.get_num_elems();
+        return values_.size();
     }
 
     /**
@@ -230,7 +230,7 @@ public:
     value_type& at(size_type batch_id, size_type row, size_type col)
     {
         GKO_ASSERT(batch_id < this->get_num_batch_items());
-        return values_.get_data()[linearize_index(batch_id, row, col)];
+        return values_.data()[linearize_index(batch_id, row, col)];
     }
 
     /**
@@ -239,7 +239,7 @@ public:
     value_type at(size_type batch_id, size_type row, size_type col) const
     {
         GKO_ASSERT(batch_id < this->get_num_batch_items());
-        return values_.get_const_data()[linearize_index(batch_id, row, col)];
+        return values_.const_data()[linearize_index(batch_id, row, col)];
     }
 
     /**
@@ -258,7 +258,7 @@ public:
      */
     ValueType& at(size_type batch_id, size_type idx) noexcept
     {
-        return values_.get_data()[linearize_index(batch_id, idx)];
+        return values_.data()[linearize_index(batch_id, idx)];
     }
 
     /**
@@ -266,7 +266,7 @@ public:
      */
     ValueType at(size_type batch_id, size_type idx) const noexcept
     {
-        return values_.get_const_data()[linearize_index(batch_id, idx)];
+        return values_.const_data()[linearize_index(batch_id, idx)];
     }
 
     /**
@@ -402,7 +402,7 @@ protected:
     {
         // Ensure that the values array has the correct size
         auto num_elems = compute_num_elems(size);
-        GKO_ENSURE_IN_BOUNDS(num_elems, values_.get_num_elems() + 1);
+        GKO_ENSURE_IN_BOUNDS(num_elems, values_.size() + 1);
     }
 
     /**

@@ -68,12 +68,12 @@ void residual_norm(std::shared_ptr<const ReferenceExecutor> exec,
     *one_changed = false;
     for (size_type i = 0; i < tau->get_size()[1]; ++i) {
         if (tau->at(i) < rel_residual_goal * orig_tau->at(i)) {
-            stop_status->get_data()[i].converge(stoppingId, setFinalized);
+            stop_status->data()[i].converge(stoppingId, setFinalized);
             *one_changed = true;
         }
     }
-    for (size_type i = 0; i < stop_status->get_num_elems(); ++i) {
-        if (!stop_status->get_const_data()[i].has_stopped()) {
+    for (size_type i = 0; i < stop_status->size(); ++i) {
+        if (!stop_status->const_data()[i].has_stopped()) {
             *all_converged = false;
             break;
         }
@@ -108,12 +108,12 @@ void implicit_residual_norm(
     *one_changed = false;
     for (size_type i = 0; i < tau->get_size()[1]; ++i) {
         if (sqrt(abs(tau->at(i))) < rel_residual_goal * orig_tau->at(i)) {
-            stop_status->get_data()[i].converge(stoppingId, setFinalized);
+            stop_status->data()[i].converge(stoppingId, setFinalized);
             *one_changed = true;
         }
     }
-    for (size_type i = 0; i < stop_status->get_num_elems(); ++i) {
-        if (!stop_status->get_const_data()[i].has_stopped()) {
+    for (size_type i = 0; i < stop_status->size(); ++i) {
+        if (!stop_status->const_data()[i].has_stopped()) {
             *all_converged = false;
             break;
         }

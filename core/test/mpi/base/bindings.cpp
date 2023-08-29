@@ -95,7 +95,7 @@ TYPED_TEST(MpiBindings, CanSendAndRecvValues)
         }
     } else {
         recv_array = gko::array<TypeParam>{this->ref, 4};
-        comm.recv(this->ref, recv_array.get_data(), 4, 0, 40 + my_rank);
+        comm.recv(this->ref, recv_array.data(), 4, 0, 40 + my_rank);
     }
 
     if (my_rank != 0) {
@@ -126,15 +126,14 @@ TYPED_TEST(MpiBindings, CanNonBlockingSendAndNonBlockingRecvValues)
         }
     } else {
         recv_array = gko::array<TypeParam>{this->ref, 4};
-        req2 =
-            comm.i_recv(this->ref, recv_array.get_data(), 4, 0, 40 + my_rank);
+        req2 = comm.i_recv(this->ref, recv_array.data(), 4, 0, 40 + my_rank);
     }
 
     if (my_rank == 0) {
         auto stat1 = wait_all(req1);
     } else {
         auto stat2 = req2.wait();
-        auto count = stat2.get_count(recv_array.get_data());
+        auto count = stat2.get_count(recv_array.data());
         ASSERT_EQ(count, 4);
         auto ref_array = gko::array<TypeParam>{this->ref, {1, 2, 3, 4}};
         GKO_ASSERT_ARRAY_EQ(ref_array, recv_array);
@@ -683,7 +682,7 @@ TYPED_TEST(MpiBindings, CanBroadcastValues)
         array = gko::array<TypeParam>(this->ref, {2, 3, 1, 3, -1, 0, 3, 1});
     }
 
-    comm.broadcast(this->ref, array.get_data(), 8, 0);
+    comm.broadcast(this->ref, array.data(), 8, 0);
 
     auto ref = gko::array<TypeParam>(this->ref, {2, 3, 1, 3, -1, 0, 3, 1});
     GKO_ASSERT_ARRAY_EQ(ref, array);
@@ -700,7 +699,7 @@ TYPED_TEST(MpiBindings, CanNonBlockingBroadcastValues)
         array = gko::array<TypeParam>(this->ref, {2, 3, 1, 3, -1, 0, 3, 1});
     }
 
-    auto req = comm.i_broadcast(this->ref, array.get_data(), 8, 0);
+    auto req = comm.i_broadcast(this->ref, array.data(), 8, 0);
 
     req.wait();
     auto ref = gko::array<TypeParam>(this->ref, {2, 3, 1, 3, -1, 0, 3, 1});
@@ -875,7 +874,7 @@ TYPED_TEST(MpiBindings, CanGatherValues)
     auto gather_array = gko::array<TypeParam>{
         this->ref, static_cast<gko::size_type>(num_ranks)};
 
-    comm.gather(this->ref, &data, 1, gather_array.get_data(), 1, 0);
+    comm.gather(this->ref, &data, 1, gather_array.data(), 1, 0);
 
     if (my_rank == 0) {
         auto ref = gko::array<TypeParam>(this->ref, {3, 5, 2, 6});
@@ -902,8 +901,7 @@ TYPED_TEST(MpiBindings, CanNonBlockingGatherValues)
     auto gather_array = gko::array<TypeParam>{
         this->ref, static_cast<gko::size_type>(num_ranks)};
 
-    auto req =
-        comm.i_gather(this->ref, &data, 1, gather_array.get_data(), 1, 0);
+    auto req = comm.i_gather(this->ref, &data, 1, gather_array.data(), 1, 0);
 
     req.wait();
     if (my_rank == 0) {
@@ -931,7 +929,7 @@ TYPED_TEST(MpiBindings, CanAllGatherValues)
     auto gather_array = gko::array<TypeParam>{
         this->ref, static_cast<gko::size_type>(num_ranks)};
 
-    comm.all_gather(this->ref, &data, 1, gather_array.get_data(), 1);
+    comm.all_gather(this->ref, &data, 1, gather_array.data(), 1);
 
     auto ref = gko::array<TypeParam>(this->ref, {3, 5, 2, 6});
     GKO_ASSERT_ARRAY_EQ(ref, gather_array);
@@ -956,8 +954,7 @@ TYPED_TEST(MpiBindings, CanNonBlockingAllGatherValues)
     auto gather_array = gko::array<TypeParam>{
         this->ref, static_cast<gko::size_type>(num_ranks)};
 
-    auto req =
-        comm.i_all_gather(this->ref, &data, 1, gather_array.get_data(), 1);
+    auto req = comm.i_all_gather(this->ref, &data, 1, gather_array.data(), 1);
 
     req.wait();
     auto ref = gko::array<TypeParam>(this->ref, {3, 5, 2, 6});
@@ -992,12 +989,12 @@ TYPED_TEST(MpiBindings, CanGatherValuesWithDisplacements)
         gather_from_array = gko::array<TypeParam>{this->ref, {1, -4, 5}};
     }
 
-    comm.gather(this->ref, &nelems, 1, r_counts.get_data(), 1, 0);
-    comm.gather_v(this->ref, gather_from_array.get_data(), nelems,
-                  gather_into_array.get_data(), r_counts.get_data(),
-                  displacements.get_data(), 0);
+    comm.gather(this->ref, &nelems, 1, r_counts.data(), 1, 0);
+    comm.gather_v(this->ref, gather_from_array.data(), nelems,
+                  gather_into_array.data(), r_counts.data(),
+                  displacements.data(), 0);
 
-    auto comp_data = gather_into_array.get_data();
+    auto comp_data = gather_into_array.data();
     if (my_rank == 0) {
         auto ref_array =
             gko::array<TypeParam>(this->ref, {2, 3, 1, 2, 1, 0, 1, 1, -4, 5});
@@ -1035,14 +1032,13 @@ TYPED_TEST(MpiBindings, CanNonBlockingGatherValuesWithDisplacements)
         gather_from_array = gko::array<TypeParam>{this->ref, {1, -4, 5}};
     }
 
-    comm.gather(this->ref, &nelems, 1, r_counts.get_data(), 1, 0);
-    auto req =
-        comm.i_gather_v(this->ref, gather_from_array.get_data(), nelems,
-                        gather_into_array.get_data(), r_counts.get_data(),
-                        displacements.get_data(), 0);
+    comm.gather(this->ref, &nelems, 1, r_counts.data(), 1, 0);
+    auto req = comm.i_gather_v(this->ref, gather_from_array.data(), nelems,
+                               gather_into_array.data(), r_counts.data(),
+                               displacements.data(), 0);
 
     req.wait();
-    auto comp_data = gather_into_array.get_data();
+    auto comp_data = gather_into_array.data();
     if (my_rank == 0) {
         auto ref_array =
             gko::array<TypeParam>(this->ref, {2, 3, 1, 2, 1, 0, 1, 1, -4, 5});
@@ -1065,10 +1061,10 @@ TYPED_TEST(MpiBindings, CanScatterValues)
     }
     auto scatter_into_array = gko::array<TypeParam>{this->ref, 2};
 
-    comm.scatter(this->ref, scatter_from_array.get_data(), 2,
-                 scatter_into_array.get_data(), 2, 0);
+    comm.scatter(this->ref, scatter_from_array.data(), 2,
+                 scatter_into_array.data(), 2, 0);
 
-    auto comp_data = scatter_into_array.get_data();
+    auto comp_data = scatter_into_array.data();
     if (my_rank == 0) {
         ASSERT_EQ(comp_data[0], TypeParam{2});
         ASSERT_EQ(comp_data[1], TypeParam{3});
@@ -1098,11 +1094,11 @@ TYPED_TEST(MpiBindings, CanNonBlockingScatterValues)
     }
     auto scatter_into_array = gko::array<TypeParam>{this->ref, 2};
 
-    auto req = comm.i_scatter(this->ref, scatter_from_array.get_data(), 2,
-                              scatter_into_array.get_data(), 2, 0);
+    auto req = comm.i_scatter(this->ref, scatter_from_array.data(), 2,
+                              scatter_into_array.data(), 2, 0);
 
     req.wait();
-    auto comp_data = scatter_into_array.get_data();
+    auto comp_data = scatter_into_array.data();
     if (my_rank == 0) {
         ASSERT_EQ(comp_data[0], TypeParam{2});
         ASSERT_EQ(comp_data[1], TypeParam{3});
@@ -1146,12 +1142,11 @@ TYPED_TEST(MpiBindings, CanScatterValuesWithDisplacements)
     scatter_into_array =
         gko::array<TypeParam>{this->ref, static_cast<gko::size_type>(nelems)};
 
-    comm.gather(this->ref, &nelems, 1, s_counts.get_data(), 1, 0);
-    comm.scatter_v(this->ref, scatter_from_array.get_data(),
-                   s_counts.get_data(), displacements.get_data(),
-                   scatter_into_array.get_data(), nelems, 0);
+    comm.gather(this->ref, &nelems, 1, s_counts.data(), 1, 0);
+    comm.scatter_v(this->ref, scatter_from_array.data(), s_counts.data(),
+                   displacements.data(), scatter_into_array.data(), nelems, 0);
 
-    auto comp_data = scatter_into_array.get_data();
+    auto comp_data = scatter_into_array.data();
     if (my_rank == 0) {
         ASSERT_EQ(comp_data[0], TypeParam{2});
         ASSERT_EQ(comp_data[1], TypeParam{3});
@@ -1197,13 +1192,13 @@ TYPED_TEST(MpiBindings, CanNonBlockingScatterValuesWithDisplacements)
     scatter_into_array =
         gko::array<TypeParam>{this->ref, static_cast<gko::size_type>(nelems)};
 
-    comm.gather(this->ref, &nelems, 1, s_counts.get_data(), 1, 0);
-    auto req = comm.i_scatter_v(this->ref, scatter_from_array.get_data(),
-                                s_counts.get_data(), displacements.get_data(),
-                                scatter_into_array.get_data(), nelems, 0);
+    comm.gather(this->ref, &nelems, 1, s_counts.data(), 1, 0);
+    auto req = comm.i_scatter_v(this->ref, scatter_from_array.data(),
+                                s_counts.data(), displacements.data(),
+                                scatter_into_array.data(), nelems, 0);
 
     req.wait();
-    auto comp_data = scatter_into_array.get_data();
+    auto comp_data = scatter_into_array.data();
     if (my_rank == 0) {
         ASSERT_EQ(comp_data[0], TypeParam{2});
         ASSERT_EQ(comp_data[1], TypeParam{3});
@@ -1246,8 +1241,7 @@ TYPED_TEST(MpiBindings, AllToAllWorksCorrectly)
         ref_array = gko::array<TypeParam>(this->ref, {2, 2, 0, -2});
     }
 
-    comm.all_to_all(this->ref, send_array.get_data(), 1, recv_array.get_data(),
-                    1);
+    comm.all_to_all(this->ref, send_array.data(), 1, recv_array.data(), 1);
 
     GKO_ASSERT_ARRAY_EQ(recv_array, ref_array);
 }
@@ -1276,8 +1270,8 @@ TYPED_TEST(MpiBindings, NonBlockingAllToAllWorksCorrectly)
         ref_array = gko::array<TypeParam>(this->ref, {2, 2, 0, -2});
     }
 
-    auto req = comm.i_all_to_all(this->ref, send_array.get_data(), 1,
-                                 recv_array.get_data(), 1);
+    auto req = comm.i_all_to_all(this->ref, send_array.data(), 1,
+                                 recv_array.data(), 1);
 
     req.wait();
     GKO_ASSERT_ARRAY_EQ(recv_array, ref_array);
@@ -1306,7 +1300,7 @@ TYPED_TEST(MpiBindings, AllToAllInPlaceWorksCorrectly)
         ref_array = gko::array<TypeParam>(this->ref, {2, 2, 0, -2});
     }
 
-    comm.all_to_all(this->ref, recv_array.get_data(), 1);
+    comm.all_to_all(this->ref, recv_array.data(), 1);
     GKO_ASSERT_ARRAY_EQ(recv_array, ref_array);
 }
 
@@ -1333,7 +1327,7 @@ TYPED_TEST(MpiBindings, NonBlockingAllToAllInPlaceWorksCorrectly)
         ref_array = gko::array<TypeParam>(this->ref, {2, 2, 0, -2});
     }
 
-    auto req = comm.i_all_to_all(this->ref, recv_array.get_data(), 1);
+    auto req = comm.i_all_to_all(this->ref, recv_array.data(), 1);
 
     req.wait();
     GKO_ASSERT_ARRAY_EQ(recv_array, ref_array);
@@ -1386,10 +1380,9 @@ TYPED_TEST(MpiBindings, AllToAllVWorksCorrectly)
         ref_array = gko::array<TypeParam>{this->ref, {0, 2, 3, 3}};
     }
 
-    comm.all_to_all_v(this->ref, send_array.get_data(),
-                      scounts_array.get_data(), soffset_array.get_data(),
-                      recv_array.get_data(), rcounts_array.get_data(),
-                      roffset_array.get_data());
+    comm.all_to_all_v(this->ref, send_array.data(), scounts_array.data(),
+                      soffset_array.data(), recv_array.data(),
+                      rcounts_array.data(), roffset_array.data());
     GKO_ASSERT_ARRAY_EQ(recv_array, ref_array);
 }
 
@@ -1440,10 +1433,10 @@ TYPED_TEST(MpiBindings, NonBlockingAllToAllVWorksCorrectly)
         ref_array = gko::array<TypeParam>{this->ref, {0, 2, 3, 3}};
     }
 
-    auto req = comm.i_all_to_all_v(
-        this->ref, send_array.get_data(), scounts_array.get_data(),
-        soffset_array.get_data(), recv_array.get_data(),
-        rcounts_array.get_data(), roffset_array.get_data());
+    auto req =
+        comm.i_all_to_all_v(this->ref, send_array.data(), scounts_array.data(),
+                            soffset_array.data(), recv_array.data(),
+                            rcounts_array.data(), roffset_array.data());
 
     req.wait();
     GKO_ASSERT_ARRAY_EQ(recv_array, ref_array);

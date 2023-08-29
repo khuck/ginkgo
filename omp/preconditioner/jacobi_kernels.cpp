@@ -70,9 +70,9 @@ void initialize_precisions(std::shared_ptr<const OmpExecutor> exec,
                            const array<precision_reduction>& source,
                            array<precision_reduction>& precisions)
 {
-    const auto source_size = source.get_num_elems();
-    for (auto i = 0u; i < precisions.get_num_elems(); ++i) {
-        precisions.get_data()[i] = source.get_const_data()[i % source_size];
+    const auto source_size = source.size();
+    for (auto i = 0u; i < precisions.size(); ++i) {
+        precisions.data()[i] = source.const_data()[i % source_size];
     }
 }
 
@@ -159,9 +159,9 @@ void find_blocks(std::shared_ptr<const OmpExecutor> exec,
                  array<IndexType>& block_pointers)
 {
     num_blocks = find_natural_blocks(system_matrix, max_block_size,
-                                     block_pointers.get_data());
+                                     block_pointers.data());
     num_blocks = agglomerate_supervariables(max_block_size, num_blocks,
-                                            block_pointers.get_data());
+                                            block_pointers.data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
@@ -368,10 +368,10 @@ void generate(std::shared_ptr<const OmpExecutor> exec,
               array<precision_reduction>& block_precisions,
               const array<IndexType>& block_pointers, array<ValueType>& blocks)
 {
-    const auto ptrs = block_pointers.get_const_data();
-    const auto prec = block_precisions.get_data();
+    const auto ptrs = block_pointers.const_data();
+    const auto prec = block_precisions.data();
     const auto group_size = storage_scheme.get_group_size();
-    const auto cond = conditioning.get_data();
+    const auto cond = conditioning.data();
     const auto num_threads = omp_get_max_threads();
     // group_size blocks for the actual blocks, 1 for temporary storage
     const auto parallel_blocks = (group_size + 1) * num_threads;
@@ -386,13 +386,13 @@ void generate(std::shared_ptr<const OmpExecutor> exec,
         const auto thread_id = omp_get_thread_num();
         const auto thread_offset = thread_id * (group_size + 1);
         auto local_blocks_tmp =
-            blocks_storage.get_data() +
+            blocks_storage.data() +
             (thread_offset * max_block_size * max_block_size);
         auto local_blocks = local_blocks_tmp + max_block_size * max_block_size;
         auto local_perms_tmp =
-            perm_storage.get_data() + (thread_offset * max_block_size);
+            perm_storage.data() + (thread_offset * max_block_size);
         auto local_perms = local_perms_tmp + max_block_size;
-        auto pr_descriptors = pr_descriptor_storage.get_data() + thread_offset;
+        auto pr_descriptors = pr_descriptor_storage.data() + thread_offset;
         std::fill_n(pr_descriptors, group_size, uint32{} - 1);
         // extract group of blocks, invert them, figure out storage precision
         for (size_type b = 0; b < group_size; ++b) {
@@ -460,7 +460,7 @@ void generate(std::shared_ptr<const OmpExecutor> exec,
                 permute_and_transpose_block(
                     block_size, perm, block, block_size,
                     reinterpret_cast<resolved_precision*>(
-                        blocks.get_data() +
+                        blocks.data() +
                         storage_scheme.get_group_offset(g + b)) +
                         storage_scheme.get_block_offset(g + b),
                     storage_scheme.get_stride()));
@@ -525,12 +525,12 @@ void apply(std::shared_ptr<const OmpExecutor> exec, size_type num_blocks,
            const matrix::Dense<ValueType>* b,
            const matrix::Dense<ValueType>* beta, matrix::Dense<ValueType>* x)
 {
-    const auto ptrs = block_pointers.get_const_data();
-    const auto prec = block_precisions.get_const_data();
+    const auto ptrs = block_pointers.const_data();
+    const auto prec = block_precisions.const_data();
 #pragma omp parallel for
     for (size_type i = 0; i < num_blocks; ++i) {
         const auto group =
-            blocks.get_const_data() + storage_scheme.get_group_offset(i);
+            blocks.const_data() + storage_scheme.get_group_offset(i);
         const auto block_b = b->get_const_values() + b->get_stride() * ptrs[i];
         const auto block_x = x->get_values() + x->get_stride() * ptrs[i];
         const auto block_size = ptrs[i + 1] - ptrs[i];
@@ -559,12 +559,12 @@ void simple_apply(
     const array<IndexType>& block_pointers, const array<ValueType>& blocks,
     const matrix::Dense<ValueType>* b, matrix::Dense<ValueType>* x)
 {
-    const auto ptrs = block_pointers.get_const_data();
-    const auto prec = block_precisions.get_const_data();
+    const auto ptrs = block_pointers.const_data();
+    const auto prec = block_precisions.const_data();
 #pragma omp parallel for
     for (size_type i = 0; i < num_blocks; ++i) {
         const auto group =
-            blocks.get_const_data() + storage_scheme.get_group_offset(i);
+            blocks.const_data() + storage_scheme.get_group_offset(i);
         const auto block_b = b->get_const_values() + b->get_stride() * ptrs[i];
         const auto block_x = x->get_values() + x->get_stride() * ptrs[i];
         const auto block_size = ptrs[i + 1] - ptrs[i];
@@ -593,8 +593,8 @@ void transpose_jacobi(
         storage_scheme,
     array<ValueType>& out_blocks)
 {
-    const auto ptrs = block_pointers.get_const_data();
-    const auto prec = block_precisions.get_const_data();
+    const auto ptrs = block_pointers.const_data();
+    const auto prec = block_precisions.const_data();
     const size_type matrix_size = ptrs[num_blocks];
 
 #pragma omp parallel for
@@ -602,8 +602,8 @@ void transpose_jacobi(
         const auto group_ofs = storage_scheme.get_group_offset(i);
         const auto block_ofs = storage_scheme.get_block_offset(i);
         const auto block_stride = storage_scheme.get_stride();
-        const auto group = blocks.get_const_data() + group_ofs;
-        auto out_group = out_blocks.get_data() + group_ofs;
+        const auto group = blocks.const_data() + group_ofs;
+        auto out_group = out_blocks.data() + group_ofs;
         const auto block_size = ptrs[i + 1] - ptrs[i];
         const auto p = prec ? prec[i] : precision_reduction();
         GKO_PRECONDITIONER_JACOBI_RESOLVE_PRECISION(
@@ -630,8 +630,8 @@ void conj_transpose_jacobi(
         storage_scheme,
     array<ValueType>& out_blocks)
 {
-    const auto ptrs = block_pointers.get_const_data();
-    const auto prec = block_precisions.get_const_data();
+    const auto ptrs = block_pointers.const_data();
+    const auto prec = block_precisions.const_data();
     const size_type matrix_size = ptrs[num_blocks];
 
 #pragma omp parallel for
@@ -639,8 +639,8 @@ void conj_transpose_jacobi(
         const auto group_ofs = storage_scheme.get_group_offset(i);
         const auto block_ofs = storage_scheme.get_block_offset(i);
         const auto block_stride = storage_scheme.get_stride();
-        const auto group = blocks.get_const_data() + group_ofs;
-        auto out_group = out_blocks.get_data() + group_ofs;
+        const auto group = blocks.const_data() + group_ofs;
+        auto out_group = out_blocks.data() + group_ofs;
         const auto block_size = ptrs[i + 1] - ptrs[i];
         const auto p = prec ? prec[i] : precision_reduction();
         GKO_PRECONDITIONER_JACOBI_RESOLVE_PRECISION(
@@ -667,8 +667,8 @@ void convert_to_dense(
         storage_scheme,
     ValueType* result_values, size_type result_stride)
 {
-    const auto ptrs = block_pointers.get_const_data();
-    const auto prec = block_precisions.get_const_data();
+    const auto ptrs = block_pointers.const_data();
+    const auto prec = block_precisions.const_data();
     const size_type matrix_size = ptrs[num_blocks];
 #pragma omp parallel for
     for (size_type i = 0; i < matrix_size; ++i) {
@@ -679,7 +679,7 @@ void convert_to_dense(
 #pragma omp parallel for
     for (size_type i = 0; i < num_blocks; ++i) {
         const auto group =
-            blocks.get_const_data() + storage_scheme.get_group_offset(i);
+            blocks.const_data() + storage_scheme.get_group_offset(i);
         const auto block_size = ptrs[i + 1] - ptrs[i];
         const auto p = prec ? prec[i] : precision_reduction();
         GKO_PRECONDITIONER_JACOBI_RESOLVE_PRECISION(

@@ -116,14 +116,13 @@ void threshold_select(std::shared_ptr<const DefaultExecutor> exec,
     tmp1.resize_and_reset(tmp_size);
     tmp2.resize_and_reset(tmp_size_vals);
 
-    auto total_counts = reinterpret_cast<IndexType*>(tmp1.get_data());
+    auto total_counts = reinterpret_cast<IndexType*>(tmp1.data());
     auto partial_counts =
-        reinterpret_cast<IndexType*>(tmp1.get_data() + tmp_size_totals);
+        reinterpret_cast<IndexType*>(tmp1.data() + tmp_size_totals);
     auto oracles = reinterpret_cast<unsigned char*>(
-        tmp1.get_data() + tmp_size_totals + tmp_size_partials);
-    auto tree =
-        reinterpret_cast<AbsType*>(tmp1.get_data() + tmp_size_totals +
-                                   tmp_size_partials + tmp_size_oracles);
+        tmp1.data() + tmp_size_totals + tmp_size_partials);
+    auto tree = reinterpret_cast<AbsType*>(
+        tmp1.data() + tmp_size_totals + tmp_size_partials + tmp_size_oracles);
 
     sampleselect_count(exec, values, size, tree, oracles, partial_counts,
                        total_counts);
@@ -136,8 +135,8 @@ void threshold_select(std::shared_ptr<const DefaultExecutor> exec,
         // we need to reallocate tmp2
         tmp2.resize_and_reset(bucket.size * 2);
     }
-    auto tmp21 = tmp2.get_data();
-    auto tmp22 = tmp2.get_data() + bucket.size;
+    auto tmp21 = tmp2.data();
+    auto tmp22 = tmp2.data() + bucket.size;
     // extract target bucket
     sampleselect_filter(exec, values, size, oracles, partial_counts, bucket.idx,
                         tmp22);
@@ -164,7 +163,7 @@ void threshold_select(std::shared_ptr<const DefaultExecutor> exec,
             array<AbsType> cpu_out_array{
                 exec->get_master(),
                 array<AbsType>::view(exec, bucket.size, tmp_out)};
-            auto begin = cpu_out_array.get_data();
+            auto begin = cpu_out_array.data();
             auto end = begin + bucket.size;
             auto middle = begin + rank;
             std::nth_element(begin, middle, end);
@@ -174,7 +173,7 @@ void threshold_select(std::shared_ptr<const DefaultExecutor> exec,
     }
 
     // base case
-    auto out_ptr = reinterpret_cast<AbsType*>(tmp1.get_data());
+    auto out_ptr = reinterpret_cast<AbsType*>(tmp1.data());
     kernel::basecase_select(1, kernel::basecase_block_size, 0,
                             exec->get_queue(), tmp22, bucket.size, rank,
                             out_ptr);

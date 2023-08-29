@@ -321,7 +321,7 @@ void initialize(std::shared_ptr<const ReferenceExecutor> exec,
             givens_sin->at(i, j) = zero<ValueType>();
             givens_cos->at(i, j) = zero<ValueType>();
         }
-        stop_status->get_data()[j].reset();
+        stop_status->data()[j].reset();
     }
 }
 
@@ -380,7 +380,7 @@ void restart(std::shared_ptr<const ReferenceExecutor> exec,
             next_krylov_basis->at(i, j) =
                 residual->at(i, j) / residual_norm->at(0, j);
         }
-        final_iter_nums->get_data()[j] = 0;
+        final_iter_nums->data()[j] = 0;
     }
 
     for (size_type k = 1; k < krylov_dim + 1; ++k) {
@@ -415,19 +415,19 @@ void arnoldi(std::shared_ptr<const ReferenceExecutor> exec,
         std::is_same<ValueType,
                      typename Accessor3d::accessor::arithmetic_type>::value,
         "ValueType must match arithmetic_type of accessor!");
-    for (size_type i = 0; i < final_iter_nums->get_num_elems(); ++i) {
-        final_iter_nums->get_data()[i] +=
+    for (size_type i = 0; i < final_iter_nums->size(); ++i) {
+        final_iter_nums->data()[i] +=
             (1 - static_cast<size_type>(
-                     stop_status->get_const_data()[i].has_stopped()));
+                     stop_status->const_data()[i].has_stopped()));
     }
     finish_arnoldi_CGS(next_krylov_basis, krylov_bases, hessenberg_iter,
                        buffer_iter, arnoldi_norm, iter,
-                       stop_status->get_const_data());
+                       stop_status->const_data());
     givens_rotation(givens_sin, givens_cos, hessenberg_iter, iter,
-                    stop_status->get_const_data());
+                    stop_status->const_data());
     calculate_next_residual_norm(givens_sin, givens_cos, residual_norm,
                                  residual_norm_collection, iter,
-                                 stop_status->get_const_data());
+                                 stop_status->const_data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_CB_GMRES_TYPE(GKO_DECLARE_CB_GMRES_ARNOLDI_KERNEL);
@@ -443,9 +443,9 @@ void solve_krylov(std::shared_ptr<const ReferenceExecutor> exec,
                   const array<size_type>* final_iter_nums)
 {
     solve_upper_triangular(residual_norm_collection, hessenberg, y,
-                           final_iter_nums->get_const_data());
+                           final_iter_nums->const_data());
     calculate_qy(krylov_bases, y, before_preconditioner,
-                 final_iter_nums->get_const_data());
+                 final_iter_nums->const_data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_CB_GMRES_CONST_TYPE(

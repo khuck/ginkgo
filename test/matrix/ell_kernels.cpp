@@ -559,10 +559,10 @@ TEST_F(Ell, CalculateNNZPerRowIsEquivalentToRef)
     gko::array<int> nnz_per_row{ref, mtx->get_size()[0]};
     gko::array<int> dnnz_per_row{exec, dmtx->get_size()[0]};
 
-    gko::kernels::reference::ell::count_nonzeros_per_row(
-        ref, mtx.get(), nnz_per_row.get_data());
+    gko::kernels::reference::ell::count_nonzeros_per_row(ref, mtx.get(),
+                                                         nnz_per_row.data());
     gko::kernels::EXEC_NAMESPACE::ell::count_nonzeros_per_row(
-        exec, dmtx.get(), dnnz_per_row.get_data());
+        exec, dmtx.get(), dnnz_per_row.data());
 
     GKO_ASSERT_ARRAY_EQ(nnz_per_row, dnnz_per_row);
 }

@@ -143,7 +143,7 @@ public:
                                    size_type* coo_nnz)
         {
             array<size_type> ref_row_nnz(row_nnz.get_executor()->get_master(),
-                                         row_nnz.get_num_elems());
+                                         row_nnz.size());
             ref_row_nnz = row_nnz;
             ell_num_stored_elements_per_row_ =
                 this->compute_ell_num_stored_elements_per_row(&ref_row_nnz);
@@ -191,8 +191,8 @@ public:
         size_type compute_coo_nnz(const array<size_type>& row_nnz) const
         {
             size_type coo_nnz = 0;
-            auto row_nnz_val = row_nnz.get_const_data();
-            for (size_type i = 0; i < row_nnz.get_num_elems(); i++) {
+            auto row_nnz_val = row_nnz.const_data();
+            for (size_type i = 0; i < row_nnz.size(); i++) {
                 if (row_nnz_val[i] > ell_num_stored_elements_per_row_) {
                     coo_nnz +=
                         row_nnz_val[i] - ell_num_stored_elements_per_row_;
@@ -262,8 +262,8 @@ public:
         size_type compute_ell_num_stored_elements_per_row(
             array<size_type>* row_nnz) const override
         {
-            auto row_nnz_val = row_nnz->get_data();
-            auto num_rows = row_nnz->get_num_elems();
+            auto row_nnz_val = row_nnz->data();
+            auto num_rows = row_nnz->size();
             if (num_rows == 0) {
                 return 0;
             }
@@ -304,7 +304,7 @@ public:
         size_type compute_ell_num_stored_elements_per_row(
             array<size_type>* row_nnz) const override
         {
-            auto num_rows = row_nnz->get_num_elems();
+            auto num_rows = row_nnz->size();
             auto ell_cols =
                 strategy_.compute_ell_num_stored_elements_per_row(row_nnz);
             return std::min(ell_cols,

@@ -67,17 +67,17 @@ protected:
         auto maxval = 1e10f;
         std::uniform_real_distribution<float> dist(-maxval, maxval);
         for (gko::size_type i = 0; i < total_size; ++i) {
-            vals.get_data()[i] = dist(rand);
-            cvals.get_data()[i] = {dist(rand), dist(rand)};
+            vals.data()[i] = dist(rand);
+            cvals.data()[i] = {dist(rand), dist(rand)};
         }
         dvals = vals;
         dcvals = cvals;
         gko::uint64 rawdouble{0x4218888000889111ULL};
         gko::uint32 rawfloat{0x50c44400UL};
         gko::uint64 rawrounded{0x4218888000000000ULL};
-        std::memcpy(vals2.get_data(), &rawdouble, sizeof(double));
-        std::memcpy(expected_float.get_data(), &rawfloat, sizeof(float));
-        std::memcpy(expected_double.get_data(), &rawrounded, sizeof(double));
+        std::memcpy(vals2.data(), &rawdouble, sizeof(double));
+        std::memcpy(expected_float.data(), &rawfloat, sizeof(float));
+        std::memcpy(expected_double.data(), &rawrounded, sizeof(double));
         dvals2 = vals2;
     }
 

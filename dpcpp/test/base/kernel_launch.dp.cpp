@@ -110,9 +110,9 @@ protected:
     {
         auto ref_iota_dense = Mtx::create(exec->get_master(), dim<2>{4, 4});
         for (int i = 0; i < 16; i++) {
-            zero_array.get_data()[i] = 0;
-            iota_array.get_data()[i] = i;
-            iota_transp_array.get_data()[i] = (i % 4 * 4) + i / 4;
+            zero_array.data()[i] = 0;
+            iota_array.data()[i] = i;
+            iota_transp_array.data()[i] = (i % 4 * 4) + i / 4;
             ref_iota_dense->at(i / 4, i % 4) = i;
         }
         zero_dense->fill(0.0);
@@ -144,7 +144,7 @@ TEST_F(KernelLaunch, Runs1D)
             static_assert(is_same<decltype(dummy), int64>::value, "dummy");
             d[i] = i;
         },
-        zero_array.get_num_elems(), zero_array.get_data(), move_only_val);
+        zero_array.size(), zero_array.data(), move_only_val);
 
     GKO_ASSERT_ARRAY_EQ(zero_array, iota_array);
 }
@@ -165,8 +165,7 @@ TEST_F(KernelLaunch, Runs1DArray)
                 d[i] = 0;
             }
         },
-        zero_array.get_num_elems(), zero_array, zero_array.get_const_data(),
-        move_only_val);
+        zero_array.size(), zero_array, zero_array.const_data(), move_only_val);
 
     GKO_ASSERT_ARRAY_EQ(zero_array, iota_array);
 }
@@ -216,7 +215,7 @@ TEST_F(KernelLaunch, Runs2D)
             static_assert(is_same<decltype(dummy), int64>::value, "dummy");
             d[i + 4 * j] = 4 * i + j;
         },
-        dim<2>{4, 4}, zero_array.get_data(), move_only_val);
+        dim<2>{4, 4}, zero_array.data(), move_only_val);
 
     GKO_ASSERT_ARRAY_EQ(zero_array, iota_transp_array);
 }
@@ -238,7 +237,7 @@ TEST_F(KernelLaunch, Runs2DArray)
                 d[i + 4 * j] = 0;
             }
         },
-        dim<2>{4, 4}, zero_array, zero_array.get_const_data(), move_only_val);
+        dim<2>{4, 4}, zero_array, zero_array.const_data(), move_only_val);
 
     GKO_ASSERT_ARRAY_EQ(zero_array, iota_transp_array);
 }
@@ -312,10 +311,10 @@ TEST_F(KernelLaunch, Reduction1D)
             static_assert(is_same<decltype(j), int64>::value, "j");
             return j * 2;
         },
-        int64{}, output.get_data(), size_type{100000}, output, move_only_val);
+        int64{}, output.data(), size_type{100000}, output, move_only_val);
 
     // 2 * sum i=0...99999 (i+1)
-    EXPECT_EQ(exec->copy_val_to_host(output.get_const_data()), 10000100000LL);
+    EXPECT_EQ(exec->copy_val_to_host(output.const_data()), 10000100000LL);
 
     gko::kernels::dpcpp::run_kernel_reduction(
         exec,
@@ -334,10 +333,10 @@ TEST_F(KernelLaunch, Reduction1D)
             static_assert(is_same<decltype(j), int64>::value, "j");
             return j * 2;
         },
-        int64{}, output.get_data(), size_type{100}, output, move_only_val);
+        int64{}, output.data(), size_type{100}, output, move_only_val);
 
     // 2 * sum i=0...99 (i+1)
-    EXPECT_EQ(exec->copy_val_to_host(output.get_const_data()), 10100LL);
+    EXPECT_EQ(exec->copy_val_to_host(output.const_data()), 10100LL);
 }
 
 
@@ -363,11 +362,10 @@ TEST_F(KernelLaunch, Reduction2D)
             static_assert(is_same<decltype(j), int64>::value, "j");
             return j * 4;
         },
-        int64{}, output.get_data(), gko::dim<2>{1000, 100}, output,
-        move_only_val);
+        int64{}, output.data(), gko::dim<2>{1000, 100}, output, move_only_val);
 
     // 4 * sum i=0...999 sum j=0...99 of (i+1)*(j+1)
-    EXPECT_EQ(exec->copy_val_to_host(output.get_const_data()), 10110100000LL);
+    EXPECT_EQ(exec->copy_val_to_host(output.const_data()), 10110100000LL);
 
     gko::kernels::dpcpp::run_kernel_reduction(
         exec,
@@ -387,10 +385,10 @@ TEST_F(KernelLaunch, Reduction2D)
             static_assert(is_same<decltype(j), int64>::value, "j");
             return j * 4;
         },
-        int64{}, output.get_data(), gko::dim<2>{10, 10}, output, move_only_val);
+        int64{}, output.data(), gko::dim<2>{10, 10}, output, move_only_val);
 
     // 4 * sum i=0...9 sum j=0...9 of (i+1)*(j+1)
-    ASSERT_EQ(exec->copy_val_to_host(output.get_const_data()), 12100LL);
+    ASSERT_EQ(exec->copy_val_to_host(output.const_data()), 12100LL);
 }
 
 
@@ -402,12 +400,12 @@ TEST_F(KernelLaunch, ReductionRow2D)
                          std::to_string(num_cols) + " cols");
             gko::array<int64> host_ref{exec->get_master(),
                                        static_cast<size_type>(2 * num_rows)};
-            std::fill_n(host_ref.get_data(), 2 * num_rows, 1234);
+            std::fill_n(host_ref.data(), 2 * num_rows, 1234);
             gko::array<int64> output{exec, host_ref};
             for (int i = 0; i < num_rows; i++) {
                 // we are computing 2 * sum {j=0, j<cols} (i+1)*(j+1) for each
                 // row i and storing it with stride 2
-                host_ref.get_data()[2 * i] =
+                host_ref.data()[2 * i] =
                     static_cast<int64>(num_cols) * (num_cols + 1) * (i + 1);
             }
 
@@ -422,8 +420,8 @@ TEST_F(KernelLaunch, ReductionRow2D)
                     return (i + 1) * (j + 1);
                 },
                 [] GKO_KERNEL(auto i, auto j) { return i + j; },
-                [] GKO_KERNEL(auto j) { return 2 * j; }, int64{},
-                output.get_data(), 2,
+                [] GKO_KERNEL(auto j) { return 2 * j; }, int64{}, output.data(),
+                2,
                 gko::dim<2>{static_cast<size_type>(num_rows),
                             static_cast<size_type>(num_cols)},
                 output, move_only_val);
@@ -447,7 +445,7 @@ TEST_F(KernelLaunch, ReductionCol2D)
             for (int i = 0; i < num_cols; i++) {
                 // we are computing 2 * sum {j=0, j<row} (i+1)*(j+1) for each
                 // column i
-                host_ref.get_data()[i] =
+                host_ref.data()[i] =
                     static_cast<int64>(num_rows) * (num_rows + 1) * (i + 1);
             }
 
@@ -462,8 +460,7 @@ TEST_F(KernelLaunch, ReductionCol2D)
                     return (i + 1) * (j + 1);
                 },
                 [] GKO_KERNEL(auto i, auto j) { return i + j; },
-                [] GKO_KERNEL(auto j) { return j * 2; }, int64{},
-                output.get_data(),
+                [] GKO_KERNEL(auto j) { return j * 2; }, int64{}, output.data(),
                 gko::dim<2>{static_cast<size_type>(num_rows),
                             static_cast<size_type>(num_cols)},
                 output, move_only_val);

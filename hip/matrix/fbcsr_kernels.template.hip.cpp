@@ -172,8 +172,8 @@ void spmv(std::shared_ptr<const HipExecutor> exec,
                              HIPSPARSE_OPERATION_TRANSPOSE, mb, nrhs, nb, nnzb,
                              &alpha, descr, values, row_ptrs, col_idxs, bs,
                              b->get_const_values(), in_stride, &beta,
-                             trans_c.get_data(), trans_stride);
-            dense_transpose(exec, nrhs, nrows, trans_stride, trans_c.get_data(),
+                             trans_c.data(), trans_stride);
+            dense_transpose(exec, nrhs, nrows, trans_stride, trans_c.data(),
                             out_stride, c->get_values());
         }
         hipsparse::destroy(descr);
@@ -225,13 +225,13 @@ void advanced_spmv(std::shared_ptr<const HipExecutor> exec,
             const auto trans_stride = nrows;
             auto trans_c = array<ValueType>(exec, nrows * nrhs);
             dense_transpose(exec, nrows, nrhs, out_stride, c->get_values(),
-                            trans_stride, trans_c.get_data());
+                            trans_stride, trans_c.data());
             hipsparse::bsrmm(handle, HIPSPARSE_OPERATION_NON_TRANSPOSE,
                              HIPSPARSE_OPERATION_TRANSPOSE, mb, nrhs, nb, nnzb,
                              alphp, descr, values, row_ptrs, col_idxs, bs,
                              b->get_const_values(), in_stride, betap,
-                             trans_c.get_data(), trans_stride);
-            dense_transpose(exec, nrhs, nrows, trans_stride, trans_c.get_data(),
+                             trans_c.data(), trans_stride);
+            dense_transpose(exec, nrhs, nrows, trans_stride, trans_c.data(),
                             out_stride, c->get_values());
         }
         hipsparse::destroy(descr);

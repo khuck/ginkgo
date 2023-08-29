@@ -74,7 +74,7 @@ TYPED_TEST(ReduceArray, KernelWorks)
     gko::kernels::reference::components::reduce_add_array(this->ref, this->vals,
                                                           this->out);
 
-    ASSERT_EQ(this->out.get_data()[0], T{14});
+    ASSERT_EQ(this->out.data()[0], T{14});
 }
 
 
@@ -84,7 +84,7 @@ TYPED_TEST(ReduceArray, CoreWorks)
 
     gko::reduce_add(this->vals, this->out);
 
-    ASSERT_EQ(this->out.get_data()[0], T{14});
+    ASSERT_EQ(this->out.data()[0], T{14});
 }
 
 

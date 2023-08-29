@@ -179,8 +179,7 @@ std::unique_ptr<LinOp> NestedDissection<ValueType, IndexType>::generate_impl(
     exec->run(make_metis_nd(host_exec, num_rows, host_mtx->get_const_row_ptrs(),
                             host_mtx->get_const_col_idxs(),
                             build_metis_options(parameters_.options),
-                            permutation.get_data(),
-                            inv_permutation.get_data()));
+                            permutation.data(), inv_permutation.data()));
     permutation.set_executor(exec);
     // we discard the inverse permutation
     return permutation_type::create(exec, dim<2>{num_rows, num_rows},

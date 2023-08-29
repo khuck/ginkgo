@@ -77,7 +77,7 @@ protected:
         std::shuffle(base_vec.begin(), base_vec.end(),
                      std::mt19937{std::random_device{}()});
         for (gko::size_type i = 0; i < num; i++) {
-            coarse_array.get_data()[i] = base_vec[i + num_rows - num];
+            coarse_array.data()[i] = base_vec[i + num_rows - num];
         }
         return coarse_array;
     }

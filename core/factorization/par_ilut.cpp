@@ -208,8 +208,8 @@ ParIlut<ValueType, IndexType>::generate_l_u(
     const auto num_rows = csr_system_matrix->get_size()[0];
     array<IndexType> l_row_ptrs_array{exec, num_rows + 1};
     array<IndexType> u_row_ptrs_array{exec, num_rows + 1};
-    auto l_row_ptrs = l_row_ptrs_array.get_data();
-    auto u_row_ptrs = u_row_ptrs_array.get_data();
+    auto l_row_ptrs = l_row_ptrs_array.data();
+    auto u_row_ptrs = u_row_ptrs_array.data();
     exec->run(make_initialize_row_ptrs_l_u(csr_system_matrix.get(), l_row_ptrs,
                                            u_row_ptrs));
 

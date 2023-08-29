@@ -209,7 +209,7 @@ void Gmres<ValueType>::apply_dense_impl(const VectorType* dense_b,
     // reset stop status
     exec->run(gmres::make_initialize(
         gko::detail::get_local(dense_b), gko::detail::get_local(residual),
-        givens_sin, givens_cos, stop_status.get_data()));
+        givens_sin, givens_cos, stop_status.data()));
     // residual = residual - Ax
     this->get_system_matrix()->apply(neg_one_op, dense_x, one_op, residual);
 
@@ -221,7 +221,7 @@ void Gmres<ValueType>::apply_dense_impl(const VectorType* dense_b,
     exec->run(gmres::make_restart(gko::detail::get_local(residual),
                                   residual_norm, residual_norm_collection,
                                   gko::detail::get_local(krylov_bases),
-                                  final_iter_nums.get_data()));
+                                  final_iter_nums.data()));
 
     auto stop_criterion = this->get_stop_criterion_factory()->generate(
         this->get_system_matrix(),
@@ -269,15 +269,14 @@ void Gmres<ValueType>::apply_dense_impl(const VectorType* dense_b,
             // Restart
             // Solve upper triangular.
             // y = hessenberg \ residual_norm_collection
-            exec->run(gmres::make_solve_krylov(residual_norm_collection,
-                                               hessenberg, y,
-                                               final_iter_nums.get_const_data(),
-                                               stop_status.get_const_data()));
+            exec->run(gmres::make_solve_krylov(
+                residual_norm_collection, hessenberg, y,
+                final_iter_nums.const_data(), stop_status.const_data()));
             // before_preconditioner = krylov_bases * y
             exec->run(gmres::make_multi_axpy(
                 gko::detail::get_local(krylov_bases), y,
                 gko::detail::get_local(before_preconditioner),
-                final_iter_nums.get_const_data(), stop_status.get_data()));
+                final_iter_nums.const_data(), stop_status.data()));
 
             // x = x + get_preconditioner() * before_preconditioner
             this->get_preconditioner()->apply(before_preconditioner,
@@ -296,7 +295,7 @@ void Gmres<ValueType>::apply_dense_impl(const VectorType* dense_b,
             exec->run(gmres::make_restart(
                 gko::detail::get_local(residual), residual_norm,
                 residual_norm_collection, gko::detail::get_local(krylov_bases),
-                final_iter_nums.get_data()));
+                final_iter_nums.data()));
             restart_iter = 0;
         }
         auto this_krylov = ::gko::detail::create_submatrix_helper(
@@ -384,8 +383,8 @@ void Gmres<ValueType>::apply_dense_impl(const VectorType* dense_b,
         //              -conj(sin(restart_iter)) * this_rnc
         exec->run(gmres::make_hessenberg_qr(
             givens_sin, givens_cos, residual_norm, residual_norm_collection,
-            hessenberg_iter.get(), restart_iter, final_iter_nums.get_data(),
-            stop_status.get_const_data()));
+            hessenberg_iter.get(), restart_iter, final_iter_nums.data(),
+            stop_status.const_data()));
 
         restart_iter++;
     }
@@ -397,7 +396,7 @@ void Gmres<ValueType>::apply_dense_impl(const VectorType* dense_b,
     // y = hessenberg \ residual_norm_collection
     exec->run(gmres::make_solve_krylov(
         residual_norm_collection, hessenberg_small.get(), y,
-        final_iter_nums.get_const_data(), stop_status.get_const_data()));
+        final_iter_nums.const_data(), stop_status.const_data()));
     if (is_flexible) {
         auto preconditioned_krylov_bases_small =
             ::gko::detail::create_submatrix_helper(
@@ -407,7 +406,7 @@ void Gmres<ValueType>::apply_dense_impl(const VectorType* dense_b,
         exec->run(gmres::make_multi_axpy(
             gko::detail::get_local(preconditioned_krylov_bases_small.get()), y,
             gko::detail::get_local(after_preconditioner),
-            final_iter_nums.get_const_data(), stop_status.get_data()));
+            final_iter_nums.const_data(), stop_status.data()));
     } else {
         auto krylov_bases_small = ::gko::detail::create_submatrix_helper(
             krylov_bases, dim<2>{num_rows, num_rhs},
@@ -416,7 +415,7 @@ void Gmres<ValueType>::apply_dense_impl(const VectorType* dense_b,
         exec->run(gmres::make_multi_axpy(
             gko::detail::get_local(krylov_bases_small.get()), y,
             gko::detail::get_local(before_preconditioner),
-            final_iter_nums.get_const_data(), stop_status.get_data()));
+            final_iter_nums.const_data(), stop_status.data()));
 
         // after_preconditioner = get_preconditioner() * before_preconditioner
         this->get_preconditioner()->apply(before_preconditioner,

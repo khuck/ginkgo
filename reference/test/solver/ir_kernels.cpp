@@ -91,12 +91,12 @@ TYPED_TEST(Ir, KernelInitialize)
     auto stop = gko::array<gko::stopping_status>(this->exec, 2);
     stopped.stop(1);
     non_stopped.reset();
-    std::fill_n(stop.get_data(), stop.get_num_elems(), non_stopped);
+    std::fill_n(stop.data(), stop.size(), non_stopped);
 
     gko::kernels::reference::ir::initialize(this->exec, &stop);
 
-    ASSERT_EQ(stop.get_data()[0], non_stopped);
-    ASSERT_EQ(stop.get_data()[1], non_stopped);
+    ASSERT_EQ(stop.data()[0], non_stopped);
+    ASSERT_EQ(stop.data()[1], non_stopped);
 }
 
 

@@ -87,13 +87,13 @@ build_partition_from_local_range(std::shared_ptr<const Executor> exec,
     auto mpi_exec = exec->get_master();
     array<GlobalIndexType> ranges_start_end(mpi_exec, comm.size() * 2);
     ranges_start_end.fill(invalid_index<GlobalIndexType>());
-    comm.all_gather(mpi_exec, range.data(), 2, ranges_start_end.get_data(), 2);
+    comm.all_gather(mpi_exec, range.data(), 2, ranges_start_end.data(), 2);
     ranges_start_end.set_executor(exec);
 
     // make_sort_by_range_start
     array<comm_index_type> part_ids(exec, comm.size());
-    exec->run(components::make_fill_seq_array(part_ids.get_data(),
-                                              part_ids.get_num_elems()));
+    exec->run(
+        components::make_fill_seq_array(part_ids.data(), part_ids.size()));
     exec->run(partition_helpers::make_sort_by_range_start(ranges_start_end,
                                                           part_ids));
 
@@ -130,12 +130,12 @@ build_partition_from_local_size(std::shared_ptr<const Executor> exec,
 {
     auto local_size_gi = static_cast<GlobalIndexType>(local_size);
     array<GlobalIndexType> sizes(exec->get_master(), comm.size());
-    comm.all_gather(exec, &local_size_gi, 1, sizes.get_data(), 1);
+    comm.all_gather(exec, &local_size_gi, 1, sizes.data(), 1);
 
     array<GlobalIndexType> offsets(exec->get_master(), comm.size() + 1);
-    offsets.get_data()[0] = 0;
-    std::partial_sum(sizes.get_data(), sizes.get_data() + comm.size(),
-                     offsets.get_data() + 1);
+    offsets.data()[0] = 0;
+    std::partial_sum(sizes.data(), sizes.data() + comm.size(),
+                     offsets.data() + 1);
 
     return Partition<LocalIndexType, GlobalIndexType>::build_from_contiguous(
         exec, offsets);

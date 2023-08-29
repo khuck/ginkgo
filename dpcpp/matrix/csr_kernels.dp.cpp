@@ -1095,12 +1095,12 @@ void merge_path_spmv(syn::value_list<int, items_per_thread>,
                     grid, block, 0, exec->get_queue(),
                     static_cast<IndexType>(a->get_size()[0]), a_vals,
                     a->get_const_col_idxs(), a->get_const_row_ptrs(),
-                    a->get_const_srow(), b_vals, c_vals, row_out.get_data(),
-                    val_out.get_data());
+                    a->get_const_srow(), b_vals, c_vals, row_out.data(),
+                    val_out.data());
             }
             csr::kernel::abstract_reduce(
                 1, spmv_block_size, 0, exec->get_queue(), grid_num,
-                val_out.get_data(), row_out.get_data(), c_vals);
+                val_out.data(), row_out.data(), c_vals);
 
         } else if (alpha != nullptr && beta != nullptr) {
             if (grid_num > 0) {
@@ -1109,12 +1109,12 @@ void merge_path_spmv(syn::value_list<int, items_per_thread>,
                     static_cast<IndexType>(a->get_size()[0]),
                     alpha->get_const_values(), a_vals, a->get_const_col_idxs(),
                     a->get_const_row_ptrs(), a->get_const_srow(), b_vals,
-                    beta->get_const_values(), c_vals, row_out.get_data(),
-                    val_out.get_data());
+                    beta->get_const_values(), c_vals, row_out.data(),
+                    val_out.data());
             }
             csr::kernel::abstract_reduce(1, spmv_block_size, 0,
                                          exec->get_queue(), grid_num,
-                                         val_out.get_data(), row_out.get_data(),
+                                         val_out.data(), row_out.data(),
                                          alpha->get_const_values(), c_vals);
         } else {
             GKO_KERNEL_NOT_FOUND;
@@ -1526,7 +1526,7 @@ void calculate_nonzeros_per_row_in_span(
 
     kernel::calc_nnz_in_span(grid_dim, block_dim, 0, exec->get_queue(),
                              row_span, col_span, row_ptrs, col_idxs,
-                             row_nnz->get_data());
+                             row_nnz->data());
 }
 
 GKO_INSTANTIATE_FOR_EACH_VALUE_AND_INDEX_TYPE(
@@ -1790,7 +1790,7 @@ void spgemm(std::shared_ptr<const DpcppExecutor> exec,
     array<val_heap_element<ValueType, IndexType>> heap_array(
         exec, a->get_num_stored_elements());
 
-    auto heap = heap_array.get_data();
+    auto heap = heap_array.data();
     auto col_heap =
         reinterpret_cast<col_heap_element<ValueType, IndexType>*>(heap);
 
@@ -1816,8 +1816,8 @@ void spgemm(std::shared_ptr<const DpcppExecutor> exec,
     auto& c_vals_array = c_builder.get_value_array();
     c_col_idxs_array.resize_and_reset(new_nnz);
     c_vals_array.resize_and_reset(new_nnz);
-    auto c_col_idxs = c_col_idxs_array.get_data();
-    auto c_vals = c_vals_array.get_data();
+    auto c_col_idxs = c_col_idxs_array.data();
+    auto c_vals = c_vals_array.data();
 
     queue->submit([&](sycl::handler& cgh) {
         cgh.parallel_for(sycl::range<1>{num_rows}, [=](sycl::id<1> idx) {
@@ -1875,7 +1875,7 @@ void advanced_spgemm(std::shared_ptr<const DpcppExecutor> exec,
     array<val_heap_element<ValueType, IndexType>> heap_array(
         exec, a->get_num_stored_elements());
 
-    auto heap = heap_array.get_data();
+    auto heap = heap_array.data();
     auto col_heap =
         reinterpret_cast<col_heap_element<ValueType, IndexType>*>(heap);
 
@@ -1915,8 +1915,8 @@ void advanced_spgemm(std::shared_ptr<const DpcppExecutor> exec,
     c_col_idxs_array.resize_and_reset(new_nnz);
     c_vals_array.resize_and_reset(new_nnz);
 
-    auto c_col_idxs = c_col_idxs_array.get_data();
-    auto c_vals = c_vals_array.get_data();
+    auto c_col_idxs = c_col_idxs_array.data();
+    auto c_vals = c_vals_array.data();
 
     queue->submit([&](sycl::handler& cgh) {
         cgh.parallel_for(sycl::range<1>{num_rows}, [=](sycl::id<1> idx) {
@@ -2025,8 +2025,8 @@ void spgeam(std::shared_ptr<const DpcppExecutor> exec,
     auto& c_vals_array = c_builder.get_value_array();
     c_col_idxs_array.resize_and_reset(new_nnz);
     c_vals_array.resize_and_reset(new_nnz);
-    auto c_cols = c_col_idxs_array.get_data();
-    auto c_vals = c_vals_array.get_data();
+    auto c_cols = c_col_idxs_array.data();
+    auto c_vals = c_vals_array.data();
 
     const auto a_vals = a->get_const_values();
     const auto b_vals = b->get_const_values();
@@ -2109,7 +2109,7 @@ void generic_transpose(std::shared_ptr<const DpcppExecutor> exec,
     const auto vals = orig->get_const_values();
 
     array<IndexType> counts{exec, num_cols + 1};
-    auto tmp_counts = counts.get_data();
+    auto tmp_counts = counts.data();
     auto out_row_ptrs = trans->get_row_ptrs();
     auto out_cols = trans->get_col_idxs();
     auto out_vals = trans->get_values();
@@ -2315,7 +2315,7 @@ void is_sorted_by_column_index(
     const auto num_rows = to_check->get_size()[0];
     const auto row_ptrs = to_check->get_const_row_ptrs();
     const auto cols = to_check->get_const_col_idxs();
-    auto is_sorted_device = is_sorted_device_array.get_data();
+    auto is_sorted_device = is_sorted_device_array.data();
     exec->get_queue()->submit([&](sycl::handler& cgh) {
         cgh.parallel_for(sycl::range<1>{num_rows}, [=](sycl::id<1> idx) {
             const auto row = static_cast<size_type>(idx[0]);

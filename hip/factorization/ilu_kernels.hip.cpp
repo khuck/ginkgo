@@ -76,11 +76,11 @@ void compute_lu(std::shared_ptr<const DefaultExecutor> exec,
     hipsparse::ilu0_analysis(handle, num_rows, nnz, desc, m->get_const_values(),
                              m->get_const_row_ptrs(), m->get_const_col_idxs(),
                              info, HIPSPARSE_SOLVE_POLICY_USE_LEVEL,
-                             buffer.get_data());
+                             buffer.data());
 
     hipsparse::ilu0(handle, num_rows, nnz, desc, m->get_values(),
                     m->get_const_row_ptrs(), m->get_const_col_idxs(), info,
-                    HIPSPARSE_SOLVE_POLICY_USE_LEVEL, buffer.get_data());
+                    HIPSPARSE_SOLVE_POLICY_USE_LEVEL, buffer.data());
 
     hipsparse::destroy_ilu0_info(info);
     hipsparse::destroy(desc);

@@ -102,13 +102,13 @@ ParIlu<ValueType, IndexType>::generate_l_u(
     array<IndexType> l_row_ptrs{exec, number_rows + 1};
     array<IndexType> u_row_ptrs{exec, number_rows + 1};
     exec->run(par_ilu_factorization::make_initialize_row_ptrs_l_u(
-        csr_system_matrix.get(), l_row_ptrs.get_data(), u_row_ptrs.get_data()));
+        csr_system_matrix.get(), l_row_ptrs.data(), u_row_ptrs.data()));
 
     // Get nnz from device memory
     auto l_nnz = static_cast<size_type>(
-        exec->copy_val_to_host(l_row_ptrs.get_data() + number_rows));
+        exec->copy_val_to_host(l_row_ptrs.data() + number_rows));
     auto u_nnz = static_cast<size_type>(
-        exec->copy_val_to_host(u_row_ptrs.get_data() + number_rows));
+        exec->copy_val_to_host(u_row_ptrs.data() + number_rows));
 
     // Since `row_ptrs` of L and U is already created, the matrix can be
     // directly created with it

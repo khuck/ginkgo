@@ -845,7 +845,7 @@ void symm_permute(std::shared_ptr<const ReferenceExecutor> exec,
                   const matrix::Dense<ValueType>* orig,
                   matrix::Dense<ValueType>* permuted)
 {
-    auto perm = permutation_indices->get_const_data();
+    auto perm = permutation_indices->const_data();
     auto size = orig->get_size()[0];
     for (size_type i = 0; i < size; ++i) {
         for (size_type j = 0; j < size; ++j) {
@@ -864,7 +864,7 @@ void inv_symm_permute(std::shared_ptr<const ReferenceExecutor> exec,
                       const matrix::Dense<ValueType>* orig,
                       matrix::Dense<ValueType>* permuted)
 {
-    auto perm = permutation_indices->get_const_data();
+    auto perm = permutation_indices->const_data();
     auto size = orig->get_size()[0];
     for (size_type i = 0; i < size; ++i) {
         for (size_type j = 0; j < size; ++j) {
@@ -883,8 +883,8 @@ void row_gather(std::shared_ptr<const ReferenceExecutor> exec,
                 const matrix::Dense<ValueType>* orig,
                 matrix::Dense<OutputType>* row_collection)
 {
-    auto rows = row_idxs->get_const_data();
-    for (size_type i = 0; i < row_idxs->get_num_elems(); ++i) {
+    auto rows = row_idxs->const_data();
+    for (size_type i = 0; i < row_idxs->size(); ++i) {
         for (size_type j = 0; j < orig->get_size()[1]; ++j) {
             row_collection->at(i, j) = orig->at(rows[i], j);
         }
@@ -904,10 +904,10 @@ void advanced_row_gather(std::shared_ptr<const ReferenceExecutor> exec,
                          matrix::Dense<OutputType>* row_collection)
 {
     using type = highest_precision<ValueType, OutputType>;
-    auto rows = row_idxs->get_const_data();
+    auto rows = row_idxs->const_data();
     auto scalar_alpha = alpha->at(0, 0);
     auto scalar_beta = beta->at(0, 0);
-    for (size_type i = 0; i < row_idxs->get_num_elems(); ++i) {
+    for (size_type i = 0; i < row_idxs->size(); ++i) {
         for (size_type j = 0; j < orig->get_size()[1]; ++j) {
             row_collection->at(i, j) =
                 static_cast<type>(scalar_alpha * orig->at(rows[i], j)) +
@@ -927,7 +927,7 @@ void column_permute(std::shared_ptr<const ReferenceExecutor> exec,
                     const matrix::Dense<ValueType>* orig,
                     matrix::Dense<ValueType>* column_permuted)
 {
-    auto perm = permutation_indices->get_const_data();
+    auto perm = permutation_indices->const_data();
     for (size_type j = 0; j < orig->get_size()[1]; ++j) {
         for (size_type i = 0; i < orig->get_size()[0]; ++i) {
             column_permuted->at(i, j) = orig->at(i, perm[j]);
@@ -945,7 +945,7 @@ void inverse_row_permute(std::shared_ptr<const ReferenceExecutor> exec,
                          const matrix::Dense<ValueType>* orig,
                          matrix::Dense<ValueType>* row_permuted)
 {
-    auto perm = permutation_indices->get_const_data();
+    auto perm = permutation_indices->const_data();
     for (size_type i = 0; i < orig->get_size()[0]; ++i) {
         for (size_type j = 0; j < orig->get_size()[1]; ++j) {
             row_permuted->at(perm[i], j) = orig->at(i, j);
@@ -963,7 +963,7 @@ void inverse_column_permute(std::shared_ptr<const ReferenceExecutor> exec,
                             const matrix::Dense<ValueType>* orig,
                             matrix::Dense<ValueType>* column_permuted)
 {
-    auto perm = permutation_indices->get_const_data();
+    auto perm = permutation_indices->const_data();
     for (size_type j = 0; j < orig->get_size()[1]; ++j) {
         for (size_type i = 0; i < orig->get_size()[0]; ++i) {
             column_permuted->at(i, perm[j]) = orig->at(i, j);
