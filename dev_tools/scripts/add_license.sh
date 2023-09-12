@@ -46,7 +46,9 @@ if ! command -v date &> /dev/null; then
 fi
 
 CURRENT_YEAR=$(date +%Y)
-echo -e "${GINKGO_LICENSE_BEGIN} 2017-${CURRENT_YEAR} The Ginkgo authors\n//\n${GINKGO_LICENSE_END} BSD-3-Clause\n" > "${COMMENTED_LICENSE_FILE}"
+echo "${GINKGO_LICENSE_BEGIN} 2017-${CURRENT_YEAR} The Ginkgo authors" > "$1"
+echo "//" >> "$1"
+echo "${GINKGO_LICENSE_END} BSD-3-Clause" >> "$1"
 
 # Does not work if a found file (including the path) contains a newline
 find "${GINKGO_ROOT_DIR}" \
