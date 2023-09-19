@@ -484,12 +484,17 @@ struct matrix_data {
     /**
      * Sorts the nonzero vector so the values follow row-major order.
      */
-    void ensure_row_major_order()
+    void sort_row_major()
     {
         std::sort(
             begin(nonzeros), end(nonzeros), [](nonzero_type x, nonzero_type y) {
                 return std::tie(x.row, x.column) < std::tie(y.row, y.column);
             });
+    }
+
+    [[deprecated("Use sort_row_major() instead")]] void ensure_row_major_order()
+    {
+        sort_row_major();
     }
 
     /**
