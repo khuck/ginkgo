@@ -881,12 +881,32 @@ struct enable_iterative_solver_factory_parameters
      * Provides stopping criteria via stop::CriterionFactory instances to be
      * used by the iterative solver in a fluent interface.
      */
-    template <typename... Args>
+    template <typename... Args,
+              typename = std::enable_if_t<xstd::conjunction<std::is_convertible<
+                  Args, deferred_factory_parameter<
+                            stop::CriterionFactory>>...>::value>>
     Parameters& with_criteria(Args&&... value)
     {
         this->criterion_generators = {
             deferred_factory_parameter<stop::CriterionFactory>{
                 std::forward<Args>(value)}...};
+        this->deferred_factories["criteria"] = [](const auto& exec,
+                                                  auto& params) {
+            if (!params.criterion_generators.empty()) {
+                params.criteria.clear();
+                for (auto& generator : params.criterion_generators) {
+                    params.criteria.push_back(generator.on(exec));
+                }
+            }
+        };
+        return *self();
+    }
+
+    Parameters& with_criteria(
+        const std::vector<deferred_factory_parameter<stop::CriterionFactory>>&
+            criteria_vec)
+    {
+        this->criterion_generators = criteria_vec;
         this->deferred_factories["criteria"] = [](const auto& exec,
                                                   auto& params) {
             if (!params.criterion_generators.empty()) {
