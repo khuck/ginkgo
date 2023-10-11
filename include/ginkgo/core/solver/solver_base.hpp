@@ -884,11 +884,11 @@ struct enable_iterative_solver_factory_parameters
     template <typename... Args,
               typename = std::enable_if_t<xstd::conjunction<std::is_convertible<
                   Args, deferred_factory_parameter<
-                            stop::CriterionFactory>>...>::value>>
+                            const stop::CriterionFactory>>...>::value>>
     Parameters& with_criteria(Args&&... value)
     {
         this->criterion_generators = {
-            deferred_factory_parameter<stop::CriterionFactory>{
+            deferred_factory_parameter<const stop::CriterionFactory>{
                 std::forward<Args>(value)}...};
         this->deferred_factories["criteria"] = [](const auto& exec,
                                                   auto& params) {
@@ -902,11 +902,16 @@ struct enable_iterative_solver_factory_parameters
         return *self();
     }
 
-    Parameters& with_criteria(
-        const std::vector<deferred_factory_parameter<stop::CriterionFactory>>&
-            criteria_vec)
+    template <typename FactoryType,
+              typename = std::enable_if_t<std::is_convertible<
+                  FactoryType, deferred_factory_parameter<
+                                   const stop::CriterionFactory>>::value>>
+    Parameters& with_criteria(const std::vector<FactoryType>& criteria_vec)
     {
-        this->criterion_generators = criteria_vec;
+        this->criterion_generators.clear();
+        for (const auto& factory : criteria_vec) {
+            this->criterion_generators.push_back(factory);
+        }
         this->deferred_factories["criteria"] = [](const auto& exec,
                                                   auto& params) {
             if (!params.criterion_generators.empty()) {
@@ -922,7 +927,7 @@ struct enable_iterative_solver_factory_parameters
 private:
     GKO_ENABLE_SELF(Parameters);
 
-    std::vector<deferred_factory_parameter<stop::CriterionFactory>>
+    std::vector<deferred_factory_parameter<const stop::CriterionFactory>>
         criterion_generators;
 };
 
@@ -957,7 +962,7 @@ struct enable_preconditioned_iterative_solver_factory_parameters
      * @see preconditioned_iterative_solver_factory_parameters::preconditioner
      */
     Parameters& with_preconditioner(
-        deferred_factory_parameter<LinOpFactory> preconditioner)
+        deferred_factory_parameter<const LinOpFactory> preconditioner)
     {
         this->preconditioner_generator = std::move(preconditioner);
         this->deferred_factories["preconditioner"] = [](const auto& exec,
@@ -985,7 +990,7 @@ struct enable_preconditioned_iterative_solver_factory_parameters
 private:
     GKO_ENABLE_SELF(Parameters);
 
-    deferred_factory_parameter<LinOpFactory> preconditioner_generator;
+    deferred_factory_parameter<const LinOpFactory> preconditioner_generator;
 };
 
 

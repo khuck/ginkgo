@@ -94,7 +94,7 @@ public:
         /**
          * Local solver factory.
          */
-        GKO_DEFERRED_FACTORY_PARAMETER(local_solver, LinOpFactory);
+        GKO_DEFERRED_FACTORY_PARAMETER(local_solver, const LinOpFactory);
     };
     GKO_ENABLE_LIN_OP_FACTORY(Schwarz, parameters, Factory);
     GKO_ENABLE_BUILD_METHOD(Factory);
